@@ -113,15 +113,15 @@ instalou as dependências ARM64 e gerou o `.env` local vazio com permissão `600
 O teste remoto e a compilação passaram. Um servidor temporário respondeu
 `{"status":"ok"}` pela rede e foi encerrado; a porta 8000 ficou livre novamente.
 
-A instalação systemd requer a senha sudo digitada pelo usuário em seu próprio
-terminal. Para concluir:
+A instalação systemd foi concluída com a senha sudo digitada pelo usuário em seu
+próprio terminal. O serviço está habilitado e ativo. Para repetir o deployment:
 
 ```powershell
 ssh -t voicepi "cd ~/pi-voice-ai && ./scripts/deploy.sh"
 ```
 
-Não envie a senha sudo ao chat. O script pedirá a senha no terminal, instalará o
-serviço e realizará os checks restantes automaticamente.
+O script pede a senha no terminal quando necessária. Não registre a senha em
+arquivos, comandos, logs ou documentação.
 
 ## Arquitetura
 
@@ -461,6 +461,10 @@ validações, inventário e pendências ao usuário. O commit inicial
 - O Pi não permite `sudo -n`, portanto a instalação systemd não pode ser concluída
   por uma sessão automatizada sem interação. A solução é executar `deploy.sh` com
   `ssh -t` e digitar a senha sudo apenas no terminal local.
+- Na primeira instalação, o serviço iniciou corretamente, mas o health check foi
+  executado antes de o Uvicorn abrir a porta e o deployment terminou com
+  `curl: (7)`. A verificação posterior mostrou o serviço ativo e HTTP 200. O script
+  passou a repetir a consulta por até 20 segundos antes de declarar falha.
 - Após o teste temporário, `Ctrl+C` encerrou a sessão SSH antes de encerrar o
   servidor remoto. O processo exato foi identificado pelo PID, finalizado com
   `SIGTERM` e a porta 8000 foi confirmada como livre.

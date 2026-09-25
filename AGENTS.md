@@ -56,8 +56,10 @@ system tools, created a Python 3.13 virtual environment, installed the ARM64
 dependencies, and created an ignored `.env` with mode 600 from the safe template.
 Remote pytest and compileall passed. A temporary Uvicorn process returned the
 expected health JSON over the LAN and was then terminated. The Git tree is clean.
-Systemd installation remains pending because the user account requires an
-interactive sudo password; never request or transmit that password in chat.
+The systemd unit is installed, enabled and active. The first deployment exposed a
+startup race: curl ran before Uvicorn opened port 8000. Subsequent inspection showed
+the service healthy. `healthcheck.sh` now retries for up to 20 seconds. Never request,
+store or transmit sudo passwords in repository files, commands or documentation.
 
 ## Project Goal
 

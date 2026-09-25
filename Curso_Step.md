@@ -372,5 +372,21 @@ foi solicitada nem transmitida. A etapa systemd ficou para execução interativa
 ssh -t voicepi "cd ~/pi-voice-ai && ./scripts/deploy.sh"
 ```
 
-Após o usuário digitar a senha no próprio terminal, ainda será necessário registrar
-o estado do serviço, health check e logs reais antes de encerrar a Fase 1.
+Após o usuário digitar a senha no próprio terminal, o estado do serviço, health
+check e logs foram inspecionados remotamente.
+
+### Instalação systemd e condição de corrida do health check
+
+O usuário executou `deploy.sh` interativamente. Bootstrap, reinstalação do pacote,
+pytest, criação do link de inicialização e instalação da unidade systemd passaram.
+O script falhou em seguida com `curl: (7)` porque consultou `127.0.0.1:8000` no
+instante imediatamente posterior ao restart.
+
+A inspeção remota mostrou que o serviço estava `enabled` e `active`, executando
+`.venv/bin/python -m app.main`. Os logs continham `APP_STARTED`, conclusão do startup
+e Uvicorn em `0.0.0.0:8000`. Uma nova consulta recebeu HTTP 200 e
+`{"status":"ok"}`. Portanto, a aplicação não havia falhado; o check estava cedo.
+
+`healthcheck.sh` foi corrigido para tentar até 20 vezes, com intervalo padrão de um
+segundo. Ele termina imediatamente quando recebe o JSON esperado e ainda falha com
+mensagem clara se o serviço não ficar pronto dentro do limite.

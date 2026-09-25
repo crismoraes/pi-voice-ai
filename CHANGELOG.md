@@ -17,7 +17,11 @@
 
 ### Pending
 
-- Instalação e validação do serviço systemd com sudo interativo.
+- Validação do health check com retry no Raspberry Pi.
+
+### Fixed
+
+- Health check agora aguarda o Uvicorn ficar pronto após restart do systemd.
 
 ## [0.1.0] - 2026-09-25
 
