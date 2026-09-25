@@ -4,6 +4,10 @@
 
 ### Added
 
+- Transporte WebRTC com signaling HTTP e loopback da faixa de áudio.
+- Cliente de navegador para captura, estado da conexão e reprodução do áudio.
+- Suporte opcional a TLS direto no Uvicorn e health check HTTPS com CA confiável.
+- Teste de integração com dois peers reais e retorno de frame de áudio.
 - Fundação FastAPI com endpoint `GET /health` independente de serviços externos.
 - Configuração validada por ambiente e logs estruturados em JSON.
 - Teste ASGI do endpoint de saúde.

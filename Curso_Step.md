@@ -405,3 +405,82 @@ físico de reinicialização. Com essa limitação registrada, a Fase 1 foi conc
 O Raspberry Pi executa a fundação FastAPI como serviço systemd, reinicia o processo
 em caso de falha, registra logs JSON no journald e expõe um endpoint de saúde que
 não depende da OpenAI. Nenhuma funcionalidade de áudio foi iniciada.
+
+## Fase 2 — WebRTC com loopback de áudio
+
+### Objetivo da aula
+
+Capturar o microfone no navegador, transportar áudio de forma segura até o Pi e
+devolver a mesma faixa ao navegador. A meta é validar transporte e latência básica
+antes de introduzir reconhecimento ou síntese de fala.
+
+### Conceitos
+
+WebRTC transporta mídia em tempo real. SDP descreve codecs e fluxos; ICE descobre
+o caminho de rede; DTLS estabelece chaves; SRTP protege os pacotes de áudio. A API
+HTTP troca a oferta e a resposta, mas o áudio segue diretamente pela conexão
+WebRTC. `getUserMedia` exige HTTPS fora de `localhost`.
+
+Arquitetura antes da aula:
+
+```text
+Browser --HTTP /health--> FastAPI
+```
+
+Arquitetura depois da implementação:
+
+```text
+Browser --HTTPS signaling--> FastAPI
+   |                           |
+   +----- WebRTC audio ------> aiortc
+   <----- audio loopback -----+
+```
+
+### Implementação
+
+Foi adicionado `aiortc 1.15.0`. Uma resolução sem instalação confirmou wheels
+binários para Python 3.13 ARM64, incluindo PyAV, cryptography e pylibsrtp. Isso evita
+compilar FFmpeg no Raspberry Pi nesta fase.
+
+O gerenciador cria um `RTCPeerConnection` por oferta, registra eventos estruturados,
+devolve a faixa de áudio recebida e fecha peers quando solicitado, em falha ou no
+shutdown. A API expõe criação e remoção de peers. A página web solicita somente
+áudio, negocia sem servidor STUN para o cenário LAN e reproduz a faixa retornada.
+
+### HTTPS
+
+Foi instalado `mkcert 1.4.4` pelo Windows Package Manager. Uma nova CA local foi
+instalada no armazenamento confiável do Windows. O certificado de desenvolvimento
+foi criado fora do repositório para o hostname local do Pi e expira em dezembro de
+2028. Nenhum conteúdo de chave foi exibido ou documentado.
+
+Uma primeira verificação de existência dos destinos TLS usou `Test-Path` com dois
+parâmetros `-LiteralPath` na mesma expressão e gerou erro de binding. Como esse erro
+não era terminante, o comando seguinte ainda criou os arquivos. A validação posterior
+confirmou certificado e chave. Em scripts futuros, cada `Test-Path` deve ficar entre
+parênteses e `$ErrorActionPreference` deve ser `Stop`.
+
+### Testes executados
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest -vv
+.\.venv\Scripts\python.exe -m compileall -q app
+```
+
+Três testes passaram. O teste principal criou dois peers aiortc reais, negociou a
+conexão e recebeu um frame de áudio devolvido pelo servidor. A sintaxe dos scripts
+Bash e a compilação Python também passaram.
+
+O Uvicorn foi iniciado localmente em HTTPS na porta 8443 usando variáveis de
+ambiente temporárias. O primeiro curl falhou com `CRYPT_E_NO_REVOCATION_CHECK`, pois
+a CA local não publica uma lista de revogação acessível ao Schannel. A repetição
+usou `--ssl-no-revoke`, que desativa apenas essa consulta; cadeia e hostname
+continuaram validados. `/health` respondeu `{"status":"ok"}`. Não foi usado
+`--insecure`, e a porta 8443 foi confirmada como livre após o teste.
+
+### Pendências da aula
+
+Ainda é necessário transferir os arquivos TLS para o Pi, instalar as dependências
+ARM64, configurar a porta HTTPS, reiniciar o serviço e testar o microfone e o áudio
+fisicamente no navegador. Esses resultados não serão presumidos.

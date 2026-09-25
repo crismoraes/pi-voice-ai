@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 and 1 complete
+## Current implementation state — Phases 0 and 1 complete, Phase 2 in progress
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -68,6 +68,34 @@ clean Pi Git tree, and the expected health response locally and over the LAN. Th
 enabled unit is configured for boot, but an actual Pi reboot has not been performed
 as part of this phase. Phase 1 is complete; do not begin Phase 2 without explicit
 user authorization.
+
+The user authorized Phase 2. The current local implementation adds `aiortc 1.15.0`,
+browser assets, HTTP offer/answer signaling, peer lifecycle management and audio
+track loopback. It does not add VAD, STT, LLM, TTS or USB audio. The browser and
+server use the same FastAPI origin; no CORS configuration is required.
+
+The signaling API is:
+
+* `POST /api/webrtc/offer` with an SDP offer, returning SDP answer and peer ID
+* `DELETE /api/webrtc/peers/{peer_id}` for explicit cleanup
+
+Every received audio track is attached to the same peer connection as an outbound
+track for the Phase 2 loopback. Peer connections are closed on failure, explicit
+disconnect and application shutdown. Log events include track receipt, state
+changes, `WEBRTC_CONNECTED`, negotiation failure and `WEBRTC_DISCONNECTED`.
+
+Local Phase 2 tests use two real aiortc peers and require one audio frame to pass
+through ICE, DTLS and SRTP. All three current tests pass. ARM64 dry-run resolution
+on the Pi found compatible binary wheels for aiortc, PyAV, cryptography and SRTP.
+
+Browser microphone access uses direct Uvicorn HTTPS during development. Windows
+trusts a local mkcert CA. The certificate covers the local Pi hostname and private
+address and expires in December 2028. Certificate, TLS key and CA files live outside
+the repository. The Pi will store them under the user's private config directory.
+The app reads `TLS_CERT_FILE` and `TLS_KEY_FILE`; `healthcheck.sh` switches to HTTPS
+and validates with `TLS_CA_FILE`. Never publish certificate private keys or mkcert's
+root CA private key. Phase 2 is not complete until TLS transfer, Pi deployment,
+signaling, browser connection, audible loopback and cleanup are validated.
 
 ## Project Goal
 

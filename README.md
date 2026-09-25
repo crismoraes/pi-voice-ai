@@ -12,6 +12,82 @@ OpenAI implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
+## Fase 2 — loopback de áudio WebRTC
+
+Estado atual: implementação e testes automatizados locais concluídos; deployment
+HTTPS e validação física do microfone/alto-falante ainda pendentes.
+
+```text
+Microfone do navegador
+        |
+        | WebRTC: ICE + DTLS + SRTP
+        v
+FastAPI signaling -> aiortc no Raspberry Pi
+        |
+        | mesma faixa de áudio retornada
+        v
+Alto-falante do navegador
+```
+
+O navegador usa `POST /api/webrtc/offer` para trocar SDP e recebe um identificador
+do peer. Ao encerrar, usa `DELETE /api/webrtc/peers/{peer_id}`. O servidor mantém
+as conexões em memória e fecha todas no shutdown. Esta fase apenas devolve o áudio;
+ela ainda não executa VAD, STT, OpenAI ou TTS.
+
+O cliente web é servido pela própria aplicação. Depois do deployment TLS, abra:
+
+```text
+https://home-ai.local:8443/
+```
+
+Use fones de ouvido para evitar microfonia. Clique em **Iniciar loopback**, permita
+o microfone e fale. O áudio deve voltar pelo elemento de áudio do navegador. O
+cliente desativa cancelamento de eco, supressão de ruído e ganho automático apenas
+para tornar o loopback verificável.
+
+### HTTPS local
+
+APIs de microfone exigem contexto seguro. Para desenvolvimento foi escolhido
+`mkcert`, sem desativar proteções do navegador. No Windows, a CA local foi instalada
+no armazenamento confiável e o certificado foi criado fora do repositório para o
+hostname do Pi. Ele expira em dezembro de 2028.
+
+Arquivos locais:
+
+```text
+%USERPROFILE%\.config\pi-voice-ai\tls\server.pem
+%USERPROFILE%\.config\pi-voice-ai\tls\server-key.pem
+%LOCALAPPDATA%\mkcert\rootCA.pem
+```
+
+Destino no Pi:
+
+```text
+/home/<usuario>/.config/pi-voice-ai/tls/
+```
+
+A chave TLS e a CA ficam fora do Git. O diretório remoto deve usar permissão `700`;
+a chave, `600`. O `.env` do Pi apontará para esses arquivos e usará `APP_PORT=8443`.
+O health check utiliza a CA para validar o certificado em vez de ignorar erros TLS.
+
+O servidor não possui autenticação de usuários nesta fase. Mantenha-o na rede local;
+não encaminhe a porta no roteador nem o exponha à internet.
+
+### Validação automatizada
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -vv
+```
+
+O teste de integração cria dois peers reais, negocia ICE/DTLS/SRTP e exige que um
+frame de áudio retorne pelo loopback. Resultado local: três testes aprovados,
+incluindo `/health`, página web e transporte de áudio.
+
+O processo HTTPS também foi iniciado localmente em 8443 com o certificado gerado.
+Uma consulta usando `home-ai.local`, validação de cadeia e validação de hostname
+recebeu o JSON de saúde esperado. O processo temporário foi encerrado e a porta
+8443 voltou a ficar livre.
+
 ## Fase 1 — fundação HTTP
 
 A fundação implementada fornece uma aplicação FastAPI mínima e independente de
@@ -100,6 +176,9 @@ Configuração lida nesta fase:
 | `APP_HOST` | `0.0.0.0` | Interface HTTP |
 | `APP_PORT` | `8000` | Porta HTTP |
 | `LOG_LEVEL` | `INFO` | Nível dos logs JSON |
+| `TLS_CERT_FILE` | vazio | Certificado HTTPS do servidor |
+| `TLS_KEY_FILE` | vazio | Chave privada HTTPS, fora do Git |
+| `TLS_CA_FILE` | vazio | CA usada pelo health check HTTPS |
 
 O endpoint de saúde não depende da internet nem da OpenAI. HTTP é suficiente para
 a validação da Fase 1 na rede local; HTTPS será configurado antes do uso do microfone
@@ -470,6 +549,10 @@ validações, inventário e pendências ao usuário. O commit inicial
   executado antes de o Uvicorn abrir a porta e o deployment terminou com
   `curl: (7)`. A verificação posterior mostrou o serviço ativo e HTTP 200. O script
   passou a repetir a consulta por até 20 segundos antes de declarar falha.
+- O curl do Windows não conseguiu consultar revogação para a CA privada do mkcert
+  e retornou `CRYPT_E_NO_REVOCATION_CHECK`. O teste foi repetido com
+  `--ssl-no-revoke`, preservando validação de cadeia e hostname, e passou. Não foi
+  usado `--insecure`.
 - Após o teste temporário, `Ctrl+C` encerrou a sessão SSH antes de encerrar o
   servidor remoto. O processo exato foi identificado pelo PID, finalizado com
   `SIGTERM` e a porta 8000 foi confirmada como livre.
