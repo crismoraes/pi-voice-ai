@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phase 0 validated, Phase 1 authorized
+## Current implementation state — Phases 0 and 1 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -22,11 +22,12 @@ config contains the alias `voicepi`, with `IdentitiesOnly yes`, and remote comma
 work through it. The target is a Raspberry Pi 5 Model B Rev 1.0 named `home-ai`,
 running Debian GNU/Linux 13 (trixie), aarch64. README.md and Curso_Step.md contain
 the sanitized baseline. Do not publish its private IP address in repository files.
-The Pi does not yet contain a `~/pi-voice-ai` clone.
+The Pi clone is at `/home/cristiano/pi-voice-ai`.
 
 README.md contains reproduction procedures; Curso_Step.md separates observed
-results from work still to be demonstrated. The `.env.example` settings
-are future placeholders, not implemented behavior or permanent engine selections.
+results from work still to be demonstrated. Phase 1 reads `APP_HOST`, `APP_PORT`
+and `LOG_LEVEL` from `.env`; other template values remain future placeholders and
+engine names are not permanent selections.
 
 Phase 0 validation passed and the user authorized `v0.1.0` and continuation into
 Phase 1. Preserve SSH password access. Phase 1 may implement only the application
@@ -60,6 +61,13 @@ The systemd unit is installed, enabled and active. The first deployment exposed 
 startup race: curl ran before Uvicorn opened port 8000. Subsequent inspection showed
 the service healthy. `healthcheck.sh` now retries for up to 20 seconds. Never request,
 store or transmit sudo passwords in repository files, commands or documentation.
+
+The corrected script passed on the Pi. Final Phase 1 checks showed `active/running`,
+`enabled`, `ExecMainStatus=0`, `NRestarts=0`, no error-priority journal entries, a
+clean Pi Git tree, and the expected health response locally and over the LAN. The
+enabled unit is configured for boot, but an actual Pi reboot has not been performed
+as part of this phase. Phase 1 is complete; do not begin Phase 2 without explicit
+user authorization.
 
 ## Project Goal
 

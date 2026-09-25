@@ -5,10 +5,10 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fase 0 concluída.** O acesso SSH por chave, o alias `voicepi` e o
-inventário do Raspberry Pi foram validados. O marco `v0.1.0` registra essa base.
-A Fase 1 começa com a fundação da aplicação; ainda não há áudio, WebRTC, STT, TTS
-ou integração OpenAI implementados.
+**Estado: Fases 0 e 1 concluídas.** O marco `v0.1.0` registra a estação Windows,
+SSH e baseline do Raspberry Pi. A fundação FastAPI está implantada como serviço
+systemd e responde em `/health`. Ainda não há áudio, WebRTC, STT, TTS ou integração
+OpenAI implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -122,6 +122,11 @@ ssh -t voicepi "cd ~/pi-voice-ai && ./scripts/deploy.sh"
 
 O script pede a senha no terminal quando necessária. Não registre a senha em
 arquivos, comandos, logs ou documentação.
+
+Validação final: serviço `active/running` e `enabled`, processo executado como
+`cristiano`, `ExecMainStatus=0`, nenhum restart, nenhum erro recente no journald e
+health check aprovado tanto no próprio Pi quanto pela rede. A unidade está habilitada
+para iniciar no boot; um reboot real do Pi ainda não foi realizado nesta fase.
 
 ## Arquitetura
 
@@ -429,7 +434,7 @@ Somente depois de todos os critérios passarem, preparar o commit
 reescrever histórico remoto. Antes de criar `v0.1.0`, apresentar os arquivos,
 validações, inventário e pendências ao usuário. O commit inicial
 `chore: initialize PiVoice AI development environment` foi criado e enviado para
-`origin/main`. Nenhuma release foi criada.
+`origin/main`, e a release `v0.1.0` foi publicada.
 
 ## Problemas realmente encontrados
 
@@ -439,8 +444,8 @@ validações, inventário e pendências ao usuário. O commit inicial
   mostra a impressão digital de uma chave existente. A inspeção de 2026-09-24
   confirmou que nem `id_ed25519` nem `id_ed25519.pub` existiam no local padrão.
   Primeiro é necessário gerar o par com `ssh-keygen -t ed25519 -C "pi-voice-ai"`;
-  depois, verificar a chave pública com o comando da seção de chaves SSH.
-  A geração ainda aguarda execução no terminal do usuário.
+  depois, verificar a chave pública com o comando da seção de chaves SSH. A chave
+  foi posteriormente criada, instalada e validada no Pi.
 - Comandos Git na pasta pai retornaram `not a git repository`. O clone está na
   subpasta `pi-voice-ai`; usar essa pasta como diretório de trabalho resolve.
 - Ler `AGENTS.md` por caminho relativo, fora da raiz do clone, falhou. A leitura

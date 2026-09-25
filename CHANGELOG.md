@@ -14,10 +14,8 @@
 
 - Bootstrap e dependências Python ARM64 no Raspberry Pi 5.
 - Teste, compilação e endpoint `/health` pela rede local.
-
-### Pending
-
-- Validação do health check com retry no Raspberry Pi.
+- Serviço systemd ativo, habilitado, sem reinícios e sem erros recentes no journald.
+- Health check corrigido no Pi e acesso HTTP pela rede local.
 
 ### Fixed
 

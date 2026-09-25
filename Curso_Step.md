@@ -143,8 +143,8 @@ não comprova ausência. A repetição usou erros terminantes e confirmou o dire
 O ambiente local possui as ferramentas necessárias, o clone aponta para o remoto
 correto e os critérios de chave, alias, comando remoto e inventário foram atendidos.
 
-O commit inicial, push e `v0.1.0` aguardam a validação completa da Fase 0. A
-implementação de aplicação pertence à Fase 1 e não foi iniciada.
+Naquele ponto, o commit inicial, push e `v0.1.0` ainda aguardavam a validação
+completa da Fase 0. Eles foram concluídos antes do início da Fase 1.
 
 Verificações locais efetivamente executadas após criar a fundação:
 
@@ -390,3 +390,18 @@ e Uvicorn em `0.0.0.0:8000`. Uma nova consulta recebeu HTTP 200 e
 `healthcheck.sh` foi corrigido para tentar até 20 vezes, com intervalo padrão de um
 segundo. Ele termina imediatamente quando recebe o JSON esperado e ainda falha com
 mensagem clara se o serviço não ficar pronto dentro do limite.
+
+Depois do fast-forward no Pi, o novo health check passou na primeira tentativa. A
+validação final mostrou `active/running`, `enabled`, usuário `cristiano`, status de
+saída zero, nenhum restart e nenhuma entrada de prioridade erro no journald. O
+endpoint também respondeu pela rede. A árvore Git do Pi ficou limpa e sincronizada.
+
+A unidade está configurada para iniciar no boot. Não houve reboot real do Pi nesta
+aula, portanto esse comportamento permanece configurado e inspecionado, sem teste
+físico de reinicialização. Com essa limitação registrada, a Fase 1 foi concluída.
+
+### Resultado da aula
+
+O Raspberry Pi executa a fundação FastAPI como serviço systemd, reinicia o processo
+em caso de falha, registra logs JSON no journald e expõe um endpoint de saúde que
+não depende da OpenAI. Nenhuma funcionalidade de áudio foi iniciada.
