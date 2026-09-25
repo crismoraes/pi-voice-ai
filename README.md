@@ -12,6 +12,99 @@ ou integração OpenAI implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
+## Fase 1 — fundação HTTP
+
+A fundação implementada fornece uma aplicação FastAPI mínima e independente de
+OpenAI ou hardware de áudio:
+
+```text
+systemd -> Python virtual environment -> Uvicorn -> FastAPI -> GET /health
+                                                  |
+                                                  +-> JSON logs -> journald
+```
+
+O endpoint responde exatamente:
+
+```json
+{"status":"ok"}
+```
+
+Dependências diretas estão fixadas em `pyproject.toml`: FastAPI 0.141.1,
+Uvicorn 0.53.0 e pydantic-settings 2.15.0. As dependências de desenvolvimento são
+pytest 8.4.2 e HTTPX 0.28.1. Python 3.11 ou superior é exigido.
+
+Para preparar o ambiente no Windows:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m app.main
+```
+
+Em outro terminal, valide:
+
+```powershell
+curl.exe --fail http://127.0.0.1:8000/health
+```
+
+O teste local real passou em Python 3.12.0. O teste ASGI retornou HTTP 200 e o JSON
+esperado; a compilação de `app` e a sintaxe de todos os scripts Bash também passaram.
+
+### Instalação no Raspberry Pi
+
+Em um Pi novo, clone o repositório como o usuário que executará o serviço:
+
+```bash
+cd "$HOME"
+git clone https://github.com/crismoraes/pi-voice-ai.git
+cd pi-voice-ai
+./scripts/bootstrap_pi.sh
+```
+
+O bootstrap verifica a arquitetura ARM64 e instala somente pacotes ausentes entre
+Git, Python, venv, pip e curl. Depois cria `.venv`, instala o projeto com ferramentas
+de teste e cria um `.env` local com permissão `600` quando ele ainda não existe.
+
+Não copie o `.env` do Windows pelo Git. A chave OpenAI não é necessária na Fase 1.
+Quando for necessário configurar o Pi, edite o `.env` diretamente nele. O arquivo
+continua ignorado pelo Git.
+
+Para instalar e validar o serviço:
+
+```bash
+cd "$HOME/pi-voice-ai"
+./scripts/deploy.sh
+```
+
+O deployment para quando encontra mudanças locais, atualiza somente por fast-forward,
+executa bootstrap, compilação e testes, renderiza o serviço para o usuário e caminho
+reais, reinicia a aplicação, consulta `/health`, mostra o estado e inspeciona erros
+recentes do journald.
+
+### Operação
+
+```bash
+./scripts/start.sh
+./scripts/stop.sh
+./scripts/restart.sh
+./scripts/healthcheck.sh
+sudo systemctl status pi-voice-ai
+sudo journalctl -u pi-voice-ai -f
+```
+
+Configuração lida nesta fase:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `APP_HOST` | `0.0.0.0` | Interface HTTP |
+| `APP_PORT` | `8000` | Porta HTTP |
+| `LOG_LEVEL` | `INFO` | Nível dos logs JSON |
+
+O endpoint de saúde não depende da internet nem da OpenAI. HTTP é suficiente para
+a validação da Fase 1 na rede local; HTTPS será configurado antes do uso do microfone
+do navegador em fases posteriores.
+
 ## Arquitetura
 
 Na Fase 0, a conexão que estamos preparando é:

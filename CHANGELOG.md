@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Fundação FastAPI com endpoint `GET /health` independente de serviços externos.
+- Configuração validada por ambiente e logs estruturados em JSON.
+- Teste ASGI do endpoint de saúde.
+- Bootstrap ARM64, deployment validado, controle de serviço e health check.
+- Unidade systemd renderizada para o usuário e caminho reais do Raspberry Pi.
+
 ## [0.1.0] - 2026-09-25
 
 ### Added

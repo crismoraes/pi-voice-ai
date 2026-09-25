@@ -246,3 +246,89 @@ chore: initialize PiVoice AI development environment
 A branch `main` foi enviada para o remoto vazio e passou a acompanhar
 `origin/main`. Não houve force push. A release `v0.1.0` foi autorizada depois da
 apresentação dos resultados completos ao usuário.
+
+## Fase 1 — Fundação da aplicação FastAPI
+
+### Objetivo da aula
+
+Criar um processo HTTP pequeno, testável e administrável pelo systemd. A aula separa
+a disponibilidade do processo das integrações futuras: `/health` deve funcionar
+mesmo sem OpenAI, microfone, STT ou TTS.
+
+### Conceitos
+
+FastAPI define a API; Uvicorn executa o servidor ASGI; pydantic-settings valida as
+configurações do ambiente. Um virtual environment isola dependências Python. O
+systemd mantém o processo ativo e envia sua saída ao journald. Logs em JSON deixam
+cada evento estruturado para consulta posterior.
+
+Arquitetura antes da aula:
+
+```text
+Windows --SSH--> Raspberry Pi sem aplicação
+```
+
+Arquitetura implementada localmente:
+
+```text
+Python -> Uvicorn -> FastAPI -> /health
+                   |
+                   +-> logs JSON
+```
+
+Arquitetura prevista após o deployment desta mesma fase:
+
+```text
+systemd -> .venv/bin/python -m app.main -> /health
+                                      |
+                                      +-> journald
+```
+
+### Implementação
+
+`pyproject.toml` exige Python 3.11+ e fixa as dependências diretas observadas na
+implementação. `app/config.py` lê somente host, porta e nível de log nesta fase;
+valores futuros presentes no `.env` são ignorados. `app/api/health.py` retorna
+somente `{"status":"ok"}`. O lifespan registra `APP_STARTED` e `APP_STOPPED`.
+
+O serviço armazenado no repositório usa placeholders. `install_service.sh` os
+substitui pelo usuário não-root e pelo caminho real do clone antes de instalar o
+arquivo em `/etc/systemd/system`. Isso evita fixar um usuário específico no código.
+
+O bootstrap consulta os pacotes antes de usar apt, cria o ambiente virtual e não
+sobrescreve um `.env` existente. O deployment exige árvore Git limpa e usa
+`git pull --ff-only`; depois executa compilação, pytest, instalação do serviço,
+restart, health check, status e consulta de erros recentes.
+
+### Comandos e testes realmente executados no Windows
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m compileall -q app
+& 'C:\Program Files\Git\bin\bash.exe' -n scripts/bootstrap_pi.sh scripts/install_service.sh scripts/deploy.sh scripts/healthcheck.sh scripts/start.sh scripts/stop.sh scripts/restart.sh
+.\.venv\Scripts\python.exe -m app.main
+curl.exe --fail --silent --show-error http://127.0.0.1:8000/health
+```
+
+Resultado local: Python 3.12.0, um teste aprovado, compilação aprovada, sintaxe Bash
+aprovada e resposta real `{"status":"ok"}`. O log de inicialização incluiu
+`APP_STARTED`. Nenhum pedido OpenAI foi realizado.
+
+Uma reinstalação dos metadados editable falhou inicialmente porque a restrição de
+rede local bloqueou `files.pythonhosted.org`. O mesmo comando foi repetido com o
+acesso de rede autorizado, instalou `pi-voice-ai 0.2.0.dev0` e o teste passou.
+Isso mostrou também por que cada etapa deve conferir seu próprio código de saída.
+
+### Segurança e configuração
+
+O `.env` local existe, está ignorado, não está tracked nem staged. Seu conteúdo não
+foi exibido. A chave OpenAI configurada pelo usuário não participa desta fase e não
+é copiada ao Pi pelo Git. O template `.env.example` permanece sem credenciais.
+
+### Resultado esperado no Raspberry Pi
+
+Depois do deployment, `systemctl status pi-voice-ai` deve mostrar o serviço ativo,
+`healthcheck.sh` deve retornar o JSON esperado e o journald deve conter logs JSON.
+Esses resultados só serão marcados como reais depois da execução remota.

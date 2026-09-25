@@ -33,6 +33,25 @@ Phase 1. Preserve SSH password access. Phase 1 may implement only the applicatio
 foundation described below; do not start WebRTC, STT, TTS, VAD, audio processing,
 or OpenAI API integration yet.
 
+Phase 1 local foundation now includes:
+
+* Python 3.11+ package metadata in `pyproject.toml`
+* pinned FastAPI, Uvicorn and pydantic-settings direct dependencies
+* `GET /health` returning exactly `{"status":"ok"}` without external dependencies
+* environment-backed host, port and log-level settings
+* JSON logs for application and Uvicorn events
+* a meaningful ASGI health test
+* idempotent Raspberry Pi bootstrap with package presence checks
+* clean-tree, fast-forward-only deployment with compile and test gates
+* a rendered systemd service running as the invoking non-root user
+* start, stop, restart and health-check scripts
+
+The local Windows validation used Python 3.12.0. `pytest` passed, Python bytecode
+compilation passed, all Bash scripts passed `bash -n`, and a real Uvicorn process
+returned the expected health JSON. The OpenAI key in the ignored local `.env` is
+not read or used by Phase 1. Do not copy that file through Git. Remote deployment
+results must be recorded after the Pi validates this exact implementation.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
