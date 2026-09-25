@@ -3,8 +3,8 @@
 ## Fase 0 — Preparando acesso SSH do Windows ao Raspberry Pi 5
 
 **Aula em construção.** A inspeção do Windows e do Git, criação e instalação da
-chave, conexão SSH, alias `voicepi` e inventário do Pi foram realizados. O commit,
-push e marco `v0.1.0` ainda estão pendentes.
+chave, conexão SSH, alias `voicepi` e inventário do Pi foram realizados. Os commits
+foram enviados ao GitHub; o marco `v0.1.0` ainda aguarda revisão do usuário.
 
 ### Objetivo da aula
 
@@ -235,3 +235,14 @@ Git 2.47.3; 7,9 GiB de RAM; 2 GiB de swap sem uso; raiz de 29 GB com 21 GB livre
 
 O clone `~/pi-voice-ai` ainda não estava presente no Raspberry Pi. Isso foi
 registrado como estado real, sem instalar pacotes ou iniciar a Fase 1.
+
+Após validar a documentação, exclusões do Git, conteúdo staged e ausência de
+credenciais, foi criado o commit inicial:
+
+```text
+chore: initialize PiVoice AI development environment
+```
+
+A branch `main` foi enviada para o remoto vazio e passou a acompanhar
+`origin/main`. Não houve force push. A release `v0.1.0` não foi criada nesta etapa,
+pois o procedimento exige primeiro apresentar os resultados completos ao usuário.

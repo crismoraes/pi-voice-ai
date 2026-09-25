@@ -4,8 +4,9 @@
 
 Only Phase 0 is authorized for the current setup. The repository is `pi-voice-ai`
 inside the parent workspace `RaspberryPI5`; execute Git commands from the clone.
-The origin URL is `https://github.com/crismoraes/pi-voice-ai.git`. Initial remote
-inspection succeeded with no refs; the local repository has no commits yet.
+The origin URL is `https://github.com/crismoraes/pi-voice-ai.git`. Phase 0 produced
+the initial commit on `main` and pushed it to `origin/main` without rewriting
+remote history.
 
 Windows inspection confirmed Windows 11 Home 64-bit, PowerShell 5.1, OpenSSH 9.5p2,
 Git 2.49.0.windows.1 and VS Code 1.136.1. See README.md and Curso_Step.md for the

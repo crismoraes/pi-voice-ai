@@ -7,8 +7,9 @@ para reconstruir o projeto e ensinar sua implementação.
 
 **Estado: Fase 0 em andamento.** O acesso SSH por chave, o alias `voicepi` e o
 inventário do Raspberry Pi foram validados. Ainda não há aplicação, dependências
-instaladas, serviço, endpoint de saúde ou testes de áudio. O commit, push e marco
-`v0.1.0` continuam pendentes. Não iniciar a Fase 1 nesta etapa.
+instaladas, serviço, endpoint de saúde ou testes de áudio. Os commits da fundação
+foram enviados para `origin/main`; a release `v0.1.0` aguarda a revisão do usuário.
+Não iniciar a Fase 1 nesta etapa.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -52,8 +53,8 @@ Rev 1.0, ARM64, executando Debian GNU/Linux 13 com kernel Raspberry Pi.
 | Git | 2.49.0.windows.1 |
 | VS Code | 1.136.1, x64; janela aberta na pasta pai RaspberryPI5 |
 | Configuração de editor no clone | Nenhum `.vscode` ou arquivo `.code-workspace` encontrado |
-| Git local | Branch `main`, sem commits; `AGENTS.md` já fornecido pelo usuário |
-| GitHub | `origin` configurado para busca/envio; `git ls-remote --symref origin` retornou sucesso, sem referências |
+| Git local | Branch `main`, commits da Fase 0 criados após revisão de conteúdo sensível |
+| GitHub | `origin/main` criado e configurado como upstream, sem reescrever histórico |
 | Chaves SSH | Par ED25519 `pi-voice-ai` criado; fingerprint local e remota coincidem |
 | Alias `voicepi` | Criado no SSH do Windows e validado com comando remoto |
 | `ssh-agent` do Windows | Parado e desabilitado; não alterado |
@@ -316,8 +317,9 @@ privadas nesses arquivos não encontrou correspondências. Nenhum `.env` foi cri
 Somente depois de todos os critérios passarem, preparar o commit
 `chore: initialize PiVoice AI development environment` e fazer push seguro, sem
 reescrever histórico remoto. Antes de criar `v0.1.0`, apresentar os arquivos,
-validações, inventário e pendências ao usuário. Nenhum commit, push ou release foi
-realizado nesta preparação parcial.
+validações, inventário e pendências ao usuário. O commit inicial
+`chore: initialize PiVoice AI development environment` foi criado e enviado para
+`origin/main`. Nenhuma release foi criada.
 
 ## Problemas realmente encontrados
 

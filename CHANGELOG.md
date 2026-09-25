@@ -16,7 +16,7 @@
 
 ### Status
 
-- Fase 0 em andamento: SSH e baseline concluídos; revisão final, commit e push
-  ainda pendentes.
+- Fase 0 validada e enviada para `origin/main`; a release `v0.1.0` aguarda a
+  revisão do usuário.
 - `v0.1.0 — Windows + SSH + Raspberry Pi Development Environment` é o próximo
   marco planejado. Nenhuma versão foi publicada.
