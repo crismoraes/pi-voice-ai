@@ -18,12 +18,14 @@ if [[ -f "$project_dir/.env" ]]; then
     tls_ca_file="$(sed -n 's/^TLS_CA_FILE=//p' "$project_dir/.env" | tail -n 1)"
     if [[ -n "$tls_cert_file" ]]; then
         app_scheme="https"
+        app_host="$(hostname)"
     fi
 fi
 
 curl_options=(--fail --silent --show-error --max-time 5)
 if [[ "$app_scheme" == "https" && -n "$tls_ca_file" ]]; then
     curl_options+=(--cacert "$tls_ca_file")
+    curl_options+=(--resolve "$app_host:$app_port:127.0.0.1")
 fi
 
 last_result="connection failed"

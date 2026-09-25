@@ -484,8 +484,32 @@ usou `--ssl-no-revoke`, que desativa apenas essa consulta; cadeia e hostname
 continuaram validados. `/health` respondeu `{"status":"ok"}`. Não foi usado
 `--insecure`, e a porta 8443 foi confirmada como livre após o teste.
 
+Os arquivos TLS foram transferidos para o diretório privado do usuário no Pi. O
+diretório recebeu modo `700`, a chave `600` e os certificados públicos `644`. A
+comparação SHA-256 das chaves públicas derivadas confirmou que certificado e chave
+privada formam o mesmo par. O `.env` foi atualizado sem exibir nem substituir a
+chave OpenAI existente.
+
+O primeiro health check HTTPS no Pi falhou porque consultava `127.0.0.1`, um nome
+que não pertence ao certificado. O script foi corrigido para validar o hostname do
+Pi e usar `curl --resolve` para direcioná-lo a `127.0.0.1`. Assim, a conexão continua
+local e a verificação do nome permanece ativa. O teste corrigido passou na primeira
+tentativa.
+
+O teste real do deployment foi executado com:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\live_webrtc_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem"
+```
+
+Ele negociou ICE, DTLS e SRTP com o Pi, enviou áudio sintético, recebeu um frame
+com amostras e removeu o peer. O journald registrou `WEBRTC_CONNECTED` e
+`WEBRTC_DISCONNECTED`, sem avisos recentes. O serviço permaneceu ativo e habilitado.
+
 ### Pendências da aula
 
-Ainda é necessário transferir os arquivos TLS para o Pi, configurar a porta HTTPS,
-reiniciar o serviço e testar o microfone e o áudio fisicamente no navegador. Esses
-resultados não serão presumidos.
+Ainda é necessário testar o microfone e o áudio fisicamente no navegador. Esse
+resultado não será presumido; automação confirma transporte e frames, mas não a
+experiência acústica do usuário.

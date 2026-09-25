@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 and 1 complete, Phase 2 in progress
+## Current implementation state — Phases 0 and 1 complete, Phase 2 awaiting audible validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -92,11 +92,21 @@ and SRTP without native compilation.
 Browser microphone access uses direct Uvicorn HTTPS during development. Windows
 trusts a local mkcert CA. The certificate covers the local Pi hostname and private
 address and expires in December 2028. Certificate, TLS key and CA files live outside
-the repository. The Pi will store them under the user's private config directory.
-The app reads `TLS_CERT_FILE` and `TLS_KEY_FILE`; `healthcheck.sh` switches to HTTPS
-and validates with `TLS_CA_FILE`. Never publish certificate private keys or mkcert's
-root CA private key. Phase 2 is not complete until TLS transfer, Pi deployment,
-signaling, browser connection, audible loopback and cleanup are validated.
+the repository and were installed in the Pi user's private config directory with
+directory mode 700 and key mode 600. The app reads `TLS_CERT_FILE` and
+`TLS_KEY_FILE`; `healthcheck.sh` switches to HTTPS, connects locally with
+`--resolve`, and validates the hostname with `TLS_CA_FILE`. Never publish certificate
+private keys or mkcert's root CA private key.
+
+The Pi service is active and enabled on HTTPS port 8443. The Windows health request,
+web page request and `scripts/live_webrtc_check.py` all passed with certificate
+validation. The live check negotiated ICE, DTLS and SRTP, received a returned audio
+frame and explicitly removed the peer; journald recorded the full connection and
+cleanup lifecycle without warnings. An initial Pi health check failed because it
+used the `127.0.0.1` URL while the certificate covered the hostname. It now uses the
+Pi hostname for TLS validation and resolves it to loopback for the local request.
+Phase 2 is not complete until the user confirms audible browser loopback with real
+microphone and speaker hardware.
 
 ## Project Goal
 

@@ -8,6 +8,7 @@
 - Cliente de navegador para captura, estado da conexão e reprodução do áudio.
 - Suporte opcional a TLS direto no Uvicorn e health check HTTPS com CA confiável.
 - Teste de integração com dois peers reais e retorno de frame de áudio.
+- Verificador do loopback WebRTC contra uma implantação HTTPS em execução.
 - Fundação FastAPI com endpoint `GET /health` independente de serviços externos.
 - Configuração validada por ambiente e logs estruturados em JSON.
 - Teste ASGI do endpoint de saúde.
@@ -21,10 +22,13 @@
 - Serviço systemd ativo, habilitado, sem reinícios e sem erros recentes no journald.
 - Health check corrigido no Pi e acesso HTTP pela rede local.
 - Testes WebRTC aprovados no Windows e no Raspberry Pi ARM64.
+- HTTPS implantado no Pi com permissões restritas e validação de CA e hostname.
+- Loopback WebRTC real validado do Windows até o Pi, incluindo conexão e cleanup.
 
 ### Fixed
 
 - Health check agora aguarda o Uvicorn ficar pronto após restart do systemd.
+- Health check HTTPS usa o hostname certificado e o resolve localmente para loopback.
 
 ## [0.1.0] - 2026-09-25
 

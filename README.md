@@ -5,17 +5,18 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 e 1 concluídas.** O marco `v0.1.0` registra a estação Windows,
-SSH e baseline do Raspberry Pi. A fundação FastAPI está implantada como serviço
-systemd e responde em `/health`. Ainda não há áudio, WebRTC, STT, TTS ou integração
-OpenAI implementados.
+**Estado: Fases 0 e 1 concluídas; Fase 2 em validação final.** O marco `v0.1.0`
+registra a estação Windows, SSH e baseline do Raspberry Pi. A fundação FastAPI e
+o loopback WebRTC estão implantados em HTTPS. STT, TTS e integração OpenAI ainda
+não foram implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
 ## Fase 2 — loopback de áudio WebRTC
 
-Estado atual: implementação e testes automatizados locais concluídos; deployment
-HTTPS e validação física do microfone/alto-falante ainda pendentes.
+Estado atual: implementação, deployment HTTPS e validação automatizada do transporte
+concluídos. Falta apenas confirmar o áudio audível com microfone e alto-falante reais
+no navegador.
 
 ```text
 Microfone do navegador
@@ -66,9 +67,10 @@ Destino no Pi:
 /home/<usuario>/.config/pi-voice-ai/tls/
 ```
 
-A chave TLS e a CA ficam fora do Git. O diretório remoto deve usar permissão `700`;
-a chave, `600`. O `.env` do Pi apontará para esses arquivos e usará `APP_PORT=8443`.
-O health check utiliza a CA para validar o certificado em vez de ignorar erros TLS.
+A chave TLS e a CA ficam fora do Git. O diretório remoto usa permissão `700`; a
+chave, `600`, e os certificados públicos, `644`. O `.env` do Pi aponta para esses
+arquivos e usa `APP_PORT=8443`. O health check usa o hostname do Pi com `--resolve`
+para acessar `127.0.0.1`, mantendo a validação da CA e do nome do certificado.
 
 O servidor não possui autenticação de usuários nesta fase. Mantenha-o na rede local;
 não encaminhe a porta no roteador nem o exponha à internet.
@@ -77,6 +79,9 @@ não encaminhe a porta no roteador nem o exponha à internet.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -vv
+.\.venv\Scripts\python.exe scripts\live_webrtc_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem"
 ```
 
 O teste de integração cria dois peers reais, negocia ICE/DTLS/SRTP e exige que um
@@ -88,6 +93,11 @@ O processo HTTPS também foi iniciado localmente em 8443 com o certificado gerad
 Uma consulta usando `home-ai.local`, validação de cadeia e validação de hostname
 recebeu o JSON de saúde esperado. O processo temporário foi encerrado e a porta
 8443 voltou a ficar livre.
+
+No deployment do Pi, o serviço ficou `active` e `enabled`, sem avisos recentes no
+journald. `/health` e a página web responderam por HTTPS a partir do Windows. O
+verificador ao vivo negociou ICE, DTLS e SRTP, recebeu um frame de áudio devolvido
+pelo Pi e removeu o peer com sucesso. Os logs confirmaram conexão e desconexão.
 
 ## Fase 1 — fundação HTTP
 
