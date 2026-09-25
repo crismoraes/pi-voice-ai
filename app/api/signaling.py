@@ -38,8 +38,4 @@ async def create_answer(offer: Offer) -> Answer:
 
 @router.delete("/peers/{peer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def close_peer(peer_id: str) -> None:
-    if not await peer_manager.close(peer_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="WebRTC peer not found",
-        )
+    await peer_manager.close(peer_id)

@@ -51,6 +51,11 @@ async def exercise_audio_loopback() -> None:
             )
             assert close_response.status_code == 204
             assert peer_manager.active_peer_count == 0
+
+            repeated_close_response = await client.delete(
+                f"/api/webrtc/peers/{answer['peer_id']}"
+            )
+            assert repeated_close_response.status_code == 204
     finally:
         await browser_peer.close()
         await peer_manager.close_all()

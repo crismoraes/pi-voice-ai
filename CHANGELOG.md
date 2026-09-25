@@ -32,6 +32,7 @@
 
 - Health check agora aguarda o Uvicorn ficar pronto após restart do systemd.
 - Health check HTTPS usa o hostname certificado e o resolve localmente para loopback.
+- Encerramento WebRTC repetido retorna sucesso quando o peer já foi removido.
 
 ## [0.1.0] - 2026-09-25
 

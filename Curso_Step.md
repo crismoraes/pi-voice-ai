@@ -514,3 +514,8 @@ O teste físico foi realizado no navegador com microfone e saída de áudio reai
 usuário permitiu o acesso ao microfone, iniciou o loopback e confirmou que ouviu a
 própria voz retornando corretamente. Com o transporte automatizado, o ciclo de logs,
 o HTTPS e a experiência acústica verificados, a Fase 2 foi concluída.
+
+Os logs desse teste mostraram uma corrida no encerramento: a conexão já havia sido
+removida pelo evento `closed` quando o navegador enviou `DELETE`, que respondeu
+`404`. A operação foi tornada idempotente; encerrar novamente um peer ausente agora
+responde `204`. O teste de integração passou a verificar as duas remoções.

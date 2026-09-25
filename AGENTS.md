@@ -110,6 +110,10 @@ confirmed that the returned voice audio worked correctly. Phase 2 is complete at
 version `0.2.0`. Do not begin Phase 3 local STT work without explicit user
 authorization.
 
+Peer deletion is intentionally idempotent. The physical browser test exposed a race
+where the connection-state callback removed a closed peer before the browser sent
+its DELETE request. Both the first cleanup request and later repeats return 204.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
