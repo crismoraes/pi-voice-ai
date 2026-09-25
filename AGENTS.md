@@ -1,12 +1,12 @@
 # AGENTS.md
 
-## Current implementation state — Phase 0 in progress
+## Current implementation state — Phase 0 validated, Phase 1 authorized
 
-Only Phase 0 is authorized for the current setup. The repository is `pi-voice-ai`
-inside the parent workspace `RaspberryPI5`; execute Git commands from the clone.
+The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
+Git commands from the clone.
 The origin URL is `https://github.com/crismoraes/pi-voice-ai.git`. Phase 0 produced
-the initial commit on `main` and pushed it to `origin/main` without rewriting
-remote history.
+the initial commits on `main`, pushed them to `origin/main` without rewriting
+remote history, and was approved for the `v0.1.0` milestone.
 
 Windows inspection confirmed Windows 11 Home 64-bit, PowerShell 5.1, OpenSSH 9.5p2,
 Git 2.49.0.windows.1 and VS Code 1.136.1. See README.md and Curso_Step.md for the
@@ -28,10 +28,10 @@ README.md contains reproduction procedures; Curso_Step.md separates observed
 results from work still to be demonstrated. The `.env.example` settings
 are future placeholders, not implemented behavior or permanent engine selections.
 
-Do not create application code, install application dependencies, deploy services,
-or advance to Phase 1. Do not commit or push until all Phase 0 validation criteria
-pass. Before creating v0.1.0, show the user the changes, SSH results, Pi baseline,
-Git status, checks and remaining manual actions. Preserve SSH password access.
+Phase 0 validation passed and the user authorized `v0.1.0` and continuation into
+Phase 1. Preserve SSH password access. Phase 1 may implement only the application
+foundation described below; do not start WebRTC, STT, TTS, VAD, audio processing,
+or OpenAI API integration yet.
 
 ## Project Goal
 

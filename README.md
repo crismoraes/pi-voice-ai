@@ -5,11 +5,10 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fase 0 em andamento.** O acesso SSH por chave, o alias `voicepi` e o
-inventário do Raspberry Pi foram validados. Ainda não há aplicação, dependências
-instaladas, serviço, endpoint de saúde ou testes de áudio. Os commits da fundação
-foram enviados para `origin/main`; a release `v0.1.0` aguarda a revisão do usuário.
-Não iniciar a Fase 1 nesta etapa.
+**Estado: Fase 0 concluída.** O acesso SSH por chave, o alias `voicepi` e o
+inventário do Raspberry Pi foram validados. O marco `v0.1.0` registra essa base.
+A Fase 1 começa com a fundação da aplicação; ainda não há áudio, WebRTC, STT, TTS
+ou integração OpenAI implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 

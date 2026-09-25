@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-25
+
 ### Added
 
 - Fundação documental do PiVoice AI: README, registro didático da Fase 0 e changelog.
@@ -14,9 +16,9 @@
 - `.gitignore` para credenciais, chaves privadas, ambientes e arquivos gerados.
 - `.env.example` sem credenciais, reservado às futuras fases.
 
-### Status
+### Validated
 
-- Fase 0 validada e enviada para `origin/main`; a release `v0.1.0` aguarda a
-  revisão do usuário.
-- `v0.1.0 — Windows + SSH + Raspberry Pi Development Environment` é o próximo
-  marco planejado. Nenhuma versão foi publicada.
+- Autenticação SSH por chave, alias `voicepi` e execução remota.
+- Raspberry Pi 5 Model B, arquitetura ARM64, sistema, Python, Git, RAM, disco,
+  temperatura e estado de throttling.
+- Repositório local limpo e sincronizado com `origin/main`, sem segredos rastreados.
