@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-25
+
 ### Added
 
 - Transporte WebRTC com signaling HTTP e loopback da faixa de áudio.
@@ -24,6 +26,7 @@
 - Testes WebRTC aprovados no Windows e no Raspberry Pi ARM64.
 - HTTPS implantado no Pi com permissões restritas e validação de CA e hostname.
 - Loopback WebRTC real validado do Windows até o Pi, incluindo conexão e cleanup.
+- Loopback audível validado no navegador com microfone e alto-falante reais.
 
 ### Fixed
 

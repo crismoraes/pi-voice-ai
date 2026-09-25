@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 and 1 complete, Phase 2 awaiting audible validation
+## Current implementation state — Phases 0, 1 and 2 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -105,8 +105,10 @@ frame and explicitly removed the peer; journald recorded the full connection and
 cleanup lifecycle without warnings. An initial Pi health check failed because it
 used the `127.0.0.1` URL while the certificate covered the hostname. It now uses the
 Pi hostname for TLS validation and resolves it to loopback for the local request.
-Phase 2 is not complete until the user confirms audible browser loopback with real
-microphone and speaker hardware.
+The user completed the browser test with real microphone and speaker hardware and
+confirmed that the returned voice audio worked correctly. Phase 2 is complete at
+version `0.2.0`. Do not begin Phase 3 local STT work without explicit user
+authorization.
 
 ## Project Goal
 

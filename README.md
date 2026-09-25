@@ -5,18 +5,17 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 e 1 concluídas; Fase 2 em validação final.** O marco `v0.1.0`
-registra a estação Windows, SSH e baseline do Raspberry Pi. A fundação FastAPI e
-o loopback WebRTC estão implantados em HTTPS. STT, TTS e integração OpenAI ainda
+**Estado: Fases 0, 1 e 2 concluídas.** O marco `v0.1.0` registra a estação Windows,
+SSH e baseline do Raspberry Pi. A versão `v0.2.0` entrega a fundação FastAPI e o
+loopback de áudio WebRTC implantados em HTTPS. STT, TTS e integração OpenAI ainda
 não foram implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
 ## Fase 2 — loopback de áudio WebRTC
 
-Estado atual: implementação, deployment HTTPS e validação automatizada do transporte
-concluídos. Falta apenas confirmar o áudio audível com microfone e alto-falante reais
-no navegador.
+Estado atual: implementação, deployment HTTPS, validação automatizada do transporte
+e teste audível com microfone e alto-falante reais concluídos.
 
 ```text
 Microfone do navegador
@@ -98,6 +97,8 @@ No deployment do Pi, o serviço ficou `active` e `enabled`, sem avisos recentes 
 journald. `/health` e a página web responderam por HTTPS a partir do Windows. O
 verificador ao vivo negociou ICE, DTLS e SRTP, recebeu um frame de áudio devolvido
 pelo Pi e removeu o peer com sucesso. Os logs confirmaram conexão e desconexão.
+O teste manual no navegador também passou: o usuário autorizou o microfone e ouviu
+a própria voz retornando corretamente pelos alto-falantes.
 
 ## Fase 1 — fundação HTTP
 

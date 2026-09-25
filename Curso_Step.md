@@ -508,8 +508,9 @@ Ele negociou ICE, DTLS e SRTP com o Pi, enviou áudio sintético, recebeu um fra
 com amostras e removeu o peer. O journald registrou `WEBRTC_CONNECTED` e
 `WEBRTC_DISCONNECTED`, sem avisos recentes. O serviço permaneceu ativo e habilitado.
 
-### Pendências da aula
+### Resultado da aula
 
-Ainda é necessário testar o microfone e o áudio fisicamente no navegador. Esse
-resultado não será presumido; automação confirma transporte e frames, mas não a
-experiência acústica do usuário.
+O teste físico foi realizado no navegador com microfone e saída de áudio reais. O
+usuário permitiu o acesso ao microfone, iniciou o loopback e confirmou que ouviu a
+própria voz retornando corretamente. Com o transporte automatizado, o ciclo de logs,
+o HTTPS e a experiência acústica verificados, a Fase 2 foi concluída.
