@@ -10,6 +10,15 @@
 - Bootstrap ARM64, deployment validado, controle de serviço e health check.
 - Unidade systemd renderizada para o usuário e caminho reais do Raspberry Pi.
 
+### Validated
+
+- Bootstrap e dependências Python ARM64 no Raspberry Pi 5.
+- Teste, compilação e endpoint `/health` pela rede local.
+
+### Pending
+
+- Instalação e validação do serviço systemd com sudo interativo.
+
 ## [0.1.0] - 2026-09-25
 
 ### Added

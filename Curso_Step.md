@@ -332,3 +332,45 @@ foi exibido. A chave OpenAI configurada pelo usuário não participa desta fase 
 Depois do deployment, `systemctl status pi-voice-ai` deve mostrar o serviço ativo,
 `healthcheck.sh` deve retornar o JSON esperado e o journald deve conter logs JSON.
 Esses resultados só serão marcados como reais depois da execução remota.
+
+### Deployment remoto executado
+
+O Pi não tinha o clone. Foi confirmado que o destino não existia antes de executar:
+
+```bash
+git clone https://github.com/crismoraes/pi-voice-ai.git "$HOME/pi-voice-ai"
+cd "$HOME/pi-voice-ai"
+./scripts/bootstrap_pi.sh
+```
+
+O clone apontou para `origin/main` no commit da fundação FastAPI. O bootstrap
+informou que todos os pacotes do sistema já estavam disponíveis, atualizou o pip
+dentro de `.venv`, instalou as dependências no ARM64 e criou `.env` a partir do
+template com permissão `600`. Nenhuma credencial do Windows foi copiada.
+
+No Raspberry Pi, Python 3.13 executou um teste com sucesso e `compileall` passou.
+A aplicação temporária registrou `APP_STARTED` com versão `0.2.0.dev0`. Do Windows,
+um pedido à porta 8000 do Pi recebeu `{"status":"ok"}`.
+
+### Problemas reais do deployment
+
+Uma tentativa de combinar `stat -c` com várias substituições em um comando SSH
+teve as aspas interpretadas incorretamente. O pytest já havia passado, mas `stat`
+falhou. A permissão foi então consultada com o formato simples `%a` e confirmou
+`600`. Esse caso reforça que comandos remotos complexos devem ser pequenos ou
+movidos para scripts versionados.
+
+Ao enviar `Ctrl+C` para o teste temporário, a sessão SSH terminou e deixou o
+processo Python escutando. Foi usado `ps` para identificar exatamente o PID e o
+comando `.venv/bin/python -m app.main`; somente esse PID recebeu `SIGTERM`. Uma
+consulta posterior confirmou a porta 8000 livre.
+
+`sudo -n true` falhou, mostrando que o usuário exige senha para sudo. A senha não
+foi solicitada nem transmitida. A etapa systemd ficou para execução interativa:
+
+```powershell
+ssh -t voicepi "cd ~/pi-voice-ai && ./scripts/deploy.sh"
+```
+
+Após o usuário digitar a senha no próprio terminal, ainda será necessário registrar
+o estado do serviço, health check e logs reais antes de encerrar a Fase 1.

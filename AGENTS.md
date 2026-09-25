@@ -49,8 +49,15 @@ Phase 1 local foundation now includes:
 The local Windows validation used Python 3.12.0. `pytest` passed, Python bytecode
 compilation passed, all Bash scripts passed `bash -n`, and a real Uvicorn process
 returned the expected health JSON. The OpenAI key in the ignored local `.env` is
-not read or used by Phase 1. Do not copy that file through Git. Remote deployment
-results must be recorded after the Pi validates this exact implementation.
+not read or used by Phase 1. Do not copy that file through Git.
+
+The Pi clone now exists at `/home/cristiano/pi-voice-ai`. Bootstrap detected all
+system tools, created a Python 3.13 virtual environment, installed the ARM64
+dependencies, and created an ignored `.env` with mode 600 from the safe template.
+Remote pytest and compileall passed. A temporary Uvicorn process returned the
+expected health JSON over the LAN and was then terminated. The Git tree is clean.
+Systemd installation remains pending because the user account requires an
+interactive sudo password; never request or transmit that password in chat.
 
 ## Project Goal
 

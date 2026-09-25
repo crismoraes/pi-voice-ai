@@ -105,6 +105,24 @@ O endpoint de saúde não depende da internet nem da OpenAI. HTTP é suficiente 
 a validação da Fase 1 na rede local; HTTPS será configurado antes do uso do microfone
 do navegador em fases posteriores.
 
+### Estado da implantação no Pi
+
+O clone foi criado em `/home/cristiano/pi-voice-ai`. O bootstrap confirmou que as
+ferramentas do sistema já estavam disponíveis, criou `.venv` com Python 3.13,
+instalou as dependências ARM64 e gerou o `.env` local vazio com permissão `600`.
+O teste remoto e a compilação passaram. Um servidor temporário respondeu
+`{"status":"ok"}` pela rede e foi encerrado; a porta 8000 ficou livre novamente.
+
+A instalação systemd requer a senha sudo digitada pelo usuário em seu próprio
+terminal. Para concluir:
+
+```powershell
+ssh -t voicepi "cd ~/pi-voice-ai && ./scripts/deploy.sh"
+```
+
+Não envie a senha sudo ao chat. O script pedirá a senha no terminal, instalará o
+serviço e realizará os checks restantes automaticamente.
+
 ## Arquitetura
 
 Na Fase 0, a conexão que estamos preparando é:
@@ -440,3 +458,9 @@ validações, inventário e pendências ao usuário. O commit inicial
 - O primeiro teste SSH feito dentro da restrição local não conseguiu acessar a
   chave nem a porta 22. Repetido com a permissão SSH prevista para o projeto, o Pi
   respondeu `home-ai`; o bloqueio era do ambiente de execução local.
+- O Pi não permite `sudo -n`, portanto a instalação systemd não pode ser concluída
+  por uma sessão automatizada sem interação. A solução é executar `deploy.sh` com
+  `ssh -t` e digitar a senha sudo apenas no terminal local.
+- Após o teste temporário, `Ctrl+C` encerrou a sessão SSH antes de encerrar o
+  servidor remoto. O processo exato foi identificado pelo PID, finalizado com
+  `SIGTERM` e a porta 8000 foi confirmada como livre.
