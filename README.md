@@ -1,0 +1,348 @@
+# PiVoice AI
+
+Assistente de voz de baixa latência com execução prevista em um Raspberry Pi 5.
+O Windows é a estação de desenvolvimento e administração remota. O objetivo é
+manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
+para reconstruir o projeto e ensinar sua implementação.
+
+**Estado: Fase 0 em andamento.** O acesso SSH por chave, o alias `voicepi` e o
+inventário do Raspberry Pi foram validados. Ainda não há aplicação, dependências
+instaladas, serviço, endpoint de saúde ou testes de áudio. O commit, push e marco
+`v0.1.0` continuam pendentes. Não iniciar a Fase 1 nesta etapa.
+
+Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Arquitetura
+
+Na Fase 0, a conexão que estamos preparando é:
+
+```text
+Windows: VS Code + PowerShell + Git
+                 |
+                 | SSH, alias voicepi
+                 v
+Raspberry Pi 5: futuro ambiente de execução
+```
+
+Arquitetura planejada para as fases seguintes, ainda não implementada:
+
+```text
+Microfone do navegador -> WebRTC -> Raspberry Pi 5
+                                      |
+                             VAD -> STT local
+                                      |
+                                 LLM de texto
+                                      |
+                                  TTS local
+                                      |
+Alto-falante do navegador <- WebRTC <--+
+```
+
+Futuramente, adaptadores USB poderão substituir a entrada e a saída WebRTC sem
+reescrever a lógica de conversação. O alvo validado é um Raspberry Pi 5 Model B
+Rev 1.0, ARM64, executando Debian GNU/Linux 13 com kernel Raspberry Pi.
+
+## Resultados confirmados nesta sessão
+
+| Verificação | Resultado |
+| --- | --- |
+| Windows | Windows 11 Home, 64 bits; versão 10.0.26200; registro 25H2, build 26200.9445 |
+| PowerShell | Windows PowerShell 5.1.26100.9444, Desktop |
+| OpenSSH | OpenSSH_for_Windows_9.5p2, LibreSSL 3.8.2 |
+| Git | 2.49.0.windows.1 |
+| VS Code | 1.136.1, x64; janela aberta na pasta pai RaspberryPI5 |
+| Configuração de editor no clone | Nenhum `.vscode` ou arquivo `.code-workspace` encontrado |
+| Git local | Branch `main`, sem commits; `AGENTS.md` já fornecido pelo usuário |
+| GitHub | `origin` configurado para busca/envio; `git ls-remote --symref origin` retornou sucesso, sem referências |
+| Chaves SSH | Par ED25519 `pi-voice-ai` criado; fingerprint local e remota coincidem |
+| Alias `voicepi` | Criado no SSH do Windows e validado com comando remoto |
+| `ssh-agent` do Windows | Parado e desabilitado; não alterado |
+| Pendrive | Consulta não encontrou volumes classificados como removíveis |
+| Fundação local | Seis arquivos obrigatórios presentes; exemplos de segredos ignorados; índice Git vazio |
+| Raspberry Pi | Pi 5 Model B Rev 1.0; `home-ai`; Debian 13; aarch64; autenticação por chave validada |
+| Recursos do Pi | 7,9 GiB RAM; raiz de 29 GB com 21 GB livres; 40,6 °C; sem throttling |
+| Software do Pi | Kernel 6.18.50+rpt-rpi-2712; Python 3.13.5; Git 2.47.3 |
+| Repositório no Pi | `~/pi-voice-ai` ainda não existe; nenhuma aplicação está implantada |
+
+A listagem remota confirma acesso de leitura, não permissão de push. Identificadores
+da máquina, endereços privados e conteúdos das chaves não são registrados aqui.
+
+## Recriar a preparação do Windows
+
+Os comandos desta seção são um **procedimento de reprodução**, não uma declaração
+de que todas as etapas já foram executadas. Resultados observados estão na tabela
+acima; o registro didático fica em [Curso_Step.md](Curso_Step.md).
+
+Em uma instalação nova, tenha Git, OpenSSH Client e VS Code disponíveis. Inspecione:
+
+```powershell
+$PSVersionTable
+Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber,OSArchitecture
+Get-Command ssh,ssh-keygen,git,code
+ssh -V
+git --version
+code --version
+```
+
+Para obter o projeto em outra máquina:
+
+```powershell
+git clone https://github.com/crismoraes/pi-voice-ai.git
+Set-Location pi-voice-ai
+git status
+git remote -v
+```
+
+No clone existente, entre diretamente na pasta `pi-voice-ai`. A pasta pai
+`RaspberryPI5` não é a raiz Git. Não execute outro `git init` nela.
+
+## Chaves SSH: verificar antes de gerar
+
+```powershell
+Get-ChildItem -LiteralPath (Join-Path $env:USERPROFILE '.ssh') -Force
+```
+
+`id_ed25519` é a **chave privada**: deve permanecer no Windows, fora do repositório
+e do pendrive. `id_ed25519.pub` é a **chave pública**: pode ser instalada no Pi.
+ED25519 é o tipo de chave usado para comprovar a identidade do cliente SSH.
+
+Se já existir um par adequado, preserve-o. Nesta sessão, o par encontrado pertencia
+a outro projeto e foi preservado. O usuário criou o par próprio `id_ed25519` para
+PiVoice AI no caminho padrão. A impressão digital da chave pública foi confirmada
+localmente e no `authorized_keys` do Pi, sem registrar seu conteúdo.
+
+Quando a criação de uma nova chave for necessária, execute no terminal local:
+
+```powershell
+ssh-keygen -t ed25519 -C "pi-voice-ai"
+```
+
+Aceite o caminho padrão somente se ele estiver livre. Se aparecer uma pergunta
+para sobrescrever, responda `n` e confira o arquivo existente. Escolha a frase-senha
+diretamente no terminal; não a envie ao chat nem a registre na documentação.
+Uma frase-senha protege a chave privada. O `ssh-agent` pode mantê-la desbloqueada
+na sessão, mas sua configuração não foi realizada nesta etapa.
+
+Depois de gerar, confira apenas a chave pública:
+
+```powershell
+ssh-keygen -lf (Join-Path $env:USERPROFILE '.ssh\id_ed25519.pub')
+```
+
+## Transferência por pendrive
+
+Se a instalação da chave no Pi ainda for necessária, conecte o pendrive ao Windows
+e confirme a letra no Explorador de Arquivos. Copie **somente**
+`%USERPROFILE%\.ssh\id_ed25519.pub`. O arquivo sem `.pub` deve ficar no Windows.
+
+Exemplo interativo, após conferir a unidade:
+
+```powershell
+$usbRoot = Read-Host 'Raiz do pendrive confirmada no Explorador (ex.: E:\)'
+$publicKey = Join-Path $env:USERPROFILE '.ssh\id_ed25519.pub'
+$destination = Join-Path $usbRoot 'id_ed25519.pub'
+if (-not (Test-Path -LiteralPath $usbRoot -PathType Container)) { throw 'Unidade não encontrada' }
+if (Test-Path -LiteralPath $destination) { throw 'Arquivo já existe: confira antes de substituir' }
+Copy-Item -LiteralPath $publicKey -Destination $destination
+Get-FileHash -LiteralPath $publicKey,$destination -Algorithm SHA256
+```
+
+Os hashes devem ser iguais. Ejete o pendrive e conecte-o ao Pi. No Pi, localize o
+arquivo pelo gerenciador de arquivos ou consulte `lsblk -f` e `findmnt`. Não presuma
+um caminho de montagem. Confirme o caminho real antes da próxima etapa.
+
+## Instalar a chave no Raspberry Pi
+
+Execute como o usuário Linux que será usado na conexão SSH. O bloco abaixo é para
+**Bash no Pi** e usa o caminho informado pelo operador. Não o execute no PowerShell.
+
+```bash
+install_public_key() {
+    local public_key key_type key_blob key_comment
+    read -r -p 'Caminho completo do id_ed25519.pub no pendrive: ' public_key
+    test -f "$public_key" || { printf 'Arquivo não encontrado\n'; return 1; }
+    ssh-keygen -lf "$public_key" || return 1
+    read -r key_type key_blob key_comment < "$public_key"
+    test "$key_type" = ssh-ed25519 && test -n "$key_blob" || return 1
+    mkdir -p "$HOME/.ssh" || return 1
+    chmod 700 "$HOME/.ssh" || return 1
+    touch "$HOME/.ssh/authorized_keys" || return 1
+    chmod 600 "$HOME/.ssh/authorized_keys" || return 1
+    if awk -v blob="$key_blob" '
+        /^[[:space:]]*#/ { next }
+        { for (i = 1; i < NF; i++)
+            if ($i == "ssh-ed25519" && $(i+1) == blob) found = 1 }
+        END { exit !found }
+    ' "$HOME/.ssh/authorized_keys"; then
+        printf 'Chave já instalada\n'
+    else
+        printf '\n%s %s\n' "$key_type" "$key_blob" >> "$HOME/.ssh/authorized_keys" || return 1
+    fi
+    ls -ld "$HOME/.ssh"
+    ls -l "$HOME/.ssh/authorized_keys"
+}
+install_public_key
+```
+
+A comparação considera o material da chave, independentemente do comentário,
+para evitar duplicatas e preservar outras entradas. A permissão `700` permite
+acesso ao diretório apenas ao proprietário; `600` permite leitura e escrita do
+arquivo apenas ao proprietário. A instalação não modifica `sshd_config` e não
+desabilita autenticação por senha. A instalação foi concluída pelo usuário; a
+validação remota confirmou `700` em `~/.ssh`, `600` em `authorized_keys` e a mesma
+impressão digital observada no Windows.
+
+## Conexão direta e alias `voicepi`
+
+Obtenha o usuário e endereço reais do Pi. No primeiro acesso, compare a impressão
+digital apresentada pelo SSH com a do próprio Pi antes de aceitar a identidade do
+servidor. A chave do servidor é diferente da chave do usuário recém-instalada.
+
+No PowerShell, substitua os campos entre `<...>`:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" <pi-user>@<pi-host>
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" <pi-user>@<pi-host> "hostname"
+```
+
+Depois do acesso direto funcionar, acrescente a entrada abaixo a
+`%USERPROFILE%\.ssh\config`, preservando outras entradas. Caso `voicepi` já exista,
+revise sua configuração antes de alterá-la.
+
+```sshconfig
+Host voicepi
+    HostName <pi-host>
+    User <pi-user>
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+```
+
+Abra e encerre uma sessão; depois abra uma nova e teste comandos:
+
+```powershell
+ssh voicepi
+ssh voicepi "hostname"
+ssh -o IdentitiesOnly=yes -o PreferredAuthentications=publickey voicepi "hostname"
+ssh voicepi "hostname && uname -m && python3 --version && free -h && df -h /"
+```
+
+As opções no terceiro comando limitam a conexão à autenticação por chave e às
+identidades configuradas, evitando selecionar outra chave do agente. Não alteram a configuração do
+servidor. Se houver frase-senha, ela poderá ser solicitada localmente.
+
+Nesta máquina, o teste direto com `BatchMode=yes` respondeu `home-ai`, comprovando
+que a autenticação por chave funciona sem fallback para senha. O arquivo SSH do
+Windows não existia e foi criado somente com a entrada `voicepi`. Tanto
+`ssh voicepi "hostname"` quanto o comando básico de inventário foram executados
+com sucesso. O endereço privado real permanece apenas na configuração local.
+
+## Inventário do Pi
+
+Após validar SSH, execute no Pi, por SSH, cada comando abaixo. Registre comandos
+ausentes como indisponíveis e continue a coleta; não instale pacotes automaticamente.
+
+```bash
+hostname
+hostname -I
+uname -a
+uname -m
+cat /etc/os-release
+python3 --version
+git --version
+free -h
+df -h /
+vcgencmd measure_temp
+vcgencmd get_throttled
+```
+
+Resultados coletados: Raspberry Pi 5 Model B Rev 1.0, hostname `home-ai`, Debian
+GNU/Linux 13 (trixie), kernel `6.18.50+rpt-rpi-2712`, arquitetura `aarch64`, Python
+3.13.5 e Git 2.47.3. Foram observados 7,9 GiB de RAM, 2 GiB de swap sem uso e uma
+raiz de 29 GB com 21 GB livres. A temperatura foi 40,6 °C e `get_throttled`
+retornou `0x0`. O endereço privado foi conferido, mas não é publicado. O diretório
+`~/pi-voice-ai` não existia, portanto ainda não havia estado ou versão da aplicação
+para consultar.
+
+## Configuração futura
+
+`.env.example` é apenas um modelo para fases posteriores. Chaves SSH nunca devem
+ser armazenadas no `.env`: a privada fica em `%USERPROFILE%\.ssh`, e a pública no
+`~/.ssh/authorized_keys` do usuário remoto. Nenhuma chave OpenAI é
+necessária na Fase 0. Quando houver necessidade de configuração local, copie sem
+sobrescrever um arquivo existente:
+
+```powershell
+if (-not (Test-Path -LiteralPath '.env')) { Copy-Item -LiteralPath '.env.example' -Destination '.env' }
+git check-ignore -v .env
+```
+
+| Variável | Uso previsto |
+| --- | --- |
+| `OPENAI_API_KEY` | Credencial do backend, vazia no exemplo |
+| `AUDIO_MODE` | Adaptador de áudio; `webrtc` inicialmente |
+| `APP_HOST`, `APP_PORT` | Endereço de escuta e porta futuros |
+| `STT_ENGINE`, `TTS_ENGINE` | Candidatos sujeitos a benchmarks ARM64 |
+| `LOG_LEVEL` | Nível de logs |
+| `ENABLE_BARGE_IN` | Interrupção da resposta por fala do usuário |
+| `ENABLE_PARTIAL_TRANSCRIPTS` | Transcrições parciais |
+| `ENABLE_STREAMING_LLM` | Respostas incrementais do LLM |
+
+## Validação e versionamento
+
+Antes do commit inicial, validar chave, instalação no Pi, alias, comandos remotos,
+inventário, documentação e exclusão de segredos pelo Git. Acesso SSH e inventário
+do Pi ainda impedem considerar a Fase 0 concluída.
+
+```powershell
+git status
+git diff
+git ls-files
+git diff --cached --name-only
+git check-ignore -v .env .venv/placeholder __pycache__/placeholder.pyc id_ed25519 secrets/placeholder private/placeholder
+```
+
+Arquivos novos ainda não rastreados não aparecem em `git diff`; leia-os antes de
+adicionar explicitamente os seis arquivos da fundação. Revise `git diff --cached`
+antes do commit. Não há testes de aplicação nesta fase; os checks são de ambiente,
+SSH, Git e documentação.
+
+Nesta preparação, `git status`, `git diff`, `git diff --check`, `git ls-files` e a
+consulta ao índice foram executados. Os seis arquivos continuam não rastreados,
+sem nada staged. `git check-ignore` confirmou exclusão de `.env`, `.env.local`,
+ambiente virtual, cache Python, chaves e diretórios privados; os seis arquivos da
+fundação não estão ignorados. Uma busca por padrões comuns de credenciais e chaves
+privadas nesses arquivos não encontrou correspondências. Nenhum `.env` foi criado.
+
+Somente depois de todos os critérios passarem, preparar o commit
+`chore: initialize PiVoice AI development environment` e fazer push seguro, sem
+reescrever histórico remoto. Antes de criar `v0.1.0`, apresentar os arquivos,
+validações, inventário e pendências ao usuário. Nenhum commit, push ou release foi
+realizado nesta preparação parcial.
+
+## Problemas realmente encontrados
+
+- Ao tentar preparar a chave, foi executado `ssh-keygen -lf` com o nome
+  `id\_ed25519.pub`, resultando em `No such file or directory`. A barra antes de
+  `_` altera o caminho; o nome correto é `id_ed25519.pub`. Além disso, `-lf` apenas
+  mostra a impressão digital de uma chave existente. A inspeção de 2026-09-24
+  confirmou que nem `id_ed25519` nem `id_ed25519.pub` existiam no local padrão.
+  Primeiro é necessário gerar o par com `ssh-keygen -t ed25519 -C "pi-voice-ai"`;
+  depois, verificar a chave pública com o comando da seção de chaves SSH.
+  A geração ainda aguarda execução no terminal do usuário.
+- Comandos Git na pasta pai retornaram `not a git repository`. O clone está na
+  subpasta `pi-voice-ai`; usar essa pasta como diretório de trabalho resolve.
+- Ler `AGENTS.md` por caminho relativo, fora da raiz do clone, falhou. A leitura
+  completa funcionou ao especificar o diretório do repositório.
+- A consulta inicial a `.ssh` recebeu `Access is denied`. Isso não significa que
+  o diretório não exista. A consulta autorizada fora da restrição mostrou os arquivos.
+- O acesso inicial ao GitHub falhou na porta 443. A mesma consulta remota funcionou
+  com permissão de rede; não foi necessário mudar o remote nem credenciais.
+- Consultas CIM/volumes foram bloqueadas inicialmente e funcionaram com a permissão
+  necessária. O registro reportou `Windows 10 Home`, mas o CIM confirmou Windows 11
+  Home. Documentamos o resultado do CIM e os números de build observados.
+- `code --version` retornou a versão, junto de aviso `CreateFile: Access is denied`
+  do Crashpad. A janela do VS Code foi detectada; o aviso não foi corrigido.
+
+- O primeiro teste SSH feito dentro da restrição local não conseguiu acessar a
+  chave nem a porta 22. Repetido com a permissão SSH prevista para o projeto, o Pi
+  respondeu `home-ai`; o bloqueio era do ambiente de execução local.
