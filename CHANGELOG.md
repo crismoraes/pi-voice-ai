@@ -20,6 +20,7 @@
 - Teste, compilação e endpoint `/health` pela rede local.
 - Serviço systemd ativo, habilitado, sem reinícios e sem erros recentes no journald.
 - Health check corrigido no Pi e acesso HTTP pela rede local.
+- Testes WebRTC aprovados no Windows e no Raspberry Pi ARM64.
 
 ### Fixed
 

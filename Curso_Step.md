@@ -472,6 +472,11 @@ Três testes passaram. O teste principal criou dois peers aiortc reais, negociou
 conexão e recebeu um frame de áudio devolvido pelo servidor. A sintaxe dos scripts
 Bash e a compilação Python também passaram.
 
+Depois do commit e push, o Pi atualizou `main` por fast-forward. O bootstrap baixou
+os wheels ARM64 de PyAV, cryptography, SRTP e demais dependências sem compilar código
+nativo. Em Python 3.13.5, os mesmos três testes passaram em 0,86 segundo e a árvore
+Git permaneceu limpa.
+
 O Uvicorn foi iniciado localmente em HTTPS na porta 8443 usando variáveis de
 ambiente temporárias. O primeiro curl falhou com `CRYPT_E_NO_REVOCATION_CHECK`, pois
 a CA local não publica uma lista de revogação acessível ao Schannel. A repetição
@@ -481,6 +486,6 @@ continuaram validados. `/health` respondeu `{"status":"ok"}`. Não foi usado
 
 ### Pendências da aula
 
-Ainda é necessário transferir os arquivos TLS para o Pi, instalar as dependências
-ARM64, configurar a porta HTTPS, reiniciar o serviço e testar o microfone e o áudio
-fisicamente no navegador. Esses resultados não serão presumidos.
+Ainda é necessário transferir os arquivos TLS para o Pi, configurar a porta HTTPS,
+reiniciar o serviço e testar o microfone e o áudio fisicamente no navegador. Esses
+resultados não serão presumidos.

@@ -80,8 +80,9 @@ não encaminhe a porta no roteador nem o exponha à internet.
 ```
 
 O teste de integração cria dois peers reais, negocia ICE/DTLS/SRTP e exige que um
-frame de áudio retorne pelo loopback. Resultado local: três testes aprovados,
-incluindo `/health`, página web e transporte de áudio.
+frame de áudio retorne pelo loopback. Três testes foram aprovados no Windows com
+Python 3.12 e no Raspberry Pi ARM64 com Python 3.13, incluindo `/health`, página
+web e transporte de áudio. Os wheels WebRTC foram instalados sem compilação nativa.
 
 O processo HTTPS também foi iniciado localmente em 8443 com o certificado gerado.
 Uma consulta usando `home-ai.local`, validação de cadeia e validação de hostname

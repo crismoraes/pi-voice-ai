@@ -84,9 +84,10 @@ track for the Phase 2 loopback. Peer connections are closed on failure, explicit
 disconnect and application shutdown. Log events include track receipt, state
 changes, `WEBRTC_CONNECTED`, negotiation failure and `WEBRTC_DISCONNECTED`.
 
-Local Phase 2 tests use two real aiortc peers and require one audio frame to pass
-through ICE, DTLS and SRTP. All three current tests pass. ARM64 dry-run resolution
-on the Pi found compatible binary wheels for aiortc, PyAV, cryptography and SRTP.
+Phase 2 tests use two real aiortc peers and require one audio frame to pass through
+ICE, DTLS and SRTP. All three current tests pass on Windows Python 3.12 and Raspberry
+Pi Python 3.13 ARM64. The Pi installed binary wheels for aiortc, PyAV, cryptography
+and SRTP without native compilation.
 
 Browser microphone access uses direct Uvicorn HTTPS during development. Windows
 trusts a local mkcert CA. The certificate covers the local Pi hostname and private
