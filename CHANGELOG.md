@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-26
+
 ### Added
 
 - Abstração substituível de TTS e voz Piper brasileira local via sherpa-onnx.
@@ -11,7 +13,7 @@
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `0.5.0.dev0`.
+- Versão publicada como `0.5.0`.
 - O loopback passou a ser controlado no servidor para compartilhar a faixa de saída
   com a voz do assistente.
 
@@ -22,10 +24,8 @@
 - Implantação HTTPS gerou 3,882 s em 0,795 s, RTF `0,205`, e entregou 185 frames
   audíveis ao peer Windows por WebRTC.
 - Serviço ativo, health check aprovado e ciclo TTS/WebRTC sem erros nos logs.
-
-### Pending
-
-- Confirmação audível do fluxo completo no navegador antes da release `v0.5.0`.
+- Fluxo físico completo no navegador: STT de 5,50 s em 0,79 s, primeiro texto em
+  0,97 s, resposta total em 1,13 s e 2,79 s de voz gerados em 0,56 s, RTF `0,20`.
 
 ## [0.4.0] - 2026-09-26
 

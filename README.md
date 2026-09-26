@@ -5,12 +5,11 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2, 3 e 4 concluídas; Fase 5 em validação.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2, 3, 4 e 5 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
-local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A Fase 5 já possui
-TTS português local e retorno de voz por WebRTC implantados; falta confirmar a
-experiência audível no navegador antes de publicar `v0.5.0`.
+local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
+adiciona TTS português local e retorno de voz por WebRTC.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -70,9 +69,11 @@ confirmou 185 frames audíveis recebidos no Windows pelo WebRTC:
 
 Onze testes passaram no Windows e no Raspberry Pi ARM64. O serviço permaneceu
 `active/running`, o health check HTTPS passou e os logs registraram `TTS_STARTED`,
-`TTS_COMPLETED`, conexão e encerramento do peer sem erros. A conclusão da fase exige
-o teste audível no navegador: atualize a página, conecte, faça uma pergunta e
-confirme que a resposta aparece em texto e é reproduzida pelos alto-falantes.
+`TTS_COMPLETED`, conexão e encerramento do peer sem erros. No teste físico, a frase
+de 5,50 s foi transcrita em 0,79 s, RTF `0,14`; o primeiro texto chegou em 0,97 s e
+a resposta terminou em 1,13 s. A resposta correta sobre Washington, D.C. gerou
+2,79 s de voz em 0,56 s, RTF `0,20`, e foi reproduzida no navegador. A Fase 5 foi
+concluída no marco `v0.5.0`.
 
 ## Fase 4 — resposta textual com OpenAI
 

@@ -810,6 +810,9 @@ do ambiente restrito, embora DNS, SSH, serviço e porta estivessem corretos. Rep
 o mesmo comando com acesso autorizado à rede local confirmou o transporte; nenhuma
 mudança no Pi foi necessária.
 
-Código, modelo, testes ARM64, benchmark e transporte ao vivo estão implantados como
-`0.5.0.dev0`. Falta ouvir o fluxo completo no navegador. Depois dessa confirmação,
-a versão pode ser fechada e publicada como `v0.5.0`.
+Código, modelo, testes ARM64, benchmark e transporte ao vivo foram implantados. No
+teste físico, o usuário perguntou qual é a capital dos Estados Unidos. Os 5,50 s de
+fala foram transcritos em 0,79 s, RTF `0,14`. O modelo respondeu corretamente
+Washington, D.C.; o primeiro texto apareceu em 0,97 s e terminou em 1,13 s. O Pi
+gerou 2,79 s de voz em 0,56 s, RTF `0,20`, e o navegador reproduziu a resposta.
+Esse teste encerrou a Fase 5 no marco `v0.5.0`.

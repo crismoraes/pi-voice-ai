@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2, 3 and 4 complete; Phase 5 validation
+## Current implementation state — Phases 0, 1, 2, 3, 4 and 5 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -164,7 +164,7 @@ in 1.97 s and completed in 2.85 s. Phase 4 is complete at version `0.4.0`.
 The final deployed check after the plain-text instruction returned no Markdown,
 with 2.216 s to first text and 2.393 s total.
 
-The user authorized Phase 5. Version `0.5.0.dev0` adds the replaceable
+The user authorized Phase 5. Version `0.5.0` adds the replaceable
 `TextToSpeech` abstraction backed by sherpa-onnx 1.13.8 and the Brazilian Portuguese
 Piper voice `vits-piper-pt_BR-jeff-medium`. The model archive is about 64 MB, its
 installed directory is about 82 MB, and `scripts/download_tts_model.sh` verifies its
@@ -181,8 +181,11 @@ Eleven tests pass on Windows and Raspberry Pi ARM64. The real model generated 3.
 seconds of audio in 0.707 seconds, RTF 0.233. The deployed HTTPS check generated
 3.882 seconds in 0.795 seconds, RTF 0.205, and delivered 185 audible frames over
 WebRTC to Windows. The service is active, health is good and recent TTS/WebRTC logs
-contain no errors. Physical browser listening remains required before Phase 5 is
-complete and `v0.5.0` is released. Do not begin Phase 6 without explicit user
+contain no errors. The user completed the physical browser test with a 5.50-second
+Portuguese question. STT took 0.79 seconds, RTF 0.14; first LLM text arrived in
+0.97 seconds and completed in 1.13 seconds. The correct Washington, D.C. answer
+produced 2.79 seconds of audible speech in 0.56 seconds, RTF 0.20. Phase 5 is
+complete at version `0.5.0`. Do not begin Phase 6 without explicit user
 authorization.
 
 ## Project Goal
