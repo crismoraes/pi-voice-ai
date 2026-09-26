@@ -4,9 +4,12 @@ import numpy as np
 from aiortc import AudioStreamTrack, RTCPeerConnection
 from httpx import ASGITransport, AsyncClient
 
+from app.conversation.manager import ConversationManager
+from app.llm.base import LanguageModel
 from app.main import app
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.tts.base import SynthesisResult, TextToSpeech
+from app.vad.base import VoiceActivityDetector
 from app.webrtc.manager import peer_manager
 
 
@@ -31,6 +34,39 @@ class FakeTextToSpeech(TextToSpeech):
         )
 
 
+class FakeLanguageModel(LanguageModel):
+    model = "fake-conversation-model"
+
+    async def stream_response(self, text: str, *, history=()):
+        assert text == "teste de transcrição local"
+        yield "resposta "
+        yield "falada"
+
+
+class FakeVoiceActivityDetector(VoiceActivityDetector):
+    def __init__(self) -> None:
+        self.calls = 0
+        self._speech = False
+
+    @property
+    def is_speech_detected(self) -> bool:
+        return self._speech
+
+    def accept(self, samples: np.ndarray) -> list[np.ndarray]:
+        self.calls += 1
+        if self.calls == 3:
+            self._speech = True
+        if self.calls == 20:
+            self._speech = False
+            time_axis = np.arange(16_000, dtype=np.float32) / 16_000
+            return [(0.2 * np.sin(2 * np.pi * 220 * time_axis)).astype(np.float32)]
+        return []
+
+    def reset(self) -> None:
+        self.calls = 0
+        self._speech = False
+
+
 async def exercise_audio_loopback() -> None:
     browser_peer = RTCPeerConnection()
     received_track = asyncio.get_running_loop().create_future()
@@ -43,6 +79,8 @@ async def exercise_audio_loopback() -> None:
     browser_peer.addTrack(AudioStreamTrack())
     original_stt = peer_manager._speech_to_text
     original_tts = peer_manager._text_to_speech
+    original_conversation_manager = peer_manager._conversation_manager
+    original_vad_factory = peer_manager._vad_factory
     peer_manager._speech_to_text = FakeSpeechToText()
     peer_manager._text_to_speech = FakeTextToSpeech()
 
@@ -116,6 +154,36 @@ async def exercise_audio_loopback() -> None:
                     break
             assert heard_speech
 
+            peer_manager.configure_conversations(
+                ConversationManager(
+                    speech_to_text=FakeSpeechToText(),
+                    language_model=FakeLanguageModel(),
+                    text_to_speech=FakeTextToSpeech(),
+                    max_turns=2,
+                ),
+                FakeVoiceActivityDetector,
+            )
+            automatic_response = await client.put(
+                f"/api/webrtc/peers/{answer['peer_id']}/conversation",
+                json={"enabled": True},
+            )
+            assert automatic_response.status_code == 204
+
+            automatic_events = []
+            ready_events = 0
+            event_stream = peer_manager.conversation_events(answer["peer_id"])
+            while ready_events < 2:
+                event, payload = await asyncio.wait_for(anext(event_stream), timeout=5)
+                automatic_events.append((event, payload))
+                if event == "ready":
+                    ready_events += 1
+            event_names = [event for event, _ in automatic_events]
+            assert "speech_started" in event_names
+            assert "speech_ended" in event_names
+            assert "transcript" in event_names
+            assert "assistant_delta" in event_names
+            assert "tts_done" in event_names
+
             close_response = await client.delete(
                 f"/api/webrtc/peers/{answer['peer_id']}"
             )
@@ -129,6 +197,8 @@ async def exercise_audio_loopback() -> None:
     finally:
         peer_manager._speech_to_text = original_stt
         peer_manager._text_to_speech = original_tts
+        peer_manager._conversation_manager = original_conversation_manager
+        peer_manager._vad_factory = original_vad_factory
         await browser_peer.close()
         await peer_manager.close_all()
 

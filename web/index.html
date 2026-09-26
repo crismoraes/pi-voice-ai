@@ -8,13 +8,14 @@
   </head>
   <body>
     <main class="panel">
-      <p class="eyebrow">PiVoice AI · Fase 5</p>
-      <h1>Assistente de voz</h1>
+      <p class="eyebrow">PiVoice AI · Fase 6</p>
+      <h1>Conversa de voz</h1>
       <p class="description">
         O navegador envia o microfone por WebRTC. O Raspberry Pi converte a fala
         em texto localmente. Somente a transcrição é enviada à OpenAI para gerar
-        uma resposta textual. O Raspberry Pi transforma a resposta em voz local e
-        a devolve pelo WebRTC.
+        uma resposta textual. O Raspberry Pi detecta o fim da fala, mantém o
+        contexto da conversa, transforma a resposta em voz local e a devolve pelo
+        WebRTC.
       </p>
 
       <div class="status-row" aria-live="polite">
@@ -28,10 +29,16 @@
         <button id="stop" class="secondary" type="button" disabled>Desconectar</button>
       </div>
 
-      <label class="loopback-option">
-        <input id="loopback" type="checkbox">
-        Ouvir retorno do microfone
-      </label>
+      <div class="mode-options">
+        <label>
+          <input id="automatic" type="checkbox" checked>
+          Conversa automática
+        </label>
+        <label>
+          <input id="loopback" type="checkbox">
+          Ouvir retorno do microfone
+        </label>
+      </div>
 
       <section class="transcript" aria-live="polite" aria-labelledby="transcript-title">
         <div class="transcript-heading">

@@ -6,7 +6,12 @@ from typing import Any
 
 from openai import AsyncOpenAI, OpenAIError
 
-from app.llm.base import LanguageModel, LanguageModelError, LanguageModelUnavailableError
+from app.llm.base import (
+    ConversationMessage,
+    LanguageModel,
+    LanguageModelError,
+    LanguageModelUnavailableError,
+)
 
 
 class OpenAIResponsesLanguageModel(LanguageModel):
@@ -41,13 +46,25 @@ class OpenAIResponsesLanguageModel(LanguageModel):
             )
         return self._client
 
-    async def stream_response(self, text: str) -> AsyncIterator[str]:
+    async def stream_response(
+        self,
+        text: str,
+        *,
+        history: tuple[ConversationMessage, ...] = (),
+    ) -> AsyncIterator[str]:
+        model_input: str | list[dict[str, str]] = text
+        if history:
+            model_input = [
+                {"role": message.role, "content": message.content}
+                for message in history
+            ]
+            model_input.append({"role": "user", "content": text})
         try:
             async with self._request_lock:
                 stream = await self._get_client().responses.create(
                     model=self.model,
                     instructions=self._instructions,
-                    input=text,
+                    input=model_input,
                     max_output_tokens=self._max_output_tokens,
                     store=False,
                     stream=True,

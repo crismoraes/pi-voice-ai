@@ -1,13 +1,18 @@
 """HTTP signaling endpoints for browser WebRTC sessions."""
 
+import json
+from collections.abc import AsyncIterator
+
 from typing import Literal
 
 from aiortc import RTCSessionDescription
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.stt.base import SpeechToTextUnavailableError
 from app.tts.base import TextToSpeechUnavailableError
+from app.vad.base import VoiceActivityDetectionUnavailableError
 from app.webrtc.manager import (
     AudioDurationError,
     AudioTrackUnavailableError,
@@ -41,6 +46,10 @@ class LoopbackSetting(BaseModel):
     enabled: bool
 
 
+class ConversationSetting(BaseModel):
+    enabled: bool
+
+
 class SpeechRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
@@ -50,6 +59,16 @@ class SpeechSynthesis(BaseModel):
     processing_seconds: float
     real_time_factor: float
     sample_rate: int
+
+
+def encode_event(event: str, payload: dict[str, object]) -> str:
+    data = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    return f"event: {event}\ndata: {data}\n\n"
+
+
+async def conversation_event_stream(peer_id: str) -> AsyncIterator[str]:
+    async for event, payload in peer_manager.conversation_events(peer_id):
+        yield encode_event(event, payload)
 
 
 @router.post("/offer", response_model=Answer)
@@ -119,6 +138,35 @@ async def configure_loopback(peer_id: str, setting: LoopbackSetting) -> None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "WebRTC peer not found") from exc
     except AudioTrackUnavailableError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+
+@router.put(
+    "/peers/{peer_id}/conversation",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def configure_conversation(
+    peer_id: str,
+    setting: ConversationSetting,
+) -> None:
+    try:
+        await peer_manager.configure_automatic_conversation(peer_id, setting.enabled)
+    except PeerNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "WebRTC peer not found") from exc
+    except AudioTrackUnavailableError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except (VoiceActivityDetectionUnavailableError, RuntimeError) as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+
+
+@router.get("/peers/{peer_id}/events")
+async def stream_conversation_events(peer_id: str) -> StreamingResponse:
+    if not peer_manager.has_peer(peer_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "WebRTC peer not found")
+    return StreamingResponse(
+        conversation_event_stream(peer_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post(

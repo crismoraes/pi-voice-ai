@@ -33,6 +33,7 @@ fi
 "$project_dir/.venv/bin/python" -m pip install -e "$project_dir[dev]"
 "$project_dir/scripts/download_stt_model.sh"
 "$project_dir/scripts/download_tts_model.sh"
+"$project_dir/scripts/download_vad_model.sh"
 
 if [[ ! -f "$project_dir/.env" ]]; then
     cp "$project_dir/.env.example" "$project_dir/.env"

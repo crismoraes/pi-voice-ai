@@ -5,7 +5,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.api import assistant as assistant_api
-from app.llm.base import LanguageModel, LanguageModelUnavailableError
+from app.llm.base import ConversationMessage, LanguageModel, LanguageModelUnavailableError
 from app.llm.openai_responses import OpenAIResponsesLanguageModel
 from app.main import app
 
@@ -98,6 +98,40 @@ def test_openai_adapter_requires_api_key() -> None:
 
     with pytest.raises(LanguageModelUnavailableError, match="OPENAI_API_KEY"):
         asyncio.run(collect_model_response(model, "teste"))
+
+
+def test_openai_adapter_sends_bounded_conversation_history() -> None:
+    client = FakeOpenAIClient()
+    model = OpenAIResponsesLanguageModel(
+        api_key="test-key",
+        model="test-model",
+        instructions="Seja breve.",
+        max_output_tokens=100,
+        timeout_seconds=10,
+        client=client,
+    )
+
+    async def collect() -> str:
+        history = (
+            ConversationMessage(role="user", content="Meu nome é Ana."),
+            ConversationMessage(role="assistant", content="Olá, Ana."),
+        )
+        return "".join(
+            [
+                chunk
+                async for chunk in model.stream_response(
+                    "Qual é meu nome?",
+                    history=history,
+                )
+            ]
+        )
+
+    assert asyncio.run(collect()) == "Olá!"
+    assert client.responses.arguments["input"] == [
+        {"role": "user", "content": "Meu nome é Ana."},
+        {"role": "assistant", "content": "Olá, Ana."},
+        {"role": "user", "content": "Qual é meu nome?"},
+    ]
 
 
 async def request_streaming_response() -> str:

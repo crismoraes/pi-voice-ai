@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
 from fractions import Fraction
@@ -17,10 +18,12 @@ from av import AudioFrame
 from av.audio.resampler import AudioResampler
 
 from app.config import get_settings
+from app.conversation.manager import ConversationManager
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.stt.sherpa_whisper import SherpaWhisperSpeechToText
 from app.tts.base import SynthesisResult, TextToSpeech
 from app.tts.sherpa_piper import SherpaPiperTextToSpeech
+from app.vad.base import VoiceActivityDetector
 
 logger = logging.getLogger("pi_voice_ai.webrtc")
 
@@ -129,6 +132,13 @@ class PeerSession:
     sample_count: int = 0
     truncated: bool = False
     output_track: AssistantAudioTrack | None = None
+    automatic_conversation: bool = False
+    conversation_busy: bool = False
+    vad: VoiceActivityDetector | None = None
+    conversation_task: asyncio.Task[None] | None = None
+    event_queue: asyncio.Queue[tuple[str, dict[str, object]] | None] = field(
+        default_factory=lambda: asyncio.Queue(maxsize=100)
+    )
 
 
 class PeerConnectionManager:
@@ -149,10 +159,23 @@ class PeerConnectionManager:
         self._text_to_speech = text_to_speech
         self._min_samples = int(min_audio_seconds * self.sample_rate)
         self._max_samples = int(max_audio_seconds * self.sample_rate)
+        self._conversation_manager: ConversationManager | None = None
+        self._vad_factory: Callable[[], VoiceActivityDetector] | None = None
+
+    def configure_conversations(
+        self,
+        conversation_manager: ConversationManager,
+        vad_factory: Callable[[], VoiceActivityDetector],
+    ) -> None:
+        self._conversation_manager = conversation_manager
+        self._vad_factory = vad_factory
 
     @property
     def active_peer_count(self) -> int:
         return len(self._sessions)
+
+    def has_peer(self, peer_id: str) -> bool:
+        return peer_id in self._sessions
 
     async def accept_offer(
         self,
@@ -218,20 +241,20 @@ class PeerConnectionManager:
             while True:
                 frame = await track.recv()
                 for resampled_frame in resampler.resample(frame):
-                    if not session.capturing or session.sample_count >= self._max_samples:
-                        continue
                     samples = (
                         resampled_frame.to_ndarray()
                         .reshape(-1)
                         .astype(np.float32)
                         / 32768.0
                     )
-                    remaining = self._max_samples - session.sample_count
-                    if len(samples) > remaining:
-                        samples = samples[:remaining]
-                        session.truncated = True
-                    session.chunks.append(samples.copy())
-                    session.sample_count += len(samples)
+                    if session.capturing and session.sample_count < self._max_samples:
+                        remaining = self._max_samples - session.sample_count
+                        capture_samples = samples[:remaining]
+                        if len(samples) > remaining:
+                            session.truncated = True
+                        session.chunks.append(capture_samples.copy())
+                        session.sample_count += len(capture_samples)
+                    self._feed_automatic_conversation(peer_id, session, samples)
         except (MediaStreamError, asyncio.CancelledError):
             pass
         except Exception:
@@ -243,6 +266,8 @@ class PeerConnectionManager:
             raise AudioTrackUnavailableError("Audio track is not ready")
         if session.capturing:
             raise CaptureStateError("Audio capture is already active")
+        if session.automatic_conversation:
+            raise CaptureStateError("Automatic conversation is active")
         session.chunks.clear()
         session.sample_count = 0
         session.truncated = False
@@ -313,6 +338,143 @@ class PeerConnectionManager:
         )
         return result
 
+    async def configure_automatic_conversation(
+        self,
+        peer_id: str,
+        enabled: bool,
+    ) -> None:
+        session = self._get_session(peer_id)
+        if not session.audio_track_ready:
+            raise AudioTrackUnavailableError("Audio track is not ready")
+        if self._conversation_manager is None or self._vad_factory is None:
+            raise RuntimeError("Automatic conversation is unavailable")
+        if enabled and session.vad is None:
+            session.vad = await asyncio.to_thread(self._vad_factory)
+        if session.vad is not None:
+            session.vad.reset()
+        session.automatic_conversation = enabled
+        await self._emit(
+            session,
+            "ready" if enabled else "manual",
+            {},
+        )
+        logger.info(
+            "CONVERSATION_MODE_CHANGED",
+            extra={"peer_id": peer_id, "automatic": enabled},
+        )
+
+    async def conversation_events(
+        self,
+        peer_id: str,
+    ) -> AsyncIterator[tuple[str, dict[str, object]]]:
+        session = self._get_session(peer_id)
+        while True:
+            event = await session.event_queue.get()
+            if event is None:
+                return
+            yield event
+
+    def _feed_automatic_conversation(
+        self,
+        peer_id: str,
+        session: PeerSession,
+        samples: np.ndarray,
+    ) -> None:
+        vad = session.vad
+        if not session.automatic_conversation or session.conversation_busy or vad is None:
+            return
+        speech_was_detected = vad.is_speech_detected
+        segments = vad.accept(samples)
+        if not speech_was_detected and vad.is_speech_detected:
+            self._emit_nowait(session, "speech_started", {})
+            logger.info("VAD_SPEECH_STARTED", extra={"peer_id": peer_id})
+        for segment in segments:
+            if len(segment) < self._min_samples:
+                logger.info(
+                    "VAD_SEGMENT_SKIPPED",
+                    extra={
+                        "peer_id": peer_id,
+                        "audio_seconds": round(len(segment) / self.sample_rate, 3),
+                    },
+                )
+                self._emit_nowait(session, "ready", {})
+                continue
+            session.conversation_busy = True
+            self._emit_nowait(
+                session,
+                "speech_ended",
+                {"audio_seconds": round(len(segment) / self.sample_rate, 3)},
+            )
+            logger.info(
+                "VAD_SPEECH_ENDED",
+                extra={
+                    "peer_id": peer_id,
+                    "audio_seconds": round(len(segment) / self.sample_rate, 3),
+                },
+            )
+            session.conversation_task = asyncio.create_task(
+                self._run_automatic_conversation(peer_id, session, segment)
+            )
+            break
+
+    async def _run_automatic_conversation(
+        self,
+        peer_id: str,
+        session: PeerSession,
+        samples: np.ndarray,
+    ) -> None:
+        try:
+            if self._conversation_manager is None or session.output_track is None:
+                raise RuntimeError("Automatic conversation is unavailable")
+            result = await self._conversation_manager.process(
+                peer_id,
+                samples,
+                lambda event, payload: self._emit(session, event, payload),
+            )
+            if result is not None:
+                session.output_track.queue_speech(
+                    result.synthesis.samples,
+                    result.synthesis.sample_rate,
+                )
+                await asyncio.sleep(result.synthesis.audio_seconds)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.exception(
+                "CONVERSATION_TURN_FAILED",
+                extra={"peer_id": peer_id, "error_type": type(exc).__name__},
+            )
+            await self._emit(
+                session,
+                "error",
+                {"message": "Não foi possível concluir a conversa."},
+            )
+        finally:
+            session.conversation_busy = False
+            if session.vad is not None:
+                session.vad.reset()
+            if session.automatic_conversation and peer_id in self._sessions:
+                await self._emit(session, "ready", {})
+
+    @staticmethod
+    async def _emit(
+        session: PeerSession,
+        event: str,
+        payload: dict[str, object],
+    ) -> None:
+        PeerConnectionManager._emit_nowait(session, event, payload)
+
+    @staticmethod
+    def _emit_nowait(
+        session: PeerSession,
+        event: str,
+        payload: dict[str, object],
+    ) -> None:
+        if session.event_queue.full():
+            with suppress(asyncio.QueueEmpty):
+                session.event_queue.get_nowait()
+        session.event_queue.put_nowait((event, payload))
+
     def _get_session(self, peer_id: str) -> PeerSession:
         session = self._sessions.get(peer_id)
         if session is None:
@@ -324,10 +486,22 @@ class PeerConnectionManager:
         if session is None:
             return False
         session.capturing = False
+        session.automatic_conversation = False
         if session.capture_task is not None:
             session.capture_task.cancel()
             with suppress(asyncio.CancelledError):
                 await session.capture_task
+        if session.conversation_task is not None:
+            session.conversation_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await session.conversation_task
+        if self._conversation_manager is not None:
+            self._conversation_manager.forget(peer_id)
+        self._emit_nowait(session, "disconnected", {})
+        if session.event_queue.full():
+            with suppress(asyncio.QueueEmpty):
+                session.event_queue.get_nowait()
+        session.event_queue.put_nowait(None)
         await session.connection.close()
         logger.info("WEBRTC_DISCONNECTED", extra={"peer_id": peer_id})
         return True

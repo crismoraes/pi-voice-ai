@@ -10,11 +10,14 @@ const assistantText = document.querySelector("#assistant-text");
 const assistantMetricsText = document.querySelector("#assistant-metrics");
 const remoteAudio = document.querySelector("#remote-audio");
 const loopbackCheckbox = document.querySelector("#loopback");
+const automaticCheckbox = document.querySelector("#automatic");
 
 let peerConnection = null;
 let localStream = null;
 let peerId = null;
 let capturing = false;
+let eventSource = null;
+let receivingAutomaticResponse = false;
 
 function setStatus(message, state = "") {
   statusText.textContent = message;
@@ -151,10 +154,88 @@ async function configureLoopback() {
   }
 }
 
+async function configureAutomaticConversation() {
+  if (!peerId) {
+    return;
+  }
+  const response = await fetch(`/api/webrtc/peers/${peerId}/conversation`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: automaticCheckbox.checked }),
+  });
+  if (!response.ok) {
+    throw new Error(await responseError(response));
+  }
+  recordButton.disabled = automaticCheckbox.checked;
+}
+
+function openConversationEvents() {
+  if (!peerId) {
+    return;
+  }
+  eventSource?.close();
+  eventSource = new EventSource(`/api/webrtc/peers/${peerId}/events`);
+  eventSource.addEventListener("ready", () => {
+    receivingAutomaticResponse = false;
+    setStatus("Ouvindo — fale quando quiser", "connected");
+  });
+  eventSource.addEventListener("manual", () => {
+    setStatus("Conectado — gravação manual", "connected");
+  });
+  eventSource.addEventListener("speech_started", () => {
+    transcriptText.textContent = "Ouvindo…";
+    metricsText.textContent = "";
+    assistantText.textContent = "Aguardando a transcrição…";
+    assistantMetricsText.textContent = "";
+    receivingAutomaticResponse = false;
+    setStatus("Fala detectada", "recording");
+  });
+  eventSource.addEventListener("speech_ended", () => {
+    setStatus("Fim da fala detectado", "connecting");
+  });
+  eventSource.addEventListener("transcribing", () => {
+    setStatus("Transcrevendo no Raspberry Pi…", "connecting");
+  });
+  eventSource.addEventListener("transcript", (message) => {
+    const result = JSON.parse(message.data);
+    transcriptText.textContent = result.text || "Nenhuma fala reconhecida.";
+    metricsText.textContent = `${result.audio_seconds.toFixed(2)} s de áudio · ${result.processing_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;
+    setStatus("Consultando a OpenAI…", "connecting");
+  });
+  eventSource.addEventListener("assistant_delta", (message) => {
+    if (!receivingAutomaticResponse) {
+      assistantText.textContent = "";
+      receivingAutomaticResponse = true;
+    }
+    assistantText.textContent += JSON.parse(message.data).text;
+    setStatus("Recebendo resposta…", "connecting");
+  });
+  eventSource.addEventListener("assistant_done", (message) => {
+    const result = JSON.parse(message.data);
+    assistantMetricsText.textContent = `${result.model} · primeiro texto ${result.first_text_seconds.toFixed(2)} s · total ${result.total_seconds.toFixed(2)} s`;
+    setStatus("Sintetizando voz no Raspberry Pi…", "connecting");
+  });
+  eventSource.addEventListener("tts_done", (message) => {
+    const result = JSON.parse(message.data);
+    assistantMetricsText.textContent += ` · voz ${result.processing_seconds.toFixed(2)} s · áudio ${result.audio_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;
+    setStatus("Reproduzindo resposta…", "connected");
+  });
+  eventSource.addEventListener("error", (message) => {
+    if (message.data) {
+      errorText.textContent = JSON.parse(message.data).message;
+      setStatus("Conectado", "connected");
+    }
+  });
+}
+
 async function closeSession({ notifyServer = true } = {}) {
   const closingPeerId = peerId;
   peerId = null;
   capturing = false;
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
 
   if (peerConnection) {
     peerConnection.close();
@@ -269,8 +350,13 @@ async function startSession() {
     peerConnection.addEventListener("connectionstatechange", () => {
       const state = peerConnection?.connectionState;
       if (state === "connected") {
-        recordButton.disabled = false;
-        setStatus("Conectado — pronto para gravar", "connected");
+        recordButton.disabled = automaticCheckbox.checked;
+        setStatus(
+          automaticCheckbox.checked
+            ? "Conectado — iniciando conversa automática"
+            : "Conectado — pronto para gravar",
+          "connected",
+        );
       } else if (["failed", "disconnected", "closed"].includes(state)) {
         if (state === "failed") {
           errorText.textContent = "A conexão WebRTC falhou. Tente novamente.";
@@ -301,7 +387,9 @@ async function startSession() {
       type: answer.type,
     });
     await configureLoopback();
-    setStatus("Conectando áudio…", "connecting");
+    openConversationEvents();
+    setStatus("Ativando conversa…", "connecting");
+    await configureAutomaticConversation();
   } catch (error) {
     errorText.textContent = error.message;
     await closeSession();
@@ -311,6 +399,13 @@ async function startSession() {
 loopbackCheckbox.addEventListener("change", async () => {
   try {
     await configureLoopback();
+  } catch (error) {
+    errorText.textContent = error.message;
+  }
+});
+automaticCheckbox.addEventListener("change", async () => {
+  try {
+    await configureAutomaticConversation();
   } catch (error) {
     errorText.textContent = error.message;
   }

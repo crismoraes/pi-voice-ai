@@ -13,12 +13,32 @@ from app.api.assistant import language_model, router as assistant_router
 from app.api.health import router as health_router
 from app.api.signaling import router as signaling_router
 from app.config import PROJECT_ROOT, get_settings
+from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
-from app.webrtc.manager import peer_manager
+from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
+from app.webrtc.manager import peer_manager, speech_to_text, text_to_speech
 
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = logging.getLogger("pi_voice_ai")
+
+conversation_manager = ConversationManager(
+    speech_to_text=speech_to_text,
+    language_model=language_model,
+    text_to_speech=text_to_speech,
+    max_turns=settings.conversation_max_turns,
+)
+peer_manager.configure_conversations(
+    conversation_manager,
+    lambda: SherpaSileroVoiceActivityDetector(
+        model_path=settings.vad_model_path,
+        threshold=settings.vad_threshold,
+        min_silence_seconds=settings.vad_min_silence_seconds,
+        min_speech_seconds=settings.vad_min_speech_seconds,
+        max_speech_seconds=settings.vad_max_speech_seconds,
+        num_threads=settings.vad_num_threads,
+    ),
+)
 
 
 @asynccontextmanager

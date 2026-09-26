@@ -44,6 +44,25 @@ class Settings(BaseSettings):
     stt_max_audio_seconds: float = Field(
         default=30, ge=1, le=120, alias="STT_MAX_AUDIO_SECONDS"
     )
+    vad_engine: str = Field(default="sherpa-silero", alias="VAD_ENGINE")
+    vad_model_path: Path = Field(
+        default=PROJECT_ROOT / "models" / "silero_vad.onnx",
+        alias="VAD_MODEL_PATH",
+    )
+    vad_threshold: float = Field(default=0.5, ge=0.05, le=0.95, alias="VAD_THRESHOLD")
+    vad_min_silence_seconds: float = Field(
+        default=0.8, ge=0.1, le=5, alias="VAD_MIN_SILENCE_SECONDS"
+    )
+    vad_min_speech_seconds: float = Field(
+        default=0.3, ge=0.1, le=5, alias="VAD_MIN_SPEECH_SECONDS"
+    )
+    vad_max_speech_seconds: float = Field(
+        default=30, ge=1, le=120, alias="VAD_MAX_SPEECH_SECONDS"
+    )
+    vad_num_threads: int = Field(default=1, ge=1, le=8, alias="VAD_NUM_THREADS")
+    conversation_max_turns: int = Field(
+        default=6, ge=1, le=20, alias="CONVERSATION_MAX_TURNS"
+    )
     tts_engine: str = Field(default="sherpa-piper", alias="TTS_ENGINE")
     tts_model_dir: Path = Field(
         default=PROJECT_ROOT / "models" / "vits-piper-pt_BR-jeff-medium",
@@ -87,6 +106,16 @@ class Settings(BaseSettings):
     def resolve_tts_model_dir(self) -> "Settings":
         if not self.tts_model_dir.is_absolute():
             self.tts_model_dir = PROJECT_ROOT / self.tts_model_dir
+        return self
+
+    @model_validator(mode="after")
+    def resolve_vad_model_path(self) -> "Settings":
+        if not self.vad_model_path.is_absolute():
+            self.vad_model_path = PROJECT_ROOT / self.vad_model_path
+        if self.vad_min_speech_seconds >= self.vad_max_speech_seconds:
+            raise ValueError(
+                "VAD_MIN_SPEECH_SECONDS must be lower than VAD_MAX_SPEECH_SECONDS"
+            )
         return self
 
 

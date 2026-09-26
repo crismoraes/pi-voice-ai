@@ -91,16 +91,21 @@ h1 {
   margin-top: 28px;
 }
 
-.loopback-option {
+.mode-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.mode-options label {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-top: 20px;
   color: #b1bac4;
   font-size: 0.9rem;
 }
 
-.loopback-option input {
+.mode-options input {
   width: 17px;
   height: 17px;
 }
