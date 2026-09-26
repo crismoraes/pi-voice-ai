@@ -16,12 +16,15 @@
 
 ### Validated
 
-- Quinze testes locais, incluindo cancelamento da reprodução, limpeza do áudio e
-  início do turno seguinte.
+- Quinze testes no Windows e no Raspberry Pi, incluindo cancelamento da reprodução,
+  limpeza do áudio e início do turno seguinte.
+- Barge-in WebRTC implantado durante `playback`, com 1,573 s de áudio pendente
+  descartado, segundo turno completo e 140 frames audíveis recebidos no Windows.
+- Serviço `0.7.0.dev0` ativo, health check aprovado e teste bem-sucedido sem erros.
 
 ### Pending
 
-- Validação WebRTC implantada e interrupção física pelo navegador antes de `v0.7.0`.
+- Interrupção física pelo navegador antes de `v0.7.0`.
 
 ## [0.6.0] - 2026-09-26
 

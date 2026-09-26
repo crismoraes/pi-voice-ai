@@ -120,6 +120,10 @@ async def check_barge_in(
                             interruption = payload
                         elif event_name == "transcript":
                             transcripts.append(payload)
+                        elif event_name == "error":
+                            raise RuntimeError(
+                                payload.get("message", "Conversation failed")
+                            )
                         elif (
                             event_name == "ready"
                             and interruption is not None

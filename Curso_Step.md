@@ -910,7 +910,12 @@ O evento SSE `interrupted` informa se a interrupção ocorreu em `processing` ou
 essa mudança imediatamente. `ENABLE_BARGE_IN` permite desativar o comportamento sem
 alterar o restante do pipeline.
 
-A primeira validação automatizada usa uma resposta de cinco segundos, inicia nova
-fala durante `playback`, confirma o cancelamento e verifica que o segundo turno chega
-ao estado `ready`. A validação no Raspberry Pi e o teste com voz humana ainda são
-necessários antes do marco `v0.7.0`.
+A validação unitária usa uma resposta de cinco segundos, inicia nova fala durante
+`playback`, confirma o cancelamento e verifica que o segundo turno chega ao estado
+`ready`. Quinze testes passaram no Windows e no Raspberry Pi.
+
+No teste WebRTC implantado, o primeiro áudio gerou 2,453 s de resposta falada. A
+segunda fala foi detectada durante a reprodução e removeu os 1,573 s restantes. O
+novo turno terminou normalmente, gerou 2,436 s de voz e o Windows recebeu 140 frames
+audíveis. O serviço permaneceu ativo e não houve erro nessa execução. Resta validar
+a interrupção com voz humana no navegador antes do marco `v0.7.0`.

@@ -221,10 +221,12 @@ turn is processing or playing. New detected speech cancels the current task, cle
 queued assistant audio and continues collecting that same utterance for the next
 turn. The `interrupted` SSE event reports whether processing or playback was stopped
 and how much queued audio was discarded. `ENABLE_BARGE_IN` controls the behavior.
-Fifteen local tests pass, including a five-second queued response interrupted during
-playback followed by a second completed turn. Raspberry Pi deployment, live WebRTC
-validation and a physical browser test remain required before `v0.7.0`. Do not begin
-Phase 8 without explicit user authorization.
+Fifteen tests pass on Windows and Raspberry Pi, including a five-second queued
+response interrupted during playback followed by a second completed turn. The live
+deployed WebRTC check interrupted playback with 1.573 seconds queued, completed the
+new turn, received 140 audible frames on Windows and produced no errors in that run.
+The service is active at `0.7.0.dev0`. A physical browser test remains required before
+`v0.7.0`. Do not begin Phase 8 without explicit user authorization.
 
 ## Project Goal
 

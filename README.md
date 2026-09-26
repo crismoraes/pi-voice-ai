@@ -26,9 +26,11 @@ duração de áudio descartada.
 resposta em andamento -> nova fala -> cancelar -> limpar áudio -> novo turno
 ```
 
-O cancelamento preserva os turnos já concluídos no histórico. A implementação e os
-testes locais estão concluídos em `0.7.0.dev0`; ainda faltam a validação implantada e
-o teste físico no navegador antes da publicação de `v0.7.0`.
+O cancelamento preserva os turnos já concluídos no histórico. Quinze testes passaram
+no Windows e no Pi. Na validação WebRTC implantada, uma nova fala interrompeu a
+reprodução, descartou 1,573 s de áudio pendente e completou o segundo turno. O Windows
+recebeu 140 frames audíveis e os logs do teste não mostraram erros. Falta o teste
+físico no navegador antes da publicação de `v0.7.0`.
 
 ## Fase 6 — conversa automática com VAD e contexto
 
