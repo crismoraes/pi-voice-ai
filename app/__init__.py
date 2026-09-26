@@ -1,3 +1,3 @@
 """PiVoice AI application package."""
 
-__version__ = "0.9.1.dev0"
+__version__ = "1.0.0"

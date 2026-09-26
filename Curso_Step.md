@@ -1094,8 +1094,9 @@ O diagnóstico confirmou `active/running`, unidade habilitada, `NRestarts=0`,
 `ExecMainStatus=0`, P10S disponível para captura e reprodução e `arecord` aberto.
 Health, dashboard e API de consumo responderam; `data/usage.db` estava em modo
 `0600`. O Pi tinha 6,6 GiB disponíveis, temperatura de 45 °C, `throttled=0x0` e
-nenhum erro no journal desse boot. A última verificação do curso é falar uma frase
-real e ouvir a resposta depois desse reboot.
+nenhum erro no journal desse boot. Na última verificação, o usuário falou pelo
+microfone USB, recebeu a resposta no alto-falante e confirmou que funcionou
+perfeitamente. Essa demonstração concluiu a Fase 10 no marco `v1.0.0`.
 
 # Perguntas frequentes e troubleshooting do curso
 

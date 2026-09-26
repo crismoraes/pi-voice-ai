@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-26
+
 ### Added
 
 - Supervisão da captura USB com reabertura do `arecord` após encerramento e
@@ -24,6 +26,8 @@
   após a validação física em português.
 - O health check de implantação também valida o dashboard e a API de consumo.
 - Banco local de consumo recebe permissão `0600` em sistemas POSIX.
+- O contrato de LLM pode entregar metadados finais de uso junto ao streaming.
+- Versão publicada como `1.0.0`, concluindo as Fases 0 a 10.
 
 ### Validated
 
@@ -32,8 +36,8 @@
   do mixer, novo processo de captura e serviço continuamente ativo.
 - Reboot real preservou a inicialização automática, captura USB, endpoints e banco;
   `NRestarts=0`, `ExecMainStatus=0`, sem throttling nem erros no journal do boot.
-- Versão de desenvolvimento elevada para `0.9.1.dev0` após o marco USB.
-- O contrato de LLM pode entregar metadados finais de uso junto ao streaming.
+- Conversa física após o reboot concluída com reconhecimento e resposta USB;
+  o usuário confirmou funcionamento perfeito.
 
 ## [0.9.0] - 2026-09-26
 

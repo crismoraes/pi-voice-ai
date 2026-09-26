@@ -5,7 +5,7 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 9 concluídas; Fase 10 em validação.** O marco `v0.1.0`
+**Estado: Fases 0 a 10 concluídas no marco `v1.0.0`.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
@@ -14,6 +14,8 @@ adiciona detecção automática de fala e contexto de múltiplos turnos. A vers�
 `v0.7.0` permite interromper uma resposta ao começar uma nova fala. A versão
 `v0.8.0` reduz a latência com medições no Pi, pré-carregamento e TTS em trechos. A
 versão `v0.9.0` adiciona microfone e alto-falante USB diretamente no Raspberry Pi.
+O marco `v1.0.0` entrega a instalação reproduzível, supervisão USB, diagnóstico
+remoto, dashboard de consumo e validação completa após reboot.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -77,8 +79,9 @@ Na validação remota, 24 testes passaram no Raspberry Pi. O encerramento propos
 do `arecord` criou um novo processo após três segundos sem reiniciar a aplicação.
 Um reboot real confirmou serviço habilitado e ativo, `NRestarts=0`, captura P10S
 aberta, endpoints saudáveis, banco de consumo com modo `0600`, temperatura de 45 °C,
-`throttled=0x0` e nenhum erro no journal do boot. A aceitação final do marco 1.0
-depende de uma conversa física após esse reboot.
+`throttled=0x0` e nenhum erro no journal do boot. Após esse reboot, o usuário fez
+uma conversa física pelo microfone e alto-falante USB e confirmou funcionamento
+perfeito. Essa aceitação concluiu a Fase 10 e o marco `v1.0.0`.
 
 ## Fase 9 — áudio USB
 

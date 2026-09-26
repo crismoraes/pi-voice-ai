@@ -293,8 +293,8 @@ ignored local SQLite database `data/usage.db`; audio, transcripts, prompts and
 assistant text are not stored. Read-only APIs feed `/dashboard.html`. Pricing is
 environment-configurable and dated because provider prices can change.
 
-Phase 10 stabilization is in validation. A physical Portuguese comparison selected
-Whisper Small INT8 with three threads and 1.0 second of ending silence: it is slower
+Phase 10 stabilization selected Whisper Small INT8 with three threads and 1.0
+second of ending silence: it is slower
 than Tiny but the user reported excellent recognition. The bootstrap now reads
 `STT_MODEL_DIR` before downloading and reproducibly installs either Tiny or Small
 with fixed SHA-256 checks. Small is the safe-template default. USB capture now
@@ -302,9 +302,7 @@ supervises `arecord`, restores the mixer and retries after process termination o
 configurable period of all-zero PCM. `scripts/diagnose_pi.sh` collects sanitized
 service, endpoint, ALSA, resource and journal status without reading `.env`.
 Deployment health checks cover `/health`, the dashboard page and usage summary API.
-The usage database is restricted to mode 0600 on POSIX. Do not mark Phase 10 or
-release `v1.0.0` until these changes pass on the Pi, survive an actual reboot and a
-physical USB conversation is confirmed.
+The usage database is restricted to mode 0600 on POSIX.
 
 The stabilization commit passed 24 tests on Windows and Raspberry Pi ARM64. A
 controlled `arecord` termination was recovered after the configured three seconds:
@@ -312,8 +310,9 @@ the mixer was restored, a new capture PID appeared and the app stayed active. An
 actual Pi reboot was performed. After boot, systemd was enabled and active with
 `NRestarts=0` and `ExecMainStatus=0`; the P10S and `arecord` were present; health,
 dashboard and usage API passed; `data/usage.db` was mode 0600; temperature was 45 C,
-throttling was 0x0 and the boot journal had no errors. Only the user's post-reboot
-physical USB conversation remains before Phase 10 completion and `v1.0.0`.
+throttling was 0x0 and the boot journal had no errors. The user then completed a
+post-reboot physical USB conversation and reported that it worked perfectly. Phase
+10 is complete at `v1.0.0`.
 
 ## Project Goal
 
