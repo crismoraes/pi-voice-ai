@@ -283,7 +283,8 @@ class UsbAudioConversation:
                 await self._accept_samples(samples)
         except asyncio.IncompleteReadError:
             stderr = await self._read_stderr(process)
-            logger.error(
+            log = logger.info if "Interrupted system call" in stderr else logger.error
+            log(
                 "USB_CAPTURE_ENDED",
                 extra={"return_code": process.returncode, "detail": stderr},
             )

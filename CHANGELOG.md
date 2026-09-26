@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-26
+
 ### Added
 
 - Adaptador ALSA para conversa local com microfone e alto-falante USB.
@@ -12,8 +14,10 @@
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `0.9.0.dev0`.
+- Versão publicada como `0.9.0`.
 - Bootstrap passa a instalar `alsa-utils` quando `arecord` ou `aplay` não existem.
+- Encerramento esperado do `arecord` durante reinícios deixa de ser registrado como erro.
+- Barge-in USB permanece opt-in para instalações sem cancelamento acústico de eco.
 
 ### Hardware
 

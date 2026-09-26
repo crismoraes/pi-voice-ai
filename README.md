@@ -5,14 +5,15 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 8 concluídas; Fase 9 em desenvolvimento.** O marco `v0.1.0`
+**Estado: Fases 0 a 9 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
 adiciona TTS português local e retorno de voz por WebRTC. A versão `v0.6.0`
 adiciona detecção automática de fala e contexto de múltiplos turnos. A versão
 `v0.7.0` permite interromper uma resposta ao começar uma nova fala. A versão
-`v0.8.0` reduz a latência com medições no Pi, pré-carregamento e TTS em trechos.
+`v0.8.0` reduz a latência com medições no Pi, pré-carregamento e TTS em trechos. A
+versão `v0.9.0` adiciona microfone e alto-falante USB diretamente no Raspberry Pi.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -50,11 +51,15 @@ som sem cancelamento de eco. Depois de validar ganho, distância e ausência de
 realimentação, `USB_ENABLE_BARGE_IN=true` permite testar interrupções locais. Para
 voltar ao navegador, use `AUDIO_MODE=webrtc` e reinicie o serviço.
 
+Na versão `v0.9.0`, o barge-in USB permanece opt-in. O padrão desligado evita ciclos
+causados pelo eco em instalações sem cancelamento acústico; o WebRTC mantém seu
+barge-in validado e independente.
+
 A primeira validação física completou o fluxo pelo hardware USB. Em um turno de
 3,244 s, o STT levou 0,540 s; a voz começou a ser enfileirada em 0,191 s e 18,472 s
 de resposta foram reproduzidos em cinco trechos. O troubleshooting real da P10S,
 incluindo volume, processo antigo e reset do endpoint, está no final de
-`Curso_Step.md`.
+`Curso_Step.md`. A Fase 9 está concluída no marco `v0.9.0`.
 
 ## Fase 8 — desempenho
 

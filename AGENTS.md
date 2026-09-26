@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 through 8 complete; Phase 9 in progress
+## Current implementation state — Phases 0 through 9 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -256,7 +256,7 @@ user authorization.
 The user authorized Phase 9 with a USB microphone and speaker already connected.
 The Raspberry Pi detects one bidirectional P10S USB Audio interface for capture and
 playback at the stable ALSA name `plughw:CARD=P10S,DEV=0`; the service user belongs
-to the `audio` group. Version `0.9.0.dev0` introduces an ALSA adapter built on
+to the `audio` group. Version `0.9.0` introduces an ALSA adapter built on
 `arecord` and `aplay`. It feeds 16 kHz mono PCM into the existing Silero VAD and
 transport-independent conversation pipeline, and streams Piper chunks to one
 playback process. `AUDIO_MODE=webrtc` remains the default. USB mode is selected by
@@ -274,8 +274,10 @@ bytes for one second at 48 kHz stereo. A physical 3.244-second turn took 0.540 s
 for STT; first audio was queued in 0.191 seconds and 18.472 seconds of speech played
 in five chunks. The service returned to ready and remained active. `Curso_Step.md`
 ends with a FAQ and troubleshooting chapter built from the real project incidents;
-continue adding new observed incidents there. Do not publish `v0.9.0` or begin Phase
-10 until the remaining USB behavior, including the desired barge-in policy, is decided.
+continue adding new observed incidents there. The `v0.9.0` policy keeps USB barge-in
+opt-in because direct USB audio has no guaranteed acoustic echo cancellation. WebRTC
+barge-in remains enabled independently. Phase 9 is complete. Do not begin Phase 10
+without explicit user authorization.
 
 ## Project Goal
 

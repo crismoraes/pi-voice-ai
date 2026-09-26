@@ -1025,6 +1025,14 @@ O Piper produziu 18,472 s de áudio em cinco trechos, com 3,075 s de síntese e 
 `0,166`. A reprodução terminou normalmente, o adaptador voltou ao estado pronto e
 o serviço permaneceu ativo.
 
+### Decisão de lançamento
+
+O marco `v0.9.0` mantém `USB_ENABLE_BARGE_IN=false` como padrão. O recurso continua
+disponível para ambientes que controlam eco, mas a instalação básica prioriza não
+confundir a própria voz do alto-falante com uma nova pergunta. O barge-in WebRTC
+permanece habilitado e não é afetado por essa escolha. Com captura, conversa, voz,
+níveis de mixer, recuperação de falha e documentação validados, a Fase 9 foi concluída.
+
 # Perguntas frequentes e troubleshooting do curso
 
 Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
