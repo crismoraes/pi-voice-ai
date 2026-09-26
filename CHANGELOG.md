@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+### Added
+
+- Abstração substituível de TTS e voz Piper brasileira local via sherpa-onnx.
+- Endpoint de síntese associado ao peer e envio do PCM por WebRTC ao navegador.
+- Download do modelo com checksum, benchmark local e verificador TTS ao vivo.
+- Interface web que reproduz automaticamente a resposta do assistente.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.5.0.dev0`.
+- O loopback passou a ser controlado no servidor para compartilhar a faixa de saída
+  com a voz do assistente.
+
+### Validated
+
+- Onze testes no Windows e no Raspberry Pi ARM64.
+- Modelo real gerou 3,036 s de voz em 0,707 s, RTF `0,233`.
+- Implantação HTTPS gerou 3,882 s em 0,795 s, RTF `0,205`, e entregou 185 frames
+  audíveis ao peer Windows por WebRTC.
+- Serviço ativo, health check aprovado e ciclo TTS/WebRTC sem erros nos logs.
+
+### Pending
+
+- Confirmação audível do fluxo completo no navegador antes da release `v0.5.0`.
+
 ## [0.4.0] - 2026-09-26
 
 ### Added

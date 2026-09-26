@@ -5,13 +5,74 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2, 3 e 4 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2, 3 e 4 concluídas; Fase 5 em validação.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
-local. A versão `v0.4.0` adiciona respostas de texto da OpenAI; TTS ainda não foi
-implementado.
+local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A Fase 5 já possui
+TTS português local e retorno de voz por WebRTC implantados; falta confirmar a
+experiência audível no navegador antes de publicar `v0.5.0`.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 5 — TTS local e resposta falada
+
+Depois que a resposta textual termina, o servidor gera voz no próprio Raspberry Pi
+e coloca o PCM na faixa de áudio de saída da sessão WebRTC. O texto continua sendo
+o único conteúdo enviado à OpenAI.
+
+```text
+Microfone -> WebRTC -> STT local -> texto -> OpenAI
+                                               |
+Alto-falante <- WebRTC <- TTS local <- resposta+
+```
+
+O adaptador `TextToSpeech` separa a síntese do transporte. A implementação atual usa
+`sherpa-onnx 1.13.8` com a voz Piper brasileira
+`vits-piper-pt_BR-jeff-medium`, mono em 22.050 Hz. A saída é reamostrada para
+48 kHz e enviada no mesmo peer WebRTC. O modelo é carregado somente na primeira
+síntese, portanto `/health` não depende dele.
+
+O modelo vem da [distribuição oficial do sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/tts/all/Portuguese/vits-piper-pt_BR-jeff-medium.html).
+Ele tem cerca de 64 MB compactado e 82 MB extraído. O bootstrap executa o download
+idempotente, confere o SHA-256 e mantém os arquivos em `models/`, fora do Git:
+
+```bash
+./scripts/download_tts_model.sh
+```
+
+Configuração:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `TTS_ENGINE` | `sherpa-piper` | Adaptador de voz local |
+| `TTS_MODEL_DIR` | `models/vits-piper-pt_BR-jeff-medium` | Diretório do modelo |
+| `TTS_NUM_THREADS` | `2` | Threads de inferência no Pi |
+| `TTS_SPEED` | `1.0` | Velocidade da fala |
+| `TTS_MAX_TEXT_CHARACTERS` | `2000` | Limite por síntese |
+
+Para medir diretamente o modelo no Pi:
+
+```bash
+.venv/bin/python scripts/benchmark_tts.py \
+  "Olá. Este é o teste da voz local do PiVoice AI." \
+  --output /tmp/pi-voice-ai-tts.wav
+```
+
+O benchmark real gerou 3,036 s de voz em 0,707 s, RTF `0,233`. O verificador ao
+vivo sintetizou outra frase em 0,795 s, gerou 3,882 s de áudio, RTF `0,205`, e
+confirmou 185 frames audíveis recebidos no Windows pelo WebRTC:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\live_tts_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem"
+```
+
+Onze testes passaram no Windows e no Raspberry Pi ARM64. O serviço permaneceu
+`active/running`, o health check HTTPS passou e os logs registraram `TTS_STARTED`,
+`TTS_COMPLETED`, conexão e encerramento do peer sem erros. A conclusão da fase exige
+o teste audível no navegador: atualize a página, conecte, faça uma pergunta e
+confirme que a resposta aparece em texto e é reproduzida pelos alto-falantes.
 
 ## Fase 4 — resposta textual com OpenAI
 
@@ -359,7 +420,7 @@ Windows: VS Code + PowerShell + Git
 Raspberry Pi 5: futuro ambiente de execução
 ```
 
-Arquitetura planejada para as fases seguintes, ainda não implementada:
+Arquitetura implementada até a Fase 5:
 
 ```text
 Microfone do navegador -> WebRTC -> Raspberry Pi 5
@@ -617,7 +678,7 @@ git check-ignore -v .env
 | `AUDIO_MODE` | Adaptador de áudio; `webrtc` inicialmente |
 | `APP_HOST`, `APP_PORT` | Endereço de escuta e porta futuros |
 | `STT_ENGINE` | `sherpa-whisper` selecionado e medido no ARM64 |
-| `TTS_ENGINE` | Candidato sujeito a benchmark em fase posterior |
+| `TTS_ENGINE` | `sherpa-piper`, selecionado e medido no ARM64 |
 | `LOG_LEVEL` | Nível de logs |
 | `ENABLE_BARGE_IN` | Interrupção da resposta por fala do usuário |
 | `ENABLE_PARTIAL_TRANSCRIPTS` | Transcrições parciais |

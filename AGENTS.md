@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2, 3 and 4 complete
+## Current implementation state — Phases 0, 1, 2, 3 and 4 complete; Phase 5 validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -163,6 +163,27 @@ a minor transcription error, produced the correct historical answer, started tex
 in 1.97 s and completed in 2.85 s. Phase 4 is complete at version `0.4.0`.
 The final deployed check after the plain-text instruction returned no Markdown,
 with 2.216 s to first text and 2.393 s total.
+
+The user authorized Phase 5. Version `0.5.0.dev0` adds the replaceable
+`TextToSpeech` abstraction backed by sherpa-onnx 1.13.8 and the Brazilian Portuguese
+Piper voice `vits-piper-pt_BR-jeff-medium`. The model archive is about 64 MB, its
+installed directory is about 82 MB, and `scripts/download_tts_model.sh` verifies its
+recorded SHA-256 before extracting it under the ignored `models/` directory.
+
+`POST /api/webrtc/peers/{peer_id}/speech` synthesizes text locally and queues its
+audio on the session's outbound track. Piper's 22,050 Hz mono float samples are
+converted to 48 kHz signed PCM with PyAV and sent through WebRTC. The same track
+sends microphone loopback when explicitly enabled and silence otherwise. Loopback
+is now controlled server-side through `PUT /api/webrtc/peers/{peer_id}/loopback` so
+the browser can always play assistant speech.
+
+Eleven tests pass on Windows and Raspberry Pi ARM64. The real model generated 3.036
+seconds of audio in 0.707 seconds, RTF 0.233. The deployed HTTPS check generated
+3.882 seconds in 0.795 seconds, RTF 0.205, and delivered 185 audible frames over
+WebRTC to Windows. The service is active, health is good and recent TTS/WebRTC logs
+contain no errors. Physical browser listening remains required before Phase 5 is
+complete and `v0.5.0` is released. Do not begin Phase 6 without explicit user
+authorization.
 
 ## Project Goal
 

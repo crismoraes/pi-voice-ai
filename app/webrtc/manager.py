@@ -71,9 +71,11 @@ class AssistantAudioTrack(MediaStreamTrack):
         )
         frames = list(resampler.resample(source_frame))
         frames.extend(resampler.resample(None))
-        self._speech_samples = np.concatenate(
+        new_samples = np.concatenate(
             [frame.to_ndarray().reshape(-1) for frame in frames]
         ).astype(np.int16, copy=False)
+        remaining = self._speech_samples[self._speech_offset :]
+        self._speech_samples = np.concatenate((remaining, new_samples))
         self._speech_offset = 0
 
     def _take_speech(self, sample_count: int) -> np.ndarray | None:

@@ -726,3 +726,90 @@ texto comprovado, a Fase 4 foi concluída no marco `v0.4.0`.
 A checagem final da versão instalada confirmou `APP_STARTED` em `0.4.0`, health
 check aprovado e resposta sem Markdown. O primeiro texto chegou em 2,216 s e o fluxo
 terminou em 2,393 s.
+
+## Fase 5 — voz local com Piper e WebRTC
+
+### Objetivo da aula
+
+Converter a resposta textual do assistente em fala no Raspberry Pi e entregá-la ao
+alto-falante do navegador pela conexão WebRTC que já transporta o microfone.
+Nenhum áudio é enviado à OpenAI.
+
+### Decisão técnica
+
+Foi escolhida a voz brasileira `vits-piper-pt_BR-jeff-medium` por funcionar com o
+`sherpa-onnx 1.13.8` já usado no STT e oferecer wheel ARM64. O pacote tem cerca de
+64 MB compactado, ocupa 82 MB e produz PCM mono em 22.050 Hz. O script
+`download_tts_model.sh` baixa a distribuição oficial, confere o SHA-256 e não repete
+o trabalho quando modelo, tokens e dados do eSpeak já existem.
+
+O contrato `TextToSpeech` recebe texto e devolve amostras `float32`, taxa de
+amostragem e tempo de processamento. `SherpaPiperTextToSpeech` carrega o modelo na
+primeira solicitação e executa inferência fora do event loop, protegida por lock.
+
+### Transporte de saída
+
+`AssistantAudioTrack` mantém uma única faixa WebRTC de saída. A cada frame recebido
+do microfone, ela envia uma destas fontes:
+
+1. voz sintetizada que estiver na fila;
+2. microfone, quando o loopback de diagnóstico estiver habilitado;
+3. silêncio, durante a espera.
+
+As amostras do Piper são convertidas de 22.050 para 48.000 Hz pelo PyAV antes do
+envio. O endpoint `POST /api/webrtc/peers/{peer_id}/speech` sintetiza a resposta e
+informa duração, processamento, RTF e taxa original. O endpoint `PUT
+/api/webrtc/peers/{peer_id}/loopback` separa a preferência do navegador do volume da
+faixa, permitindo que a resposta TTS seja ouvida mesmo com loopback desabilitado.
+
+### Configuração e instalação
+
+```text
+TTS_ENGINE=sherpa-piper
+TTS_MODEL_DIR=models/vits-piper-pt_BR-jeff-medium
+TTS_NUM_THREADS=2
+TTS_SPEED=1.0
+TTS_MAX_TEXT_CHARACTERS=2000
+```
+
+```bash
+./scripts/download_tts_model.sh
+.venv/bin/python scripts/benchmark_tts.py \
+  "Olá. Este é o teste da voz local do PiVoice AI." \
+  --output /tmp/pi-voice-ai-tts.wav
+```
+
+O primeiro benchmark real no Raspberry Pi gerou 3,036 s de áudio em 0,707 s, com
+RTF `0,233`. O WAV resultante foi confirmado como PCM mono, 16 bits, 22.050 Hz.
+
+### Testes e implantação
+
+Onze testes passaram no Windows e no Pi. O teste de integração usa dois peers reais,
+um sintetizador determinístico e verifica que amostras não silenciosas atravessam
+ICE, DTLS, SRTP e Opus. O teste ao vivo pode ser repetido no Windows:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\live_tts_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem" `
+  --text "Olá. A voz local está funcionando."
+```
+
+Na implantação, uma frase de 70 caracteres gerou 3,882 s de voz em 0,795 s, RTF
+`0,205`. O peer Windows recebeu 185 frames audíveis, com pico PCM 14.816. Os logs
+mostraram `WEBRTC_CONNECTED`, `TTS_STARTED`, `TTS_COMPLETED` e cleanup sem erro.
+
+### Problemas encontrados e estado
+
+O teste de integração inicialmente examinou apenas os dez primeiros frames depois
+da síntese. Eles ainda pertenciam ao silêncio acumulado enquanto o STT era testado.
+O teste passou a drenar até dois segundos de buffer e comprovou o áudio TTS.
+
+A primeira execução do verificador ao vivo não abriu a porta da rede local dentro
+do ambiente restrito, embora DNS, SSH, serviço e porta estivessem corretos. Repetir
+o mesmo comando com acesso autorizado à rede local confirmou o transporte; nenhuma
+mudança no Pi foi necessária.
+
+Código, modelo, testes ARM64, benchmark e transporte ao vivo estão implantados como
+`0.5.0.dev0`. Falta ouvir o fluxo completo no navegador. Depois dessa confirmação,
+a versão pode ser fechada e publicada como `v0.5.0`.
