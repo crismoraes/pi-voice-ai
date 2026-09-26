@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Added
+
+- Pipeline local de STT com interface substituível e Whisper Tiny via sherpa-onnx.
+- Captura manual de frases WebRTC, reamostragem mono em 16 kHz e limite de 30 s.
+- APIs para iniciar e finalizar transcrições e interface web para exibir resultados.
+- Download idempotente do modelo com checksum e scripts de benchmark e teste ao vivo.
+
+### Validated
+
+- Cinco testes no Windows e Raspberry Pi ARM64, incluindo captura WebRTC com STT falso.
+- Wheels ARM64 de sherpa-onnx e NumPy instalados sem compilação.
+- Whisper Tiny real no Pi com RTF de `0,171` em uma referência inglesa de 6,625 s.
+
+### Changed
+
+- Versão de desenvolvimento avançada para `0.3.0.dev0`.
+- Bootstrap instala o modelo STT em `models/`, fora do Git.
+
 ## [0.2.0] - 2026-09-25
 
 ### Added

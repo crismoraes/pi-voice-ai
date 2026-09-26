@@ -519,3 +519,128 @@ Os logs desse teste mostraram uma corrida no encerramento: a conexão já havia 
 removida pelo evento `closed` quando o navegador enviou `DELETE`, que respondeu
 `404`. A operação foi tornada idempotente; encerrar novamente um peer ausente agora
 responde `204`. O teste de integração passou a verificar as duas remoções.
+
+## Fase 3 — reconhecimento de fala local
+
+### Objetivo da aula
+
+Transformar trechos do microfone do navegador em texto no Raspberry Pi, sem enviar
+o áudio para a OpenAI. A aula introduz uma abstração substituível de STT, captura
+manual de frases e medição do fator de tempo real.
+
+### Conceitos
+
+STT converte fala em texto. O Whisper Tiny usado nesta fase é multilíngue e roda
+localmente em ONNX. Quantização int8 reduz tamanho e custo de inferência. O RTF é o
+tempo de processamento dividido pela duração do áudio: valores abaixo de 1 indicam
+processamento mais rápido que tempo real.
+
+O VAD não faz parte desta etapa. O usuário marca manualmente o início e o fim da
+frase, permitindo validar captura e reconhecimento antes de automatizar endpointing.
+
+Arquitetura anterior:
+
+```text
+Microfone -> WebRTC -> Pi -> loopback
+```
+
+Arquitetura desta fase:
+
+```text
+Microfone -> WebRTC -> MediaRelay -> buffer mono 16 kHz -> STT local -> texto
+                           |
+                           +-> loopback opcional
+```
+
+### Implementação
+
+Foi criada a interface `SpeechToText`, que recebe amostras `float32` e retorna texto,
+duração, tempo de inferência e RTF. `SherpaWhisperSpeechToText` carrega o modelo
+somente na primeira transcrição e executa a inferência com `asyncio.to_thread`. Um
+lock impede duas decodificações simultâneas no mesmo reconhecedor.
+
+O `MediaRelay` duplica a faixa WebRTC. O consumidor STT usa PyAV para converter o
+áudio para mono em 16 kHz. O buffer aceita entre 0,5 e 30 segundos por frase e não é
+gravado em disco. A interface web controla as APIs `transcription/start` e
+`transcription/finish` e apresenta o resultado com suas métricas.
+
+### Dependências e modelo
+
+As versões usadas foram:
+
+```text
+sherpa-onnx 1.13.8
+NumPy 2.4.6
+Whisper Tiny multilíngue, encoder e decoder int8
+```
+
+O sherpa-onnx fornece wheels oficiais para Windows x64 e Linux ARM64. No Raspberry
+Pi com Python 3.13, os wheels foram instalados sem compilação. O modelo oficial foi
+baixado com:
+
+```bash
+./scripts/download_stt_model.sh
+```
+
+O arquivo compactado tinha cerca de 110 MB; o diretório extraído ocupou 245 MB. O
+checksum SHA-256 observado foi incorporado ao script, que valida o download e não
+repete a instalação quando os três arquivos int8 necessários já existem.
+
+### Configuração
+
+```text
+STT_ENGINE=sherpa-whisper
+STT_MODEL_DIR=models/sherpa-onnx-whisper-tiny
+STT_LANGUAGE=pt
+STT_NUM_THREADS=4
+STT_MIN_AUDIO_SECONDS=0.5
+STT_MAX_AUDIO_SECONDS=30
+```
+
+O `.env` remoto foi atualizado sem exibir ou alterar a chave OpenAI existente. O
+valor histórico `STT_ENGINE=sherpa` continua aceito como alias para não quebrar
+instalações anteriores.
+
+### Testes
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest -q
+node --check web\app.js
+```
+
+Cinco testes passaram no Windows. O teste de integração cria peers WebRTC reais,
+captura áudio reamostrado, usa um STT falso determinístico e verifica o texto e as
+métricas retornadas. Os mesmos cinco testes passaram no Pi ARM64.
+
+O benchmark do modelo real usa:
+
+```bash
+.venv/bin/python scripts/benchmark_stt.py arquivo.wav
+```
+
+As três amostras fornecidas com o modelo são inglesas. Quando executadas com idioma
+forçado para português, mediram RTF entre 0,203 e 0,225, mas produziram texto sem
+valor para qualidade. Ao repetir `0.wav` com `STT_LANGUAGE=en`, o texto correspondeu
+à referência e o Pi processou 6,625 s de áudio em 1,134 s, RTF 0,171.
+
+### Problemas encontrados
+
+O `.env` local ainda continha `STT_ENGINE=sherpa`, o que inicialmente interrompeu a
+coleta dos testes. A implementação passou a aceitar esse nome antigo como alias.
+
+O utilitário `/usr/bin/time` não estava instalado no Pi. Não foi adicionado um pacote
+somente para o benchmark; as métricas internas do reconhecedor foram usadas.
+
+Após a mudança de IP, o alias `voicepi` ainda apontava para o endereço anterior. O
+novo host foi localizado por mDNS e validado primeiro pelo certificado HTTPS já
+confiável antes de registrar sua chave SSH. Mais tarde, o mDNS e o novo endereço
+ficaram temporariamente indisponíveis, impedindo a última validação ao vivo.
+
+### Resultado atual
+
+O código, as dependências, o modelo, os testes ARM64, o benchmark e o serviço
+`0.3.0.dev0` foram implantados. Antes da indisponibilidade de rede, o health check
+HTTPS passou e o serviço estava ativo. Ainda faltam o teste ao vivo automatizado e
+a confirmação da qualidade em português pelo navegador; esses resultados não são
+presumidos.

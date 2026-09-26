@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1 and 2 complete
+## Current implementation state — Phases 0, 1 and 2 complete, Phase 3 in validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -107,12 +107,39 @@ used the `127.0.0.1` URL while the certificate covered the hostname. It now uses
 Pi hostname for TLS validation and resolves it to loopback for the local request.
 The user completed the browser test with real microphone and speaker hardware and
 confirmed that the returned voice audio worked correctly. Phase 2 is complete at
-version `0.2.0`. Do not begin Phase 3 local STT work without explicit user
-authorization.
+version `0.2.0`. The user later provided explicit authorization for Phase 3.
 
 Peer deletion is intentionally idempotent. The physical browser test exposed a race
 where the connection-state callback removed a closed peer before the browser sent
 its DELETE request. Both the first cleanup request and later repeats return 204.
+
+The user authorized Phase 3. Version `0.3.0.dev0` implements manual utterance
+capture and local offline STT. `MediaRelay` splits the inbound WebRTC track between
+the optional loopback and a 16 kHz mono capture consumer. The `SpeechToText`
+abstraction is currently implemented by sherpa-onnx 1.13.8 with the multilingual
+Whisper Tiny int8 encoder and decoder. NumPy is pinned to 2.4.6 for Python 3.11+
+compatibility.
+
+The model is downloaded outside Git by `scripts/download_stt_model.sh`. Its archive
+is approximately 110 MB, extracts to 245 MB, and is verified against the recorded
+SHA-256 before extraction. Bootstrap invokes the idempotent downloader. The model
+loads lazily, so `/health` does not require model files or inference initialization.
+
+Transcription endpoints are:
+
+* `POST /api/webrtc/peers/{peer_id}/transcription/start`
+* `POST /api/webrtc/peers/{peer_id}/transcription/finish`
+
+The finish response contains text, audio seconds, processing seconds and RTF.
+Inference runs with `asyncio.to_thread` behind a decode lock so it does not block
+WebRTC event handling. Audio is not persisted or logged. Capture is limited to the
+configured duration. VAD, partial transcripts, automatic endpointing, LLM and TTS
+remain outside Phase 3.
+
+Five tests pass on Windows Python 3.12 and Pi Python 3.13 ARM64. The Pi installed
+binary wheels and loaded the real model. An English reference produced the correct
+text with RTF 0.171 (1.134 s inference for 6.625 s audio). Portuguese browser
+quality and the live STT request remain to be validated before Phase 3 is complete.
 
 ## Project Goal
 
@@ -1394,7 +1421,12 @@ AUDIO_MODE=webrtc
 APP_HOST=0.0.0.0
 APP_PORT=8000
 
-STT_ENGINE=sherpa
+STT_ENGINE=sherpa-whisper
+STT_MODEL_DIR=models/sherpa-onnx-whisper-tiny
+STT_LANGUAGE=pt
+STT_NUM_THREADS=4
+STT_MIN_AUDIO_SECONDS=0.5
+STT_MAX_AUDIO_SECONDS=30
 TTS_ENGINE=piper
 
 LOG_LEVEL=INFO

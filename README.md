@@ -5,12 +5,84 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1 e 2 concluídas.** O marco `v0.1.0` registra a estação Windows,
-SSH e baseline do Raspberry Pi. A versão `v0.2.0` entrega a fundação FastAPI e o
-loopback de áudio WebRTC implantados em HTTPS. STT, TTS e integração OpenAI ainda
-não foram implementados.
+**Estado: Fases 0, 1 e 2 concluídas; Fase 3 em validação.** O marco `v0.1.0`
+registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
+entrega a fundação FastAPI e o loopback WebRTC. A versão de desenvolvimento
+`0.3.0.dev0` adiciona STT local; TTS e integração OpenAI ainda não foram implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 3 — STT local
+
+O áudio recebido por WebRTC é duplicado com `MediaRelay`: uma faixa continua
+disponível para o loopback e a outra é convertida para mono, 16 kHz e `float32`.
+O usuário controla o início e o fim de cada frase. O Pi transcreve o trecho com
+Whisper Tiny multilíngue quantizado por meio do `sherpa-onnx`, sem enviar áudio ou
+texto a serviços externos.
+
+```text
+Navegador -> WebRTC -> MediaRelay -> buffer 16 kHz -> sherpa-onnx -> texto
+                         |
+                         +-> loopback opcional
+```
+
+O controle manual mantém esta fase independente de VAD. Detecção automática de
+fala e endpointing serão adicionados em uma fase posterior.
+
+### Instalação do modelo
+
+O bootstrap instala wheels ARM64 de `sherpa-onnx 1.13.8` e `NumPy 2.4.6`, depois
+executa:
+
+```bash
+./scripts/download_stt_model.sh
+```
+
+O script baixa o pacote oficial `sherpa-onnx-whisper-tiny`, valida seu SHA-256 e o
+extrai em `models/`, que é ignorado pelo Git. O download tem aproximadamente 110 MB
+e ocupa 245 MB depois da extração.
+
+Configuração:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `STT_ENGINE` | `sherpa-whisper` | Adaptador STT local |
+| `STT_MODEL_DIR` | `models/sherpa-onnx-whisper-tiny` | Diretório do modelo |
+| `STT_LANGUAGE` | `pt` | Idioma Whisper |
+| `STT_NUM_THREADS` | `4` | Threads de inferência no Pi |
+| `STT_MIN_AUDIO_SECONDS` | `0.5` | Menor trecho aceito |
+| `STT_MAX_AUDIO_SECONDS` | `30` | Limite de memória por frase |
+
+Abra `https://home-ai.local:8443/`, conecte o microfone, clique em **Começar a
+falar**, diga uma frase e clique em **Finalizar e transcrever**. A tela mostra o
+texto, duração, tempo de processamento e fator de tempo real (RTF).
+
+### Testes e benchmark
+
+Cinco testes passaram no Windows e no Raspberry Pi ARM64. O teste de integração
+negocia WebRTC, captura áudio reamostrado, usa um STT substituto e valida as APIs de
+início e fim da transcrição. O modelo real também foi carregado no Pi.
+
+Nos três WAVs oficiais em inglês, com `STT_LANGUAGE=pt`, o RTF medido ficou entre
+`0,203` e `0,225`; o texto não serve como medida de qualidade porque o idioma foi
+forçado incorretamente. Com `STT_LANGUAGE=en`, a primeira referência foi reconhecida
+corretamente em 1,134 s para 6,625 s de áudio, RTF `0,171`. A qualidade em português
+e o fluxo completo do navegador ainda precisam de validação física.
+
+Para repetir um benchmark:
+
+```bash
+.venv/bin/python scripts/benchmark_stt.py caminho/para/audio.wav
+```
+
+Para validar uma implantação completa com um WAV enviado por WebRTC:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\live_stt_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem" `
+  --audio-file caminho\para\audio.wav
+```
 
 ## Fase 2 — loopback de áudio WebRTC
 
@@ -488,7 +560,8 @@ git check-ignore -v .env
 | `OPENAI_API_KEY` | Credencial do backend, vazia no exemplo |
 | `AUDIO_MODE` | Adaptador de áudio; `webrtc` inicialmente |
 | `APP_HOST`, `APP_PORT` | Endereço de escuta e porta futuros |
-| `STT_ENGINE`, `TTS_ENGINE` | Candidatos sujeitos a benchmarks ARM64 |
+| `STT_ENGINE` | `sherpa-whisper` selecionado e medido no ARM64 |
+| `TTS_ENGINE` | Candidato sujeito a benchmark em fase posterior |
 | `LOG_LEVEL` | Nível de logs |
 | `ENABLE_BARGE_IN` | Interrupção da resposta por fala do usuário |
 | `ENABLE_PARTIAL_TRANSCRIPTS` | Transcrições parciais |
