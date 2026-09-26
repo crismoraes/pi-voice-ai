@@ -949,3 +949,23 @@ O evento `tts_chunk` atualiza a interface no primeiro trecho.
 
 O Whisper Base oficial foi baixado somente para benchmark. O Tiny ocupa 245 MiB e o
 Base 433 MiB no Pi. A seleção final depende da comparação de latência e transcrição.
+
+### Seleção baseada nos resultados
+
+Com três threads e o mesmo WAV de 1,467 s, as medianas Tiny INT8, Tiny FP32, Base
+INT8 e Base FP32 foram 0,325 s, 0,426 s, 0,719 s e 0,969 s. O Base também produziu
+mais erros nesse corpus curto. O serviço manteve Tiny INT8 e o Base temporário foi
+removido após liberar 433 MiB.
+
+O benchmark de TTS comparou limites de 80, 120, 180, 240 e 400 caracteres. Como o
+divisor prioriza finais de sentença, 240 caracteres produziu três partes, primeiro
+áudio mediano de aproximadamente 0,605 s e processamento total de 2,449 s. Limites
+de 80 e 120 criaram quatro partes e elevaram o total sem antecipar a primeira frase.
+
+No WebRTC real, dois turnos aquecidos iniciaram voz em 0,257 s e 0,362 s; o segundo
+precisou de 0,874 s para sintetizar todo o áudio, comprovando a sobreposição. STT e
+TTS passaram a carregar em paralelo durante a inicialização. Depois do reinício, os
+modelos ficaram prontos em cerca de 1,41 s e o primeiro turno entregou voz em 0,586 s,
+contra 1,652 s antes do pré-carregamento. Dezessete testes passaram nos dois ambientes.
+Resta ouvir uma resposta longa no navegador para confirmar continuidade e percepção
+de latência antes do marco `v0.8.0`.

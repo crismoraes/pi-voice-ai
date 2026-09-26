@@ -239,8 +239,14 @@ The first audio chunk is queued while later chunks are still synthesized, and
 threads: Tiny INT8 STT took about 0.324 seconds for 1.467 seconds of audio; short TTS
 took about 0.182 seconds versus 0.218 with two threads. The official Whisper Base
 benchmark model occupies 433 MiB versus 245 MiB for Tiny. Model comparison, deployed
-latency validation and physical validation remain before `v0.8.0`. Do not begin
-Phase 9 without explicit user authorization.
+results favored Tiny INT8: median 0.325 seconds versus 0.426 for Tiny FP32, 0.719 for
+Base INT8 and 0.969 for Base FP32 on 1.467 seconds of audio. The Base model also made
+more errors and its temporary files were removed. A 240-character TTS ceiling gave
+about 0.605 seconds to first audio and 2.449 seconds total for the long benchmark.
+Deployed warm turns queued first audio in 0.257 and 0.362 seconds. Parallel startup
+preloading reduced the observed cold first-audio time from 1.652 to 0.586 seconds.
+Seventeen tests pass on Windows and Pi. Physical latency and continuity validation
+remain before `v0.8.0`. Do not begin Phase 9 without explicit user authorization.
 
 ## Project Goal
 

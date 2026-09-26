@@ -6,6 +6,8 @@
 
 - Streaming de TTS por sentenças com evento `tts_chunk` e tempo até o primeiro áudio.
 - Seleção `int8`/`fp32` e descoberta do tamanho do modelo Whisper pelo diretório.
+- Benchmark reproduzível de limites de trecho TTS.
+- Pré-carregamento paralelo dos modelos STT e TTS durante a inicialização.
 
 ### Changed
 
@@ -17,10 +19,17 @@
 - Linha de base de uma a quatro threads para STT e TTS no Raspberry Pi 5.
 - STT Tiny INT8 com mediana aproximada de 0,324 s em três threads para 1,467 s de áudio.
 - TTS curto com mediana aproximada de 0,182 s em três threads, contra 0,218 s em duas.
+- Tiny INT8/FP32 com medianas de 0,325/0,426 s; Base INT8/FP32 com
+  0,719/0,969 s no mesmo WAV de 1,467 s. Tiny INT8 também teve o melhor texto.
+- Limite TTS de 240 caracteres: primeiro trecho em cerca de 0,605 s e total de
+  2,449 s no texto longo, sem o custo das divisões menores.
+- WebRTC implantado com primeiro áudio em 0,257 s e 0,362 s em turnos aquecidos.
+- Pré-carregamento reduziu o primeiro áudio após reinício de 1,652 s para 0,586 s.
+- Dezessete testes aprovados no Windows e no Raspberry Pi ARM64.
 
 ### Pending
 
-- Comparação Tiny/Base e INT8/FP32, implantação do TTS em trechos e validação física.
+- Validação física de latência e continuidade da voz antes de `v0.8.0`.
 
 ## [0.7.0] - 2026-09-26
 

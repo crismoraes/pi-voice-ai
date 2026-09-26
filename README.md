@@ -29,8 +29,21 @@ reprodução e as métricas incluem o tempo até o primeiro áudio.
 
 A linha de base no Pi 5 indicou STT Tiny INT8 de 1,467 s em aproximadamente 0,324 s
 com três threads. No TTS curto, três threads reduziram o processamento de cerca de
-0,218 s para 0,182 s, mantendo um núcleo livre. Os benchmarks de modelos e o teste
-implantado do novo streaming ainda estão em andamento.
+0,218 s para 0,182 s, mantendo um núcleo livre.
+
+| Whisper, 3 threads | Mediana | RTF aproximado | Resultado no corpus |
+|---|---:|---:|---|
+| Tiny INT8 | 0,325 s | 0,222 | Melhor latência e transcrição |
+| Tiny FP32 | 0,426 s | 0,290 | Mesmo texto, 31% mais lento |
+| Base INT8 | 0,719 s | 0,490 | Mais erros neste áudio |
+| Base FP32 | 0,969 s | 0,661 | Mais lento e mais erros |
+
+Tiny INT8 permaneceu em produção. No benchmark longo, 240 caracteres entregaram o
+primeiro trecho em cerca de 0,605 s e completaram a síntese em 2,449 s; limites
+menores criaram mais chamadas sem antecipar a primeira sentença. O teste WebRTC
+entregou primeiro áudio em 0,257 s e 0,362 s nos turnos aquecidos. O pré-carregamento
+na inicialização reduziu o primeiro uso observado de 1,652 s para 0,586 s. Dezessete
+testes passaram no Windows e no Pi; falta a validação física antes de `v0.8.0`.
 
 Referências oficiais: [modelos Whisper do sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/whisper/tiny.en.html)
 e [catálogo TTS](https://k2-fsa.github.io/sherpa/onnx/tts/all/).
