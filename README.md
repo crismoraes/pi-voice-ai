@@ -57,6 +57,9 @@ identificou Pedro Álvares Cabral e contextualizou que povos indígenas já habi
 território. O primeiro texto chegou em 1,97 s e a resposta terminou em 2,85 s. A
 Fase 4 foi concluída no marco `v0.4.0`.
 
+Na checagem final após solicitar texto simples, a implantação respondeu sem marcação
+Markdown, com primeiro texto em 2,216 s e conclusão em 2,393 s.
+
 ## Fase 3 — STT local
 
 O áudio recebido por WebRTC é duplicado com `MediaRelay`: uma faixa continua

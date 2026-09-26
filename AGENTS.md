@@ -161,6 +161,8 @@ and timing. The user completed the physical browser flow with a Portuguese quest
 STT processed 7.08 s in 0.98 s, RTF 0.14. The model understood the question despite
 a minor transcription error, produced the correct historical answer, started text
 in 1.97 s and completed in 2.85 s. Phase 4 is complete at version `0.4.0`.
+The final deployed check after the plain-text instruction returned no Markdown,
+with 2.216 s to first text and 2.393 s total.
 
 ## Project Goal
 

@@ -722,3 +722,7 @@ A resposta trouxe marcação Markdown para destacar um nome. Como a interface us
 texto simples e uma fase posterior enviará a saída ao TTS, a instrução padrão passou
 a pedir respostas sem Markdown. Com o caminho voz, STT local, OpenAI e streaming de
 texto comprovado, a Fase 4 foi concluída no marco `v0.4.0`.
+
+A checagem final da versão instalada confirmou `APP_STARTED` em `0.4.0`, health
+check aprovado e resposta sem Markdown. O primeiro texto chegou em 2,216 s e o fluxo
+terminou em 2,393 s.

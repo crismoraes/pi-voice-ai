@@ -24,6 +24,7 @@
   conclusão em `1,683 s`.
 - Fluxo físico de voz até resposta validado: STT de 7,08 s em 0,98 s, RTF `0,14`,
   primeiro texto em 1,97 s e conclusão em 2,85 s.
+- Resposta final sem Markdown validada na implantação `0.4.0`.
 
 ## [0.3.0] - 2026-09-26
 
