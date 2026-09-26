@@ -226,7 +226,7 @@ function openConversationEvents() {
   });
   eventSource.addEventListener("tts_done", (message) => {
     const result = JSON.parse(message.data);
-    assistantMetricsText.textContent += ` · voz ${result.processing_seconds.toFixed(2)} s · áudio ${result.audio_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;
+    assistantMetricsText.textContent += ` · primeiro áudio ${result.first_audio_seconds.toFixed(2)} s · voz ${result.processing_seconds.toFixed(2)} s · áudio ${result.audio_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)} · ${result.chunks} trecho(s)`;
     setStatus("Reproduzindo resposta…", "connected");
   });
   eventSource.addEventListener("error", (message) => {

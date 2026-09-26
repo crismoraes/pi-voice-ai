@@ -100,3 +100,7 @@ class SherpaWhisperSpeechToText(SpeechToText):
     async def transcribe(self, samples: np.ndarray) -> TranscriptionResult:
         async with self._decode_lock:
             return await asyncio.to_thread(self._transcribe_sync, samples)
+
+    async def warm_up(self) -> None:
+        """Load model weights before the first utterance."""
+        await asyncio.to_thread(self._load_recognizer)

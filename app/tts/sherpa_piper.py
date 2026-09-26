@@ -89,3 +89,7 @@ class SherpaPiperTextToSpeech(TextToSpeech):
             sample_rate=audio.sample_rate,
             processing_seconds=processing_seconds,
         )
+
+    async def warm_up(self) -> None:
+        """Load model weights before the first response."""
+        await self._get_tts()

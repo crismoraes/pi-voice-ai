@@ -1,5 +1,6 @@
-"""FastAPI application entry point for the Phase 1 foundation."""
+"""FastAPI application entry point for the voice assistant."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -45,6 +46,8 @@ peer_manager.configure_conversations(
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    await asyncio.gather(speech_to_text.warm_up(), text_to_speech.warm_up())
+    logger.info("APP_MODELS_READY")
     logger.info("APP_STARTED", extra={"version": __version__})
     yield
     await peer_manager.close_all()
