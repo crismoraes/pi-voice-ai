@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 through 7 complete
+## Current implementation state — Phases 0 through 8 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -232,7 +232,7 @@ synthesize 23.61 seconds of speech. Two earlier OpenAI calls returned no text, s
 conversation pipeline now retries once only for an empty completion. Phase 7 is
 complete at `0.7.0`. Do not begin Phase 8 without explicit user authorization.
 
-The user authorized Phase 8. Version `0.8.0.dev0` adds Whisper model-prefix discovery,
+The user authorized Phase 8. Version `0.8.0` adds Whisper model-prefix discovery,
 INT8/FP32 selection, unbuffered WebRTC capture relay and sentence-sized TTS streaming.
 The first audio chunk is queued while later chunks are still synthesized, and
 `tts_chunk` reports playback progress. Baseline Raspberry Pi 5 medians favor three
@@ -245,8 +245,13 @@ more errors and its temporary files were removed. A 240-character TTS ceiling ga
 about 0.605 seconds to first audio and 2.449 seconds total for the long benchmark.
 Deployed warm turns queued first audio in 0.257 and 0.362 seconds. Parallel startup
 preloading reduced the observed cold first-audio time from 1.652 to 0.586 seconds.
-Seventeen tests pass on Windows and Pi. Physical latency and continuity validation
-remain before `v0.8.0`. Do not begin Phase 9 without explicit user authorization.
+Seventeen tests pass on Windows and Pi. In the physical browser validation, 3.31
+seconds of speech were transcribed in 0.55 seconds. An 802-character response was
+split into 12 chunks and produced 43.75 seconds of continuous speech. The first
+audio was queued in 0.462 seconds while full synthesis took 7.323 seconds, confirming
+generation and playback overlap. The service remained active and the turn had no
+logged errors. Phase 8 is complete at `0.8.0`. Do not begin Phase 9 without explicit
+user authorization.
 
 ## Project Goal
 

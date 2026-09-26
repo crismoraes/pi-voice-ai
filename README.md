@@ -5,19 +5,20 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 7 concluídas; Fase 8 em desenvolvimento.** O marco `v0.1.0`
+**Estado: Fases 0 a 8 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
 adiciona TTS português local e retorno de voz por WebRTC. A versão `v0.6.0`
 adiciona detecção automática de fala e contexto de múltiplos turnos. A versão
-`v0.7.0` permite interromper uma resposta ao começar uma nova fala.
+`v0.7.0` permite interromper uma resposta ao começar uma nova fala. A versão
+`v0.8.0` reduz a latência com medições no Pi, pré-carregamento e TTS em trechos.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
 ## Fase 8 — desempenho
 
-A versão `0.8.0.dev0` mede modelos, precisão, threads, buffering e entrega de voz.
+A versão `0.8.0` mede modelos, precisão, threads, buffering e entrega de voz.
 O STT agora descobre o prefixo do modelo Whisper e aceita `STT_MODEL_PRECISION=int8`
 ou `fp32`, permitindo comparar Tiny e Base sem código específico para cada tamanho.
 O áudio de entrada WebRTC usa o relay sem fila intermediária.
@@ -43,7 +44,14 @@ primeiro trecho em cerca de 0,605 s e completaram a síntese em 2,449 s; limites
 menores criaram mais chamadas sem antecipar a primeira sentença. O teste WebRTC
 entregou primeiro áudio em 0,257 s e 0,362 s nos turnos aquecidos. O pré-carregamento
 na inicialização reduziu o primeiro uso observado de 1,652 s para 0,586 s. Dezessete
-testes passaram no Windows e no Pi; falta a validação física antes de `v0.8.0`.
+testes passaram no Windows e no Pi.
+
+Na validação física, uma resposta de 802 caracteres foi dividida em 12 trechos e
+produziu 43,75 s de voz. O primeiro trecho ficou disponível em 0,462 s, enquanto a
+síntese completa levou 7,323 s, confirmando que a reprodução começa durante a geração.
+O STT processou 3,31 s em 0,55 s, RTF `0,17`; o primeiro texto chegou em 0,95 s.
+O serviço permaneceu ativo e os logs do turno não mostraram erros. A Fase 8 está
+concluída no marco `v0.8.0`.
 
 Referências oficiais: [modelos Whisper do sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/whisper/tiny.en.html)
 e [catálogo TTS](https://k2-fsa.github.io/sherpa/onnx/tts/all/).

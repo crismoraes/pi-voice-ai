@@ -967,5 +967,13 @@ precisou de 0,874 s para sintetizar todo o áudio, comprovando a sobreposição.
 TTS passaram a carregar em paralelo durante a inicialização. Depois do reinício, os
 modelos ficaram prontos em cerca de 1,41 s e o primeiro turno entregou voz em 0,586 s,
 contra 1,652 s antes do pré-carregamento. Dezessete testes passaram nos dois ambientes.
-Resta ouvir uma resposta longa no navegador para confirmar continuidade e percepção
-de latência antes do marco `v0.8.0`.
+
+### Validação física e conclusão
+
+No navegador, uma fala de 3,31 s foi transcrita em 0,55 s, RTF `0,17`. O primeiro
+texto apareceu em 0,95 s e a resposta textual terminou em 2,49 s. Seus 802 caracteres
+foram divididos em 12 trechos, que produziram 43,75 s de voz. O primeiro áudio ficou
+disponível em 0,462 s, embora a síntese completa tenha levado 7,323 s, demonstrando
+que a reprodução e a geração ocorreram ao mesmo tempo. A história foi ouvida com
+continuidade, o serviço permaneceu ativo e os logs do turno não mostraram erros.
+Essa validação encerrou a Fase 8 no marco `v0.8.0`.

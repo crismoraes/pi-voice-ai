@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-26
+
 ### Added
 
 - Streaming de TTS por sentenças com evento `tts_chunk` e tempo até o primeiro áudio.
@@ -11,7 +13,7 @@
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `0.8.0.dev0`.
+- Versão publicada como `0.8.0`.
 - Relay da captura WebRTC sem fila intermediária para priorizar áudio recente.
 
 ### Validated
@@ -26,10 +28,8 @@
 - WebRTC implantado com primeiro áudio em 0,257 s e 0,362 s em turnos aquecidos.
 - Pré-carregamento reduziu o primeiro áudio após reinício de 1,652 s para 0,586 s.
 - Dezessete testes aprovados no Windows e no Raspberry Pi ARM64.
-
-### Pending
-
-- Validação física de latência e continuidade da voz antes de `v0.8.0`.
+- Validação física produziu 43,75 s de voz em 12 trechos; o primeiro áudio ficou
+  disponível em 0,462 s e a síntese completa levou 7,323 s, sem erros no turno.
 
 ## [0.7.0] - 2026-09-26
 
