@@ -1126,6 +1126,13 @@ se a intenção foi preservada e compare áudio, tempo de inferência e texto an
 trocar de modelo. A Fase 8 mediu Tiny e Base, INT8 e FP32; nesse hardware, o Base foi
 mais lento e não melhorou aquela amostra.
 
+Quando a dificuldade se tornou frequente no microfone USB, os logs mostraram vários
+segmentos curtos, entre 0,49 s e 0,94 s. O diagnóstico passou a registrar somente
+pico, RMS e percentual de saturação antes do STT. Essas medidas ajudam a separar
+volume baixo, distorção e corte precoce do VAD sem guardar áudio nem transcrição. Um
+teste com `VAD_MIN_SILENCE_SECONDS=1.2` permite pausas naturais maiores antes de
+encerrar a frase; a troca de modelo deve ocorrer somente após essa comparação.
+
 ## A OpenAI terminou uma chamada sem texto
 
 Esse comportamento apareceu em testes reais. O pipeline faz uma única repetição

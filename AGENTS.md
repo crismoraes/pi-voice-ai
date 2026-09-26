@@ -279,6 +279,12 @@ opt-in because direct USB audio has no guaranteed acoustic echo cancellation. We
 barge-in remains enabled independently. Phase 9 is complete. Do not begin Phase 10
 without explicit user authorization.
 
+Post-release `0.9.1.dev0` diagnostics add only numeric audio peak, RMS and clipping
+percentage to `CONVERSATION_STT_STARTED`; speech and transcripts remain absent from
+logs. The user's USB speech is often misunderstood, and recent segments include
+several very short 0.49–0.94 second utterances. Test a 1.2-second ending-silence
+setting and inspect these signal metrics before changing the selected Whisper model.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

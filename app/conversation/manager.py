@@ -67,11 +67,24 @@ class ConversationManager:
         state = self._states.setdefault(session_id, ConversationState())
         async with state.lock:
             await emit("transcribing", {})
+            absolute_samples = np.abs(samples)
+            audio_peak = float(np.max(absolute_samples)) if len(samples) else 0.0
+            audio_rms = (
+                float(np.sqrt(np.mean(np.square(samples)))) if len(samples) else 0.0
+            )
+            clipped_percent = (
+                float(np.count_nonzero(absolute_samples >= 0.99) * 100 / len(samples))
+                if len(samples)
+                else 0.0
+            )
             logger.info(
                 "CONVERSATION_STT_STARTED",
                 extra={
                     "peer_id": session_id,
                     "audio_seconds": round(len(samples) / 16_000, 3),
+                    "audio_peak": round(audio_peak, 4),
+                    "audio_rms": round(audio_rms, 4),
+                    "clipped_percent": round(clipped_percent, 3),
                 },
             )
             transcription = await self._speech_to_text.transcribe(samples)

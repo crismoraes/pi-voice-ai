@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Métricas sanitizadas de pico, RMS e saturação do áudio antes do STT para
+  diagnosticar qualidade do microfone sem registrar fala ou transcrição.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.9.1.dev0` após o marco USB.
+
 ## [0.9.0] - 2026-09-26
 
 ### Added
