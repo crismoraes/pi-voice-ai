@@ -6,6 +6,8 @@ const statusDot = document.querySelector("#status-dot");
 const errorText = document.querySelector("#error");
 const transcriptText = document.querySelector("#transcript-text");
 const metricsText = document.querySelector("#metrics");
+const assistantText = document.querySelector("#assistant-text");
+const assistantMetricsText = document.querySelector("#assistant-metrics");
 const remoteAudio = document.querySelector("#remote-audio");
 const loopbackCheckbox = document.querySelector("#loopback");
 
@@ -41,6 +43,74 @@ async function responseError(response) {
   } catch {
     return `Erro HTTP ${response.status}`;
   }
+}
+
+function parseEventFrame(frame) {
+  let eventName = "message";
+  const dataLines = [];
+  for (const line of frame.split("\n")) {
+    if (line.startsWith("event:")) {
+      eventName = line.slice(6).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+  if (dataLines.length === 0) {
+    return null;
+  }
+  return { eventName, data: JSON.parse(dataLines.join("\n")) };
+}
+
+async function streamAssistantResponse(text) {
+  assistantText.textContent = "";
+  assistantMetricsText.textContent = "";
+  setStatus("Consultando a OpenAI…", "connecting");
+
+  const response = await fetch("/api/assistant/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) {
+    throw new Error(await responseError(response));
+  }
+  if (!response.body) {
+    throw new Error("O navegador não disponibilizou o fluxo da resposta.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() ?? "";
+
+    for (const frame of frames) {
+      const event = parseEventFrame(frame);
+      if (!event) {
+        continue;
+      }
+      if (event.eventName === "delta") {
+        assistantText.textContent += event.data.text;
+        setStatus("Recebendo resposta…", "connecting");
+      } else if (event.eventName === "done") {
+        assistantMetricsText.textContent = `${event.data.model} · primeiro texto ${event.data.first_token_seconds.toFixed(2)} s · total ${event.data.total_seconds.toFixed(2)} s`;
+      } else if (event.eventName === "error") {
+        throw new Error(event.data.message);
+      }
+    }
+    if (done) {
+      break;
+    }
+  }
+
+  if (!assistantText.textContent) {
+    assistantText.textContent = "O modelo não retornou texto.";
+  }
+  setStatus("Pronto para outra frase", "connected");
 }
 
 async function closeSession({ notifyServer = true } = {}) {
@@ -92,6 +162,8 @@ async function toggleCapture() {
       capturing = true;
       transcriptText.textContent = "Ouvindo…";
       metricsText.textContent = "";
+      assistantText.textContent = "Aguardando a transcrição…";
+      assistantMetricsText.textContent = "";
       recordButton.textContent = "Finalizar e transcrever";
       setStatus("Gravando — fale agora", "recording");
     } else {
@@ -108,7 +180,12 @@ async function toggleCapture() {
       const result = await response.json();
       transcriptText.textContent = result.text || "Nenhuma fala reconhecida.";
       metricsText.textContent = `${result.audio_seconds.toFixed(2)} s de áudio · ${result.processing_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;
-      setStatus("Pronto para outra frase", "connected");
+      if (result.text) {
+        await streamAssistantResponse(result.text);
+      } else {
+        assistantText.textContent = "Nenhuma pergunta foi enviada.";
+        setStatus("Pronto para outra frase", "connected");
+      }
     }
   } catch (error) {
     capturing = false;

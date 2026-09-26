@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
+from app.api.assistant import language_model, router as assistant_router
 from app.api.health import router as health_router
 from app.api.signaling import router as signaling_router
 from app.config import PROJECT_ROOT, get_settings
@@ -25,6 +26,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     logger.info("APP_STARTED", extra={"version": __version__})
     yield
     await peer_manager.close_all()
+    await language_model.close()
     logger.info("APP_STOPPED", extra={"version": __version__})
 
 
@@ -35,6 +37,7 @@ app = FastAPI(
 )
 app.include_router(health_router)
 app.include_router(signaling_router)
+app.include_router(assistant_router)
 app.mount(
     "/",
     StaticFiles(directory=str(PROJECT_ROOT / "web"), html=True),

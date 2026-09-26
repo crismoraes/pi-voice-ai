@@ -139,6 +139,15 @@ h1 {
   line-height: 1.6;
 }
 
+.transcript.assistant {
+  border-color: rgba(86, 211, 100, 0.45);
+}
+
+.transcript.assistant p {
+  color: #d7f7dc;
+  white-space: pre-wrap;
+}
+
 button {
   min-height: 46px;
   padding: 0 20px;

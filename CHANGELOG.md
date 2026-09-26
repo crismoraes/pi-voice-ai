@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- Abstração substituível de LLM e adaptador para a OpenAI Responses API.
+- Endpoint SSE que transmite deltas, primeiro token e tempo total ao navegador.
+- Interface web que envia a transcrição e exibe incrementalmente a resposta.
+- Verificador do streaming LLM contra uma implantação HTTPS real.
+
+### Changed
+
+- Versão de desenvolvimento avançada para `0.4.0.dev0`.
+- Modelo padrão configurado como `gpt-6-luna`, com saída limitada a 300 tokens.
+
+### Validated
+
+- Nove testes locais e uma chamada real mínima à Responses API.
+
 ## [0.3.0] - 2026-09-26
 
 ### Added

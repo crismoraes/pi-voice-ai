@@ -659,3 +659,40 @@ preservou o assunto e a sequência da mensagem, embora tenha trocado algumas
 palavras. Esse nível confirmou o funcionamento de ponta a ponta e também registrou
 a limitação de qualidade do Whisper Tiny. A Fase 3 foi
 concluída no marco `v0.3.0`.
+
+## Fase 4 — resposta textual com OpenAI
+
+### Objetivo da aula
+
+Enviar à OpenAI somente o texto produzido pelo STT local e mostrar a resposta no
+navegador enquanto ela é gerada. O áudio continua restrito ao navegador e ao
+Raspberry Pi.
+
+### Arquitetura
+
+```text
+Voz -> WebRTC -> STT local -> transcrição -> OpenAI Responses API
+                                              |
+Interface web <- SSE com deltas de texto <-----+
+```
+
+Foi criada a abstração `LanguageModel` e o adaptador
+`OpenAIResponsesLanguageModel`. O endpoint `POST /api/assistant/responses` recebe
+até 4.000 caracteres e devolve eventos `delta`, `done` ou `error`. O evento final
+contém o modelo, o tempo até o primeiro texto e o tempo total.
+
+A chave é lida de `OPENAI_API_KEY` somente no servidor. O navegador não recebe essa
+credencial. O conteúdo do prompt e da resposta também não aparece nos logs; somente
+modelo, quantidade de caracteres e tempos são registrados. As requisições usam
+`store=false`, limite padrão de 300 tokens e um lock para evitar geração simultânea.
+
+O modelo padrão é `gpt-6-luna`, configurável no `.env`. A implementação usa o SDK
+oficial `openai 3.19.2` e a Responses API recomendada pela documentação oficial para
+novas integrações de texto e streaming.
+
+### Validação local inicial
+
+Nove testes passaram no Windows. Eles cobrem a extração dos eventos de texto do SDK,
+a ausência de chave, o streaming SSE, o WebRTC, o STT e o health check. Uma chamada
+real mínima usando a chave do `.env` retornou a frase solicitada por streaming. A
+implantação ARM64 e o fluxo físico completo ainda precisam ser demonstrados.

@@ -3,7 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -15,6 +15,18 @@ class Settings(BaseSettings):
     app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
     app_port: int = Field(default=8000, ge=1, le=65535, alias="APP_PORT")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-6-luna", alias="OPENAI_MODEL")
+    openai_max_output_tokens: int = Field(
+        default=300, ge=16, le=4096, alias="OPENAI_MAX_OUTPUT_TOKENS"
+    )
+    openai_timeout_seconds: float = Field(
+        default=30, ge=1, le=120, alias="OPENAI_TIMEOUT_SECONDS"
+    )
+    llm_instructions: str = Field(
+        default="Responda em português brasileiro, de forma natural e concisa.",
+        alias="LLM_INSTRUCTIONS",
+    )
     tls_cert_file: Path | None = Field(default=None, alias="TLS_CERT_FILE")
     tls_key_file: Path | None = Field(default=None, alias="TLS_KEY_FILE")
     stt_engine: str = Field(default="sherpa-whisper", alias="STT_ENGINE")

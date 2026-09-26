@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2 and 3 complete
+## Current implementation state — Phases 0, 1, 2 and 3 complete, Phase 4 in validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -144,6 +144,19 @@ The user tested several real Portuguese utterances in the browser. The last long
 sample was understandable and preserved its subject and sentence sequence, with
 some word errors expected from Whisper Tiny. Its 18.06 s of audio were decoded in
 3.346 s, RTF 0.185. Phase 3 is complete at version `0.3.0`.
+
+The user authorized Phase 4. Version `0.4.0.dev0` adds a replaceable
+`LanguageModel` abstraction backed by the OpenAI Responses API. After local STT,
+the browser sends only the transcript to `POST /api/assistant/responses` and reads
+SSE events containing text deltas and completion timing. The API key remains on the
+server. Requests use `store=false`, a 300-token default limit and a single-request
+lock. Prompts and response text are not logged.
+
+The default model is configurable and currently set to `gpt-6-luna` for low latency
+and cost. Nine tests pass on Windows, including provider-independent streaming. A
+minimal real API call using the ignored local `.env` succeeded. The Raspberry Pi
+deployment and physical browser flow remain to be validated before Phase 4 is
+complete.
 
 ## Project Goal
 

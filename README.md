@@ -5,12 +5,49 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2 e 3 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2 e 3 concluídas; Fase 4 em validação.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
-local; TTS e integração OpenAI ainda não foram implementados.
+local. A versão de desenvolvimento `0.4.0.dev0` adiciona respostas de texto da
+OpenAI; TTS ainda não foi implementado.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 4 — resposta textual com OpenAI
+
+Depois da transcrição local, somente o texto reconhecido é enviado pelo servidor à
+Responses API da OpenAI. A resposta retorna ao navegador em eventos incrementais;
+a chave fica no `.env` do Raspberry Pi e nunca é enviada ao JavaScript.
+
+```text
+Microfone -> WebRTC -> STT local -> texto -> OpenAI Responses API
+                                              |
+Navegador <- resposta textual em streaming <--+
+```
+
+O adaptador `LanguageModel` mantém o provedor separado da captura WebRTC e do STT.
+O padrão é `gpt-6-luna`, configurável por `OPENAI_MODEL`, com respostas curtas em
+português e no máximo 300 tokens. As requisições usam `store=false`, são executadas
+uma por vez e não registram prompts nem respostas nos logs.
+
+A implementação segue a documentação oficial da [Responses API para geração de
+texto](https://developers.openai.com/api/docs/guides/text) e de [streaming de
+respostas](https://developers.openai.com/api/docs/guides/streaming-responses).
+
+Configuração:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | vazio | Credencial mantida somente no servidor |
+| `OPENAI_MODEL` | `gpt-6-luna` | Modelo de texto da Responses API |
+| `OPENAI_MAX_OUTPUT_TOKENS` | `300` | Limite da resposta |
+| `OPENAI_TIMEOUT_SECONDS` | `30` | Timeout da chamada externa |
+| `LLM_INSTRUCTIONS` | resposta curta em português | Comportamento do assistente |
+
+Nove testes locais passaram, incluindo streaming com adaptadores falsos e validação
+de que o endpoint entrega deltas e métricas. Uma chamada real com a chave local
+também retornou a frase solicitada. O deployment e o teste físico no Raspberry Pi
+ainda serão validados antes do marco `v0.4.0`.
 
 ## Fase 3 — STT local
 

@@ -3,16 +3,17 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PiVoice AI — Transcrição local</title>
+    <title>PiVoice AI — Assistente de texto</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <main class="panel">
-      <p class="eyebrow">PiVoice AI · Fase 3</p>
-      <h1>Transcrição local</h1>
+      <p class="eyebrow">PiVoice AI · Fase 4</p>
+      <h1>Assistente de texto</h1>
       <p class="description">
         O navegador envia o microfone por WebRTC. O Raspberry Pi converte a fala
-        em texto localmente, sem enviar áudio para serviços externos.
+        em texto localmente. Somente a transcrição é enviada à OpenAI para gerar
+        uma resposta textual.
       </p>
 
       <div class="status-row" aria-live="polite">
@@ -37,6 +38,14 @@
           <span id="metrics"></span>
         </div>
         <p id="transcript-text">A transcrição aparecerá aqui.</p>
+      </section>
+
+      <section class="transcript assistant" aria-live="polite" aria-labelledby="assistant-title">
+        <div class="transcript-heading">
+          <h2 id="assistant-title">Resposta do assistente</h2>
+          <span id="assistant-metrics"></span>
+        </div>
+        <p id="assistant-text">A resposta aparecerá aqui.</p>
       </section>
 
       <p id="error" class="error" role="alert"></p>
