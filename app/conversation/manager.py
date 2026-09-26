@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from time import perf_counter
@@ -14,6 +13,7 @@ import numpy as np
 from app.llm.base import ConversationMessage, LanguageModel
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.tts.base import SynthesisResult, TextToSpeech
+from app.tts.chunking import split_text_for_speech
 
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
@@ -145,7 +145,9 @@ class ConversationManager:
             tts_started_at = perf_counter()
             first_audio_seconds: float | None = None
             syntheses: list[SynthesisResult] = []
-            text_chunks = self._split_tts_text(response_text)
+            text_chunks = split_text_for_speech(
+                response_text, self._tts_chunk_characters
+            )
             for index, text_chunk in enumerate(text_chunks, start=1):
                 synthesis_chunk = await self._text_to_speech.synthesize(text_chunk)
                 syntheses.append(synthesis_chunk)
@@ -214,23 +216,3 @@ class ConversationManager:
                 total_text_seconds=total_text_seconds,
                 synthesis=synthesis,
             )
-
-    def _split_tts_text(self, text: str) -> list[str]:
-        sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-        chunks: list[str] = []
-        current = ""
-        for sentence in sentences:
-            words = sentence.split()
-            for word in words:
-                candidate = f"{current} {word}".strip()
-                if current and len(candidate) > self._tts_chunk_characters:
-                    chunks.append(current)
-                    current = word
-                else:
-                    current = candidate
-            if current and sentence.rstrip().endswith((".", "!", "?")):
-                chunks.append(current)
-                current = ""
-        if current:
-            chunks.append(current)
-        return chunks or [text]
