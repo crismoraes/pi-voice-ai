@@ -696,3 +696,16 @@ Nove testes passaram no Windows. Eles cobrem a extração dos eventos de texto d
 a ausência de chave, o streaming SSE, o WebRTC, o STT e o health check. Uma chamada
 real mínima usando a chave do `.env` retornou a frase solicitada por streaming. A
 implantação ARM64 e o fluxo físico completo ainda precisam ser demonstrados.
+
+### Implantação inicial no Raspberry Pi
+
+A chave foi transferida separadamente por entrada padrão do SSH, sem imprimir seu
+valor e sem copiar o `.env` inteiro. O SDK instalou wheels compatíveis com Python
+3.13 ARM64, incluindo `jiter`, sem compilação nativa. Os nove testes passaram no Pi.
+
+Depois do restart, o serviço `0.4.0.dev0` respondeu ao health check HTTPS. O script
+`live_llm_check.py` enviou uma frase ao endpoint implantado e recebeu a resposta do
+`gpt-6-luna` por streaming. O primeiro texto chegou em 1,520 s e a resposta terminou
+em 1,683 s. O journald registrou início, primeiro token e conclusão, sem registrar o
+conteúdo e sem erros. Falta o teste físico que une microfone, STT e resposta textual
+na interface do navegador.

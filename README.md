@@ -44,10 +44,12 @@ Configuração:
 | `OPENAI_TIMEOUT_SECONDS` | `30` | Timeout da chamada externa |
 | `LLM_INSTRUCTIONS` | resposta curta em português | Comportamento do assistente |
 
-Nove testes locais passaram, incluindo streaming com adaptadores falsos e validação
-de que o endpoint entrega deltas e métricas. Uma chamada real com a chave local
-também retornou a frase solicitada. O deployment e o teste físico no Raspberry Pi
-ainda serão validados antes do marco `v0.4.0`.
+Nove testes passaram no Windows e no Raspberry Pi ARM64, incluindo streaming com
+adaptadores falsos e validação de que o endpoint entrega deltas e métricas. Uma
+chamada real local e outra contra a implantação HTTPS retornaram as frases
+solicitadas. No Pi, o primeiro texto chegou em 1,520 s e a resposta terminou em
+1,683 s. Falta validar o fluxo completo com voz no navegador antes do marco
+`v0.4.0`.
 
 ## Fase 3 — STT local
 

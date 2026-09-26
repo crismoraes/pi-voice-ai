@@ -16,7 +16,9 @@
 
 ### Validated
 
-- Nove testes locais e uma chamada real mínima à Responses API.
+- Nove testes no Windows e Raspberry Pi ARM64.
+- Chamada real local e endpoint HTTPS implantado, com primeiro texto em `1,520 s` e
+  conclusão em `1,683 s`.
 
 ## [0.3.0] - 2026-09-26
 

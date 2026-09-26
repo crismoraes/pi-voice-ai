@@ -153,10 +153,12 @@ server. Requests use `store=false`, a 300-token default limit and a single-reque
 lock. Prompts and response text are not logged.
 
 The default model is configurable and currently set to `gpt-6-luna` for low latency
-and cost. Nine tests pass on Windows, including provider-independent streaming. A
-minimal real API call using the ignored local `.env` succeeded. The Raspberry Pi
-deployment and physical browser flow remain to be validated before Phase 4 is
-complete.
+and cost. Nine tests pass on Windows and Raspberry Pi ARM64, including
+provider-independent streaming. A minimal real API call using the ignored local
+`.env` succeeded. The deployed HTTPS endpoint also streamed a real response with
+1.520 s to first text and 1.683 s total. Logs contain only model, character counts
+and timing. The physical voice-to-response browser flow remains to be validated
+before Phase 4 is complete.
 
 ## Project Goal
 
