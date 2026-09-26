@@ -11,14 +11,20 @@
 
 ### Validated
 
-- Cinco testes no Windows e Raspberry Pi ARM64, incluindo captura WebRTC com STT falso.
+- Seis testes no Windows e Raspberry Pi ARM64, incluindo captura WebRTC com STT falso.
 - Wheels ARM64 de sherpa-onnx e NumPy instalados sem compilação.
 - Whisper Tiny real no Pi com RTF de `0,171` em uma referência inglesa de 6,625 s.
+- Fluxo implantado validado do Windows ao Pi por WebRTC, com RTF de `0,175`.
 
 ### Changed
 
 - Versão de desenvolvimento avançada para `0.3.0.dev0`.
 - Bootstrap instala o modelo STT em `models/`, fora do Git.
+
+### Fixed
+
+- Teste STT ao vivo ignora proxies do ambiente para alcançar a rede local.
+- Duração de áudio do teste ao vivo usa corretamente a base de tempo do PyAV.
 
 ## [0.2.0] - 2026-09-25
 

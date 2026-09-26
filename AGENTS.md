@@ -136,10 +136,11 @@ WebRTC event handling. Audio is not persisted or logged. Capture is limited to t
 configured duration. VAD, partial transcripts, automatic endpointing, LLM and TTS
 remain outside Phase 3.
 
-Five tests pass on Windows Python 3.12 and Pi Python 3.13 ARM64. The Pi installed
+Six tests pass on Windows Python 3.12 and Pi Python 3.13 ARM64. The Pi installed
 binary wheels and loaded the real model. An English reference produced the correct
-text with RTF 0.171 (1.134 s inference for 6.625 s audio). Portuguese browser
-quality and the live STT request remain to be validated before Phase 3 is complete.
+text with RTF 0.171 (1.134 s inference for 6.625 s audio). The live deployment test
+also sent 6.539 s over WebRTC and completed local inference in 1.147 s, RTF 0.175.
+Portuguese browser quality remains to be validated before Phase 3 is complete.
 
 ## Project Goal
 

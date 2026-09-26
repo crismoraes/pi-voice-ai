@@ -59,15 +59,19 @@ texto, duração, tempo de processamento e fator de tempo real (RTF).
 
 ### Testes e benchmark
 
-Cinco testes passaram no Windows e no Raspberry Pi ARM64. O teste de integração
+Seis testes passaram no Windows e no Raspberry Pi ARM64. O teste de integração
 negocia WebRTC, captura áudio reamostrado, usa um STT substituto e valida as APIs de
 início e fim da transcrição. O modelo real também foi carregado no Pi.
 
 Nos três WAVs oficiais em inglês, com `STT_LANGUAGE=pt`, o RTF medido ficou entre
 `0,203` e `0,225`; o texto não serve como medida de qualidade porque o idioma foi
 forçado incorretamente. Com `STT_LANGUAGE=en`, a primeira referência foi reconhecida
-corretamente em 1,134 s para 6,625 s de áudio, RTF `0,171`. A qualidade em português
-e o fluxo completo do navegador ainda precisam de validação física.
+corretamente em 1,134 s para 6,625 s de áudio, RTF `0,171`.
+
+O teste da implantação enviou o mesmo WAV do Windows ao Pi por WebRTC, capturou
+6,539 s e concluiu a inferência local em 1,147 s, RTF `0,175`. Os logs confirmaram
+captura, carregamento do modelo, transcrição e encerramento do peer sem erros. A
+qualidade com fala real em português ainda precisa de validação física no navegador.
 
 Para repetir um benchmark:
 

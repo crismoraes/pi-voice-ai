@@ -20,7 +20,7 @@ def audio_duration(path: Path) -> float:
     with av.open(str(path)) as container:
         if container.duration is None:
             raise ValueError(f"Audio duration is unavailable for {path}")
-        return float(container.duration * av.time_base)
+        return float(container.duration / av.time_base)
 
 
 async def drain_track(track) -> None:
@@ -57,7 +57,12 @@ async def check_stt(base_url: str, ca_file: Path, audio_file: Path) -> dict:
         offer = await peer.createOffer()
         await peer.setLocalDescription(offer)
 
-        async with AsyncClient(base_url=base_url, verify=ssl_context, timeout=45) as client:
+        async with AsyncClient(
+            base_url=base_url,
+            verify=ssl_context,
+            timeout=45,
+            trust_env=False,
+        ) as client:
             response = await client.post(
                 "/api/webrtc/offer",
                 json={
@@ -92,7 +97,10 @@ async def check_stt(base_url: str, ca_file: Path, audio_file: Path) -> dict:
         if peer_id is not None:
             with suppress(Exception):
                 async with AsyncClient(
-                    base_url=base_url, verify=ssl_context, timeout=10
+                    base_url=base_url,
+                    verify=ssl_context,
+                    timeout=10,
+                    trust_env=False,
                 ) as client:
                     await client.delete(f"/api/webrtc/peers/{peer_id}")
         await peer.close()

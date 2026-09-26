@@ -609,9 +609,9 @@ instalações anteriores.
 node --check web\app.js
 ```
 
-Cinco testes passaram no Windows. O teste de integração cria peers WebRTC reais,
+Seis testes passaram no Windows. O teste de integração cria peers WebRTC reais,
 captura áudio reamostrado, usa um STT falso determinístico e verifica o texto e as
-métricas retornadas. Os mesmos cinco testes passaram no Pi ARM64.
+métricas retornadas. Os mesmos seis testes passaram no Pi ARM64.
 
 O benchmark do modelo real usa:
 
@@ -635,12 +635,21 @@ somente para o benchmark; as métricas internas do reconhecedor foram usadas.
 Após a mudança de IP, o alias `voicepi` ainda apontava para o endereço anterior. O
 novo host foi localizado por mDNS e validado primeiro pelo certificado HTTPS já
 confiável antes de registrar sua chave SSH. Mais tarde, o mDNS e o novo endereço
-ficaram temporariamente indisponíveis, impedindo a última validação ao vivo.
+ficaram temporariamente indisponíveis. Quando o Pi voltou à rede, o alias `voicepi`
+foi alterado para `home-ai.local` e voltou a funcionar sem depender do endereço
+concedido por DHCP.
+
+Na primeira execução de `live_stt_check.py`, o `httpx` herdou a configuração de
+proxy do Windows e não alcançou a rede local. O cliente passou a usar
+`trust_env=False`. Na segunda, a duração do PyAV foi multiplicada pela base de tempo
+em vez de dividida, causando uma espera excessiva; o cálculo foi corrigido e ganhou
+um teste de regressão.
 
 ### Resultado atual
 
 O código, as dependências, o modelo, os testes ARM64, o benchmark e o serviço
-`0.3.0.dev0` foram implantados. Antes da indisponibilidade de rede, o health check
-HTTPS passou e o serviço estava ativo. Ainda faltam o teste ao vivo automatizado e
-a confirmação da qualidade em português pelo navegador; esses resultados não são
-presumidos.
+`0.3.0.dev0` foram implantados. O teste ao vivo enviou um WAV do Windows ao Pi por
+WebRTC, capturou 6,539 s e concluiu a inferência em 1,147 s, RTF 0,175. O health
+check respondeu, o serviço permaneceu ativo e os logs não mostraram erros. Falta a
+confirmação da qualidade com fala real em português pelo navegador; esse resultado
+não é presumido.
