@@ -24,7 +24,9 @@ class Settings(BaseSettings):
         default=30, ge=1, le=120, alias="OPENAI_TIMEOUT_SECONDS"
     )
     llm_instructions: str = Field(
-        default="Responda em português brasileiro, de forma natural e concisa.",
+        default=(
+            "Responda em português brasileiro, de forma natural, concisa e sem Markdown."
+        ),
         alias="LLM_INSTRUCTIONS",
     )
     tls_cert_file: Path | None = Field(default=None, alias="TLS_CERT_FILE")

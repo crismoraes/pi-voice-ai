@@ -709,3 +709,16 @@ Depois do restart, o serviço `0.4.0.dev0` respondeu ao health check HTTPS. O sc
 em 1,683 s. O journald registrou início, primeiro token e conclusão, sem registrar o
 conteúdo e sem erros. Falta o teste físico que une microfone, STT e resposta textual
 na interface do navegador.
+
+### Validação física e conclusão
+
+O usuário perguntou por voz quem chegou ao Brasil. A captura teve 7,08 s e o STT
+local terminou em 0,98 s, RTF 0,14. A transcrição trocou uma palavra, mas preservou
+a intenção. O `gpt-6-luna` interpretou corretamente a pergunta, respondeu Pedro
+Álvares Cabral e acrescentou o contexto dos povos indígenas já presentes no
+território. O primeiro texto apareceu em 1,97 s e a resposta terminou em 2,85 s.
+
+A resposta trouxe marcação Markdown para destacar um nome. Como a interface usa
+texto simples e uma fase posterior enviará a saída ao TTS, a instrução padrão passou
+a pedir respostas sem Markdown. Com o caminho voz, STT local, OpenAI e streaming de
+texto comprovado, a Fase 4 foi concluída no marco `v0.4.0`.

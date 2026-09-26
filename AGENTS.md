@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2 and 3 complete, Phase 4 in validation
+## Current implementation state — Phases 0, 1, 2, 3 and 4 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -145,7 +145,7 @@ sample was understandable and preserved its subject and sentence sequence, with
 some word errors expected from Whisper Tiny. Its 18.06 s of audio were decoded in
 3.346 s, RTF 0.185. Phase 3 is complete at version `0.3.0`.
 
-The user authorized Phase 4. Version `0.4.0.dev0` adds a replaceable
+The user authorized Phase 4. Version `0.4.0` adds a replaceable
 `LanguageModel` abstraction backed by the OpenAI Responses API. After local STT,
 the browser sends only the transcript to `POST /api/assistant/responses` and reads
 SSE events containing text deltas and completion timing. The API key remains on the
@@ -157,8 +157,10 @@ and cost. Nine tests pass on Windows and Raspberry Pi ARM64, including
 provider-independent streaming. A minimal real API call using the ignored local
 `.env` succeeded. The deployed HTTPS endpoint also streamed a real response with
 1.520 s to first text and 1.683 s total. Logs contain only model, character counts
-and timing. The physical voice-to-response browser flow remains to be validated
-before Phase 4 is complete.
+and timing. The user completed the physical browser flow with a Portuguese question.
+STT processed 7.08 s in 0.98 s, RTF 0.14. The model understood the question despite
+a minor transcription error, produced the correct historical answer, started text
+in 1.97 s and completed in 2.85 s. Phase 4 is complete at version `0.4.0`.
 
 ## Project Goal
 

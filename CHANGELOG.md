@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-26
+
 ### Added
 
 - Abstração substituível de LLM e adaptador para a OpenAI Responses API.
@@ -11,14 +13,17 @@
 
 ### Changed
 
-- Versão de desenvolvimento avançada para `0.4.0.dev0`.
+- Versão publicada como `0.4.0`.
 - Modelo padrão configurado como `gpt-6-luna`, com saída limitada a 300 tokens.
+- Instrução padrão solicita texto simples sem Markdown para a interface e o futuro TTS.
 
 ### Validated
 
 - Nove testes no Windows e Raspberry Pi ARM64.
 - Chamada real local e endpoint HTTPS implantado, com primeiro texto em `1,520 s` e
   conclusão em `1,683 s`.
+- Fluxo físico de voz até resposta validado: STT de 7,08 s em 0,98 s, RTF `0,14`,
+  primeiro texto em 1,97 s e conclusão em 2,85 s.
 
 ## [0.3.0] - 2026-09-26
 

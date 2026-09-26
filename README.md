@@ -5,11 +5,11 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2 e 3 concluídas; Fase 4 em validação.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2, 3 e 4 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
-local. A versão de desenvolvimento `0.4.0.dev0` adiciona respostas de texto da
-OpenAI; TTS ainda não foi implementado.
+local. A versão `v0.4.0` adiciona respostas de texto da OpenAI; TTS ainda não foi
+implementado.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -48,8 +48,14 @@ Nove testes passaram no Windows e no Raspberry Pi ARM64, incluindo streaming com
 adaptadores falsos e validação de que o endpoint entrega deltas e métricas. Uma
 chamada real local e outra contra a implantação HTTPS retornaram as frases
 solicitadas. No Pi, o primeiro texto chegou em 1,520 s e a resposta terminou em
-1,683 s. Falta validar o fluxo completo com voz no navegador antes do marco
-`v0.4.0`.
+1,683 s.
+
+O fluxo físico completo também passou. Uma pergunta falada sobre a chegada dos
+portugueses ao Brasil gerou 7,08 s de áudio, transcritos em 0,98 s, RTF `0,14`.
+Apesar de uma pequena troca de palavra no STT, o modelo interpretou a pergunta,
+identificou Pedro Álvares Cabral e contextualizou que povos indígenas já habitavam o
+território. O primeiro texto chegou em 1,97 s e a resposta terminou em 2,85 s. A
+Fase 4 foi concluída no marco `v0.4.0`.
 
 ## Fase 3 — STT local
 
