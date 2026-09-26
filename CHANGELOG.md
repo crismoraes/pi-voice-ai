@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- Adaptador ALSA para conversa local com microfone e alto-falante USB.
+- Configuração de dispositivos USB, período de captura e barge-in local.
+- Testes do ciclo de vida do `arecord` e do streaming PCM para um único `aplay`.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.9.0.dev0`.
+- Bootstrap passa a instalar `alsa-utils` quando `arecord` ou `aplay` não existem.
+
+### Hardware
+
+- Interface bidirecional P10S identificada por ALSA como
+  `plughw:CARD=P10S,DEV=0`, com captura e reprodução USB.
+
 ## [0.8.0] - 2026-09-26
 
 ### Added

@@ -13,6 +13,8 @@ command -v git >/dev/null 2>&1 || missing_packages+=(git)
 command -v python3 >/dev/null 2>&1 || missing_packages+=(python3)
 command -v curl >/dev/null 2>&1 || missing_packages+=(curl)
 command -v bzip2 >/dev/null 2>&1 || missing_packages+=(bzip2)
+command -v arecord >/dev/null 2>&1 || missing_packages+=(alsa-utils)
+command -v aplay >/dev/null 2>&1 || missing_packages+=(alsa-utils)
 if command -v python3 >/dev/null 2>&1; then
     python3 -m venv --help >/dev/null 2>&1 || missing_packages+=(python3-venv)
     python3 -m pip --version >/dev/null 2>&1 || missing_packages+=(python3-pip)

@@ -16,6 +16,19 @@ class Settings(BaseSettings):
     app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
     app_port: int = Field(default=8000, ge=1, le=65535, alias="APP_PORT")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    audio_mode: Literal["webrtc", "usb"] = Field(
+        default="webrtc", alias="AUDIO_MODE"
+    )
+    usb_capture_device: str = Field(
+        default="plughw:CARD=P10S,DEV=0", alias="USB_CAPTURE_DEVICE", min_length=1
+    )
+    usb_playback_device: str = Field(
+        default="plughw:CARD=P10S,DEV=0", alias="USB_PLAYBACK_DEVICE", min_length=1
+    )
+    usb_capture_period_frames: int = Field(
+        default=512, ge=128, le=4096, alias="USB_CAPTURE_PERIOD_FRAMES"
+    )
+    usb_enable_barge_in: bool = Field(default=False, alias="USB_ENABLE_BARGE_IN")
     openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-6-luna", alias="OPENAI_MODEL")
     openai_max_output_tokens: int = Field(

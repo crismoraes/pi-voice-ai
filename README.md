@@ -5,7 +5,7 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 8 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0 a 8 concluídas; Fase 9 em desenvolvimento.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
@@ -15,6 +15,31 @@ adiciona detecção automática de fala e contexto de múltiplos turnos. A vers�
 `v0.8.0` reduz a latência com medições no Pi, pré-carregamento e TTS em trechos.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 9 — áudio USB
+
+O modo `AUDIO_MODE=usb` usa `arecord` e `aplay` do ALSA para conectar um microfone
+e um alto-falante diretamente ao Raspberry Pi. O adaptador captura PCM mono de
+16 kHz para o mesmo VAD, STT e gerenciador de conversa usados pelo WebRTC. Cada
+trecho do TTS é convertido para PCM de 16 bits e escrito no mesmo processo de
+reprodução, preservando a entrega incremental da Fase 8.
+
+O hardware inicialmente detectado é uma interface bidirecional P10S, exposta pelo
+ALSA como `plughw:CARD=P10S,DEV=0`. Usar o nome da placa evita depender do número
+de card, que pode mudar após reinícios ou ao conectar outro dispositivo. Configure:
+
+```dotenv
+AUDIO_MODE=usb
+USB_CAPTURE_DEVICE=plughw:CARD=P10S,DEV=0
+USB_PLAYBACK_DEVICE=plughw:CARD=P10S,DEV=0
+USB_CAPTURE_PERIOD_FRAMES=512
+USB_ENABLE_BARGE_IN=false
+```
+
+O barge-in USB começa desativado porque o microfone pode captar a própria caixa de
+som sem cancelamento de eco. Depois de validar ganho, distância e ausência de
+realimentação, `USB_ENABLE_BARGE_IN=true` permite testar interrupções locais. Para
+voltar ao navegador, use `AUDIO_MODE=webrtc` e reinicie o serviço.
 
 ## Fase 8 — desempenho
 

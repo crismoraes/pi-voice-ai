@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 through 8 complete
+## Current implementation state — Phases 0 through 8 complete; Phase 9 in progress
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -252,6 +252,17 @@ audio was queued in 0.462 seconds while full synthesis took 7.323 seconds, confi
 generation and playback overlap. The service remained active and the turn had no
 logged errors. Phase 8 is complete at `0.8.0`. Do not begin Phase 9 without explicit
 user authorization.
+
+The user authorized Phase 9 with a USB microphone and speaker already connected.
+The Raspberry Pi detects one bidirectional P10S USB Audio interface for capture and
+playback at the stable ALSA name `plughw:CARD=P10S,DEV=0`; the service user belongs
+to the `audio` group. Version `0.9.0.dev0` introduces an ALSA adapter built on
+`arecord` and `aplay`. It feeds 16 kHz mono PCM into the existing Silero VAD and
+transport-independent conversation pipeline, and streams Piper chunks to one
+playback process. `AUDIO_MODE=webrtc` remains the default. USB mode is selected by
+`AUDIO_MODE=usb`, with separate capture/playback device settings and a configurable
+capture period. USB barge-in defaults off until physical echo behavior is validated.
+Do not publish `v0.9.0` or begin Phase 10 before physical USB validation.
 
 ## Project Goal
 

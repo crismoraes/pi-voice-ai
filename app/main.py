@@ -13,6 +13,7 @@ from app import __version__
 from app.api.assistant import language_model, router as assistant_router
 from app.api.health import router as health_router
 from app.api.signaling import router as signaling_router
+from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
@@ -30,17 +31,30 @@ conversation_manager = ConversationManager(
     max_turns=settings.conversation_max_turns,
     tts_chunk_characters=settings.tts_chunk_characters,
 )
+vad_factory = lambda: SherpaSileroVoiceActivityDetector(
+    model_path=settings.vad_model_path,
+    threshold=settings.vad_threshold,
+    min_silence_seconds=settings.vad_min_silence_seconds,
+    min_speech_seconds=settings.vad_min_speech_seconds,
+    max_speech_seconds=settings.vad_max_speech_seconds,
+    num_threads=settings.vad_num_threads,
+)
 peer_manager.configure_conversations(
     conversation_manager,
-    lambda: SherpaSileroVoiceActivityDetector(
-        model_path=settings.vad_model_path,
-        threshold=settings.vad_threshold,
-        min_silence_seconds=settings.vad_min_silence_seconds,
-        min_speech_seconds=settings.vad_min_speech_seconds,
-        max_speech_seconds=settings.vad_max_speech_seconds,
-        num_threads=settings.vad_num_threads,
-    ),
+    vad_factory,
     enable_barge_in=settings.enable_barge_in,
+)
+usb_audio = (
+    UsbAudioConversation(
+        conversation_manager=conversation_manager,
+        vad_factory=vad_factory,
+        capture_device=settings.usb_capture_device,
+        playback_device=settings.usb_playback_device,
+        period_frames=settings.usb_capture_period_frames,
+        enable_barge_in=settings.usb_enable_barge_in,
+    )
+    if settings.audio_mode == "usb"
+    else None
 )
 
 
@@ -48,11 +62,20 @@ peer_manager.configure_conversations(
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await asyncio.gather(speech_to_text.warm_up(), text_to_speech.warm_up())
     logger.info("APP_MODELS_READY")
-    logger.info("APP_STARTED", extra={"version": __version__})
-    yield
-    await peer_manager.close_all()
-    await language_model.close()
-    logger.info("APP_STOPPED", extra={"version": __version__})
+    if usb_audio is not None:
+        await usb_audio.start()
+    logger.info(
+        "APP_STARTED",
+        extra={"version": __version__, "audio_mode": settings.audio_mode},
+    )
+    try:
+        yield
+    finally:
+        if usb_audio is not None:
+            await usb_audio.stop()
+        await peer_manager.close_all()
+        await language_model.close()
+        logger.info("APP_STOPPED", extra={"version": __version__})
 
 
 app = FastAPI(

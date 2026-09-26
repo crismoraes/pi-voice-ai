@@ -977,3 +977,34 @@ disponível em 0,462 s, embora a síntese completa tenha levado 7,323 s, demonst
 que a reprodução e a geração ocorreram ao mesmo tempo. A história foi ouvida com
 continuidade, o serviço permaneceu ativo e os logs do turno não mostraram erros.
 Essa validação encerrou a Fase 8 no marco `v0.8.0`.
+
+## Fase 9 — microfone e alto-falante USB
+
+### Inventário do hardware
+
+Com os dois conectores de áudio ligados à mesma interface USB, `lsusb` identificou
+o dispositivo P10S. `arecord -l` encontrou captura e `aplay -l` encontrou reprodução
+na mesma placa. O nome ALSA `plughw:CARD=P10S,DEV=0` foi escolhido no lugar de
+`hw:2,0`: `plughw` faz as conversões necessárias e `CARD=P10S` permanece legível
+mesmo se o índice numérico mudar.
+
+O teste de captura confirmou PCM `S16_LE`, mono e 16 kHz. O usuário `cristiano`, que
+executa o serviço systemd, já pertence ao grupo `audio`. Portanto, não foi necessário
+alterar permissões nem executar a aplicação como root.
+
+### Arquitetura do adaptador
+
+`arecord` entrega blocos PCM de 512 amostras ao Silero VAD. Um segmento concluído
+segue pelo mesmo `ConversationManager`, Whisper local, OpenAI e Piper já validados.
+Na saída, todos os trechos TTS do turno são escritos em um único processo `aplay`,
+permitindo que o alto-falante comece antes do fim da síntese.
+
+O modo é selecionado no `.env` por `AUDIO_MODE=usb`. Os dispositivos de entrada e
+saída têm configurações separadas, então uma fase futura pode usar interfaces USB
+distintas sem alterar VAD, STT, LLM, TTS ou histórico. O modo WebRTC continua
+disponível ao restaurar `AUDIO_MODE=webrtc`.
+
+O barge-in local começa desligado. Sem cancelamento acústico de eco, o microfone
+pode interpretar a voz do próprio alto-falante como uma nova fala. Primeiro serão
+validados o fluxo completo, o volume e a distância física; depois a interrupção USB
+poderá ser habilitada conscientemente.
