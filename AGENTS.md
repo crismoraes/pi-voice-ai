@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2, 3, 4 and 5 complete; Phase 6 validation
+## Current implementation state — Phases 0, 1, 2, 3, 4, 5 and 6 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -187,7 +187,7 @@ Portuguese question. STT took 0.79 seconds, RTF 0.14; first LLM text arrived in
 produced 2.79 seconds of audible speech in 0.56 seconds, RTF 0.20. Phase 5 is
 complete at version `0.5.0`.
 
-The user authorized Phase 6. Version `0.6.0.dev0` adds automatic utterance
+The user authorized and completed Phase 6. Version `0.6.0` adds automatic utterance
 segmentation with the official sherpa-onnx Silero VAD model and a transport-neutral
 `ConversationManager`. The VAD receives the existing 16 kHz mono stream, uses a
 0.5 threshold, 0.3-second minimum speech and 0.8-second ending silence. Its 643,854
@@ -208,9 +208,13 @@ platforms and segmented synthesized Portuguese speech. A deployed two-turn check
 finished with four history messages, delivered two spoken responses over WebRTC and
 produced 463 audible frames on Windows without log errors. Synthetic speech exposed
 expected Whisper Tiny word errors, while the second response still proved the first
-recognized turn was present in context. Physical browser validation with human speech
-remains required before Phase 6 is complete and `v0.6.0` is released. Do not begin
-Phase 7 without explicit user authorization.
+recognized turn was present in context. Physical browser validation detected
+5.00-second and 5.39-second utterances automatically. STT took 0.95 and 1.03 seconds,
+first text arrived in 1.32 and 0.94 seconds, and local TTS took 0.34 seconds for each
+response. The same peer's history advanced through 4, 6, 8 and the configured
+12-message limit. Every turn completed, the peer closed normally and the service
+remained active without journal errors. Phase 6 is complete at version `0.6.0`. Do
+not begin Phase 7 without explicit user authorization.
 
 ## Project Goal
 

@@ -5,11 +5,12 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2, 3, 4 e 5 concluídas; Fase 6 em validação.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2, 3, 4, 5 e 6 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
-adiciona TTS português local e retorno de voz por WebRTC.
+adiciona TTS português local e retorno de voz por WebRTC. A versão `v0.6.0`
+adiciona detecção automática de fala e contexto de múltiplos turnos.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -74,8 +75,15 @@ Para repetir com um ou mais WAVs:
 
 Durante STT, LLM, síntese e reprodução, novos frames do microfone são ignorados para
 evitar que o assistente responda à própria voz. Interromper uma resposta em andamento
-será implementado como barge-in na Fase 7. A Fase 6 aguarda a validação física de
-detecção automática e memória no navegador antes da publicação de `v0.6.0`.
+será implementado como barge-in na Fase 7.
+
+A validação física no navegador detectou e concluiu falas de 5,00 s e 5,39 s sem
+controle manual. O STT levou 0,95 s e 1,03 s, com RTF `0,19` nos dois turnos. O
+primeiro texto chegou em 1,32 s e 0,94 s; as vozes de resposta foram sintetizadas
+em 0,34 s nos dois casos, com RTF `0,20` e `0,18`. Os logs mostraram o histórico da
+mesma sessão avançando de quatro para seis e oito mensagens, e depois até o limite
+de 12 mensagens. A sessão encerrou normalmente e sem erros. A Fase 6 está concluída
+na versão `v0.6.0`.
 
 ## Fase 5 — TTS local e resposta falada
 

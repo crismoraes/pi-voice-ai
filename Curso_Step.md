@@ -881,6 +881,17 @@ O Whisper Tiny teve erros nas frases sintetizadas, mas o segundo modelo responde
 usando exatamente o conteúdo que havia sido reconhecido no primeiro turno. Isso
 separa a validação da memória da avaliação de qualidade do STT.
 
-Falta validar com voz humana no navegador: falar sem clicar em finalizar, aguardar a
-resposta e fazer uma segunda pergunta dependente da primeira. Depois desse teste, a
-Fase 6 poderá ser publicada como `v0.6.0`.
+### Validação física e encerramento
+
+No navegador, duas falas de 5,00 s e 5,39 s foram encerradas automaticamente pelo
+silêncio, sem clicar em finalizar. O STT levou 0,95 s e 1,03 s, com RTF `0,19` nos
+dois casos. O primeiro texto apareceu em 1,32 s e 0,94 s; a síntese local levou
+0,34 s em ambos, produzindo 1,74 s e 1,92 s de áudio com RTF `0,20` e `0,18`.
+
+Os logs do mesmo peer registraram `history_messages: 4` antes do primeiro turno
+relatado, seis depois dele, oito depois do segundo e, após mais duas interações, o
+limite de 12 mensagens. Todos os turnos terminaram com `CONVERSATION_TURN_COMPLETED`,
+o peer fechou normalmente e o serviço permaneceu ativo, sem erros. As palavras
+incomuns foram transcritas de formas diferentes pelo Whisper Tiny; as respostas
+usaram coerentemente o texto reconhecido. Com isso, a Fase 6 foi concluída e
+publicada como `v0.6.0`.

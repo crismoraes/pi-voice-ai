@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-26
+
 ### Added
 
 - Silero VAD local para detectar início e fim da fala sem controle manual.
@@ -12,7 +14,7 @@
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `0.6.0.dev0`.
+- Versão publicada como `0.6.0`.
 - Barge-in e transcrições parciais ficam explicitamente desabilitados até suas fases.
 
 ### Validated
@@ -21,10 +23,12 @@
 - Modelo VAD carregado nos dois ambientes e pergunta portuguesa segmentada por silêncio.
 - Dois turnos implantados na mesma sessão, com quatro mensagens no histórico ao final.
 - Duas respostas TTS entregues por WebRTC, totalizando 463 frames audíveis no Windows.
-
-### Pending
-
-- Validação física do VAD e da memória de conversa no navegador antes de `v0.6.0`.
+- Validação física no navegador com segmentos automáticos de 5,00 s e 5,39 s; STT
+  em 0,95 s e 1,03 s, ambos com RTF `0,19`.
+- Primeiro texto em 1,32 s e 0,94 s; síntese local em 0,34 s nos dois turnos, com
+  RTF `0,20` e `0,18`.
+- Histórico da sessão avançando até o limite de 12 mensagens, encerramento normal
+  do peer e serviço sem erros no journald.
 
 ## [0.5.0] - 2026-09-26
 
