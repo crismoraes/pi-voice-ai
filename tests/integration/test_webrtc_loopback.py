@@ -1,10 +1,22 @@
 import asyncio
 
+import numpy as np
 from aiortc import AudioStreamTrack, RTCPeerConnection
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.stt.base import SpeechToText, TranscriptionResult
 from app.webrtc.manager import peer_manager
+
+
+class FakeSpeechToText(SpeechToText):
+    async def transcribe(self, samples: np.ndarray) -> TranscriptionResult:
+        audio_seconds = len(samples) / self.sample_rate
+        return TranscriptionResult(
+            text="teste de transcrição local",
+            audio_seconds=audio_seconds,
+            processing_seconds=0.01,
+        )
 
 
 async def exercise_audio_loopback() -> None:
@@ -17,6 +29,8 @@ async def exercise_audio_loopback() -> None:
             received_track.set_result(track)
 
     browser_peer.addTrack(AudioStreamTrack())
+    original_stt = peer_manager._speech_to_text
+    peer_manager._speech_to_text = FakeSpeechToText()
 
     try:
         offer = await browser_peer.createOffer()
@@ -46,6 +60,21 @@ async def exercise_audio_loopback() -> None:
             assert frame.samples > 0
             assert peer_manager.active_peer_count == 1
 
+            start_response = await client.post(
+                f"/api/webrtc/peers/{answer['peer_id']}/transcription/start"
+            )
+            assert start_response.status_code == 204
+            await asyncio.sleep(0.7)
+
+            finish_response = await client.post(
+                f"/api/webrtc/peers/{answer['peer_id']}/transcription/finish"
+            )
+            assert finish_response.status_code == 200
+            transcription = finish_response.json()
+            assert transcription["text"] == "teste de transcrição local"
+            assert transcription["audio_seconds"] >= 0.5
+            assert transcription["processing_seconds"] == 0.01
+
             close_response = await client.delete(
                 f"/api/webrtc/peers/{answer['peer_id']}"
             )
@@ -57,6 +86,7 @@ async def exercise_audio_loopback() -> None:
             )
             assert repeated_close_response.status_code == 204
     finally:
+        peer_manager._speech_to_text = original_stt
         await browser_peer.close()
         await peer_manager.close_all()
 

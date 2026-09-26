@@ -17,6 +17,19 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     tls_cert_file: Path | None = Field(default=None, alias="TLS_CERT_FILE")
     tls_key_file: Path | None = Field(default=None, alias="TLS_KEY_FILE")
+    stt_engine: str = Field(default="sherpa-whisper", alias="STT_ENGINE")
+    stt_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-tiny",
+        alias="STT_MODEL_DIR",
+    )
+    stt_language: str = Field(default="pt", alias="STT_LANGUAGE")
+    stt_num_threads: int = Field(default=4, ge=1, le=16, alias="STT_NUM_THREADS")
+    stt_min_audio_seconds: float = Field(
+        default=0.5, ge=0.1, le=5, alias="STT_MIN_AUDIO_SECONDS"
+    )
+    stt_max_audio_seconds: float = Field(
+        default=30, ge=1, le=120, alias="STT_MAX_AUDIO_SECONDS"
+    )
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -34,6 +47,16 @@ class Settings(BaseSettings):
     def validate_tls_pair(self) -> "Settings":
         if (self.tls_cert_file is None) != (self.tls_key_file is None):
             raise ValueError("TLS_CERT_FILE and TLS_KEY_FILE must be set together")
+        return self
+
+    @model_validator(mode="after")
+    def resolve_stt_model_dir(self) -> "Settings":
+        if not self.stt_model_dir.is_absolute():
+            self.stt_model_dir = PROJECT_ROOT / self.stt_model_dir
+        if self.stt_min_audio_seconds >= self.stt_max_audio_seconds:
+            raise ValueError(
+                "STT_MIN_AUDIO_SECONDS must be lower than STT_MAX_AUDIO_SECONDS"
+            )
         return self
 
 

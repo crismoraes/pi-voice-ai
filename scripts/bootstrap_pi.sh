@@ -12,6 +12,7 @@ missing_packages=()
 command -v git >/dev/null 2>&1 || missing_packages+=(git)
 command -v python3 >/dev/null 2>&1 || missing_packages+=(python3)
 command -v curl >/dev/null 2>&1 || missing_packages+=(curl)
+command -v bzip2 >/dev/null 2>&1 || missing_packages+=(bzip2)
 if command -v python3 >/dev/null 2>&1; then
     python3 -m venv --help >/dev/null 2>&1 || missing_packages+=(python3-venv)
     python3 -m pip --version >/dev/null 2>&1 || missing_packages+=(python3-pip)
@@ -30,6 +31,7 @@ fi
 
 "$project_dir/.venv/bin/python" -m pip install --upgrade 'pip>=25,<27'
 "$project_dir/.venv/bin/python" -m pip install -e "$project_dir[dev]"
+"$project_dir/scripts/download_stt_model.sh"
 
 if [[ ! -f "$project_dir/.env" ]]; then
     cp "$project_dir/.env.example" "$project_dir/.env"

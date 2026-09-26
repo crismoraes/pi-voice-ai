@@ -4,14 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pi-voice-ai"
-version = "0.2.0"
+version = "0.3.0.dev0"
 description = "Low-latency voice assistant foundation for Raspberry Pi 5"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "aiortc==1.15.0",
     "fastapi==0.141.1",
+    "numpy==2.4.6",
     "pydantic-settings==2.15.0",
+    "sherpa-onnx==1.13.8",
     "uvicorn==0.53.0",
 ]
 

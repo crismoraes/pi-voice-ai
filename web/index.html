@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PiVoice AI — WebRTC Loopback</title>
+    <title>PiVoice AI — Transcrição local</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <main class="panel">
-      <p class="eyebrow">PiVoice AI · Fase 2</p>
-      <h1>Teste de áudio WebRTC</h1>
+      <p class="eyebrow">PiVoice AI · Fase 3</p>
+      <h1>Transcrição local</h1>
       <p class="description">
-        O microfone do navegador será enviado ao Raspberry Pi e retornará ao seu
-        alto-falante. Use fones de ouvido para evitar microfonia.
+        O navegador envia o microfone por WebRTC. O Raspberry Pi converte a fala
+        em texto localmente, sem enviar áudio para serviços externos.
       </p>
 
       <div class="status-row" aria-live="polite">
@@ -21,12 +21,26 @@
       </div>
 
       <div class="actions">
-        <button id="start" type="button">Iniciar loopback</button>
-        <button id="stop" class="secondary" type="button" disabled>Encerrar</button>
+        <button id="start" type="button">Conectar microfone</button>
+        <button id="record" type="button" disabled>Começar a falar</button>
+        <button id="stop" class="secondary" type="button" disabled>Desconectar</button>
       </div>
 
+      <label class="loopback-option">
+        <input id="loopback" type="checkbox">
+        Ouvir retorno do microfone
+      </label>
+
+      <section class="transcript" aria-live="polite" aria-labelledby="transcript-title">
+        <div class="transcript-heading">
+          <h2 id="transcript-title">Transcrição</h2>
+          <span id="metrics"></span>
+        </div>
+        <p id="transcript-text">A transcrição aparecerá aqui.</p>
+      </section>
+
       <p id="error" class="error" role="alert"></p>
-      <audio id="remote-audio" autoplay></audio>
+      <audio id="remote-audio" autoplay muted></audio>
     </main>
     <script src="/app.js" defer></script>
   </body>
