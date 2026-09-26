@@ -36,6 +36,7 @@ class ContextAwareLanguageModel(LanguageModel):
         text: str,
         *,
         history: tuple[ConversationMessage, ...] = (),
+        on_usage=None,
     ):
         self.histories.append(history)
         yield "Olá, Ana." if not history else "Seu nome é Ana."
@@ -56,7 +57,7 @@ class EmptyThenTextLanguageModel(LanguageModel):
     def __init__(self) -> None:
         self.calls = 0
 
-    async def stream_response(self, text: str, *, history=()):
+    async def stream_response(self, text: str, *, history=(), on_usage=None):
         self.calls += 1
         if self.calls == 1:
             return
@@ -124,7 +125,7 @@ def test_conversation_retries_one_empty_model_response() -> None:
 
 def test_conversation_queues_tts_in_sentence_chunks() -> None:
     class SentenceModel(LanguageModel):
-        async def stream_response(self, text: str, *, history=()):
+        async def stream_response(self, text: str, *, history=(), on_usage=None):
             yield "Primeira frase. Segunda frase."
 
     async def exercise() -> tuple[object, list[float], list[str]]:

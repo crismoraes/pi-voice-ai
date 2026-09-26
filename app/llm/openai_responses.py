@@ -11,6 +11,8 @@ from app.llm.base import (
     LanguageModel,
     LanguageModelError,
     LanguageModelUnavailableError,
+    TokenUsage,
+    UsageHandler,
 )
 
 
@@ -51,6 +53,7 @@ class OpenAIResponsesLanguageModel(LanguageModel):
         text: str,
         *,
         history: tuple[ConversationMessage, ...] = (),
+        on_usage: UsageHandler | None = None,
     ) -> AsyncIterator[str]:
         model_input: str | list[dict[str, str]] = text
         if history:
@@ -72,6 +75,23 @@ class OpenAIResponsesLanguageModel(LanguageModel):
                 async for event in stream:
                     if event.type == "response.output_text.delta" and event.delta:
                         yield event.delta
+                    elif event.type == "response.completed" and on_usage is not None:
+                        response = event.response
+                        usage = response.usage
+                        if usage is None:
+                            continue
+                        input_details = getattr(usage, "input_tokens_details", None)
+                        output_details = getattr(usage, "output_tokens_details", None)
+                        on_usage(
+                            TokenUsage(
+                                model=getattr(response, "model", self.model),
+                                input_tokens=usage.input_tokens,
+                                cached_input_tokens=getattr(input_details, "cached_tokens", 0),
+                                output_tokens=usage.output_tokens,
+                                reasoning_output_tokens=getattr(output_details, "reasoning_tokens", 0),
+                                total_tokens=usage.total_tokens,
+                            )
+                        )
                     elif event.type == "error":
                         raise LanguageModelError("OpenAI stream failed")
         except LanguageModelUnavailableError:

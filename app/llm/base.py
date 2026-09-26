@@ -1,7 +1,7 @@
 """Replaceable language model contract."""
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 
 
@@ -19,6 +19,21 @@ class ConversationMessage:
     content: str
 
 
+@dataclass(frozen=True, slots=True)
+class TokenUsage:
+    """Provider-reported token counts for one completed model request."""
+
+    model: str
+    input_tokens: int
+    cached_input_tokens: int
+    output_tokens: int
+    reasoning_output_tokens: int
+    total_tokens: int
+
+
+UsageHandler = Callable[[TokenUsage], None]
+
+
 class LanguageModel(ABC):
     """Stream text responses without coupling callers to one provider."""
 
@@ -28,6 +43,7 @@ class LanguageModel(ABC):
         text: str,
         *,
         history: tuple[ConversationMessage, ...] = (),
+        on_usage: UsageHandler | None = None,
     ) -> AsyncIterator[str]:
         """Yield response text as it becomes available."""
 

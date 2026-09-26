@@ -37,7 +37,7 @@ class FakeTextToSpeech(TextToSpeech):
 class FakeLanguageModel(LanguageModel):
     model = "fake-conversation-model"
 
-    async def stream_response(self, text: str, *, history=()):
+    async def stream_response(self, text: str, *, history=(), on_usage=None):
         assert text == "teste de transcrição local"
         yield "resposta "
         yield "falada"

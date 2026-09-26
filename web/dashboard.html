@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PiVoice AI — Consumo</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="panel dashboard-panel">
+      <nav class="top-nav"><a href="/">← Assistente</a></nav>
+      <p class="eyebrow">PiVoice AI · Fase 10</p>
+      <div class="dashboard-title">
+        <div><h1>Consumo e custos</h1><p id="pricing-note" class="description"></p></div>
+        <label>Período
+          <select id="days"><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">1 ano</option></select>
+        </label>
+      </div>
+
+      <section class="metric-grid" aria-label="Resumo">
+        <article><span>Conversas</span><strong id="turns">—</strong></article>
+        <article><span>Tokens totais</span><strong id="tokens">—</strong></article>
+        <article><span>Entrada</span><strong id="input-tokens">—</strong></article>
+        <article><span>Saída</span><strong id="output-tokens">—</strong></article>
+        <article><span>Cache</span><strong id="cached-tokens">—</strong></article>
+        <article><span>Custo estimado</span><strong id="cost">—</strong></article>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>Histórico diário</h2>
+        <div id="chart" class="usage-chart"><p class="empty">Ainda não há dados.</p></div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>Últimas falas</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Origem</th><th>Modelo</th><th>Entrada</th><th>Cache</th><th>Saída</th><th>Total</th><th>Custo</th><th>LLM</th></tr></thead>
+            <tbody id="turn-list"><tr><td colspan="9">Ainda não há dados.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <p class="privacy-note">Somente métricas numéricas são armazenadas localmente. Áudio, transcrição e resposta não entram neste histórico.</p>
+      <p id="dashboard-error" class="error" role="alert"></p>
+    </main>
+    <script src="/dashboard.js" defer></script>
+  </body>
+</html>

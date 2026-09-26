@@ -6,10 +6,16 @@
 
 - Métricas sanitizadas de pico, RMS e saturação do áudio antes do STT para
   diagnosticar qualidade do microfone sem registrar fala ou transcrição.
+- Histórico local SQLite com tokens de entrada, cache, saída e raciocínio informados
+  pela Responses API, latências por fala e custo estimado com tarifas configuráveis.
+- Dashboard responsivo com totais, gráfico diário, filtros por período e últimas
+  falas, sem armazenar áudio, transcrição ou texto da resposta.
+- APIs somente leitura em `/api/usage/summary` e `/api/usage/turns`.
 
 ### Changed
 
 - Versão de desenvolvimento elevada para `0.9.1.dev0` após o marco USB.
+- O contrato de LLM pode entregar metadados finais de uso junto ao streaming.
 
 ## [0.9.0] - 2026-09-26
 

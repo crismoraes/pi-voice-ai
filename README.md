@@ -17,6 +17,39 @@ versão `v0.9.0` adiciona microfone e alto-falante USB diretamente no Raspberry 
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
+## Fase 10 — dashboard local de tokens e custos
+
+Cada resposta concluída pela Responses API informa contagens reais de tokens de
+entrada, entrada em cache, saída, raciocínio e total. O PiVoice AI grava essas
+métricas em `data/usage.db`, um banco SQLite local ignorado pelo Git. Áudio,
+transcrição, pergunta e resposta não são armazenados nesse histórico.
+
+Abra `https://<host-do-pi>:8443/dashboard.html` ou use o link **Ver consumo e
+custos** na página principal. O painel mostra totais por período, gráfico diário e
+as últimas falas. As APIs de leitura são:
+
+```text
+GET /api/usage/summary?days=30
+GET /api/usage/turns?days=30&limit=100
+```
+
+O custo é uma estimativa local. Cada linha conserva o modelo, a data e as tarifas
+usadas no cálculo. Se o modelo retornado não corresponder ao modelo da tabela de
+preços, o turno continua com os tokens reais e fica sem estimativa monetária.
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `USAGE_DB_PATH` | `data/usage.db` | Banco SQLite local |
+| `USAGE_PRICING_MODEL` | `gpt-6-luna` | Modelo coberto pelas tarifas |
+| `USAGE_INPUT_PRICE_PER_MILLION` | `0.10` | Entrada em USD por milhão |
+| `USAGE_CACHED_INPUT_PRICE_PER_MILLION` | `0.01` | Entrada em cache por milhão |
+| `USAGE_OUTPUT_PRICE_PER_MILLION` | `0.50` | Saída em USD por milhão |
+| `USAGE_PRICING_DATE` | `2026-09-26` | Data de referência da tabela |
+
+Os valores padrão correspondem ao modo Standard publicado para `gpt-6-luna` na
+[página oficial de preços](https://developers.openai.com/api/docs/pricing?tab=suite).
+Atualize a configuração quando a tabela oficial mudar.
+
 ## Fase 9 — áudio USB
 
 O modo `AUDIO_MODE=usb` usa `arecord` e `aplay` do ALSA para conectar um microfone

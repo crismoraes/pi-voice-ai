@@ -36,7 +36,19 @@ class FakeResponses:
                 SimpleNamespace(type="response.created"),
                 SimpleNamespace(type="response.output_text.delta", delta="Olá"),
                 SimpleNamespace(type="response.output_text.delta", delta="!"),
-                SimpleNamespace(type="response.completed"),
+                SimpleNamespace(
+                    type="response.completed",
+                    response=SimpleNamespace(
+                        model="test-model-2026-09-01",
+                        usage=SimpleNamespace(
+                            input_tokens=120,
+                            input_tokens_details=SimpleNamespace(cached_tokens=20),
+                            output_tokens=30,
+                            output_tokens_details=SimpleNamespace(reasoning_tokens=5),
+                            total_tokens=150,
+                        ),
+                    ),
+                ),
             ]
         )
 
@@ -53,7 +65,7 @@ class FakeOpenAIClient:
 class FakeLanguageModel(LanguageModel):
     model = "fake-model"
 
-    async def stream_response(self, text: str):
+    async def stream_response(self, text: str, *, history=(), on_usage=None):
         assert text == "Como você está?"
         yield "Estou "
         yield "bem."
@@ -98,6 +110,37 @@ def test_openai_adapter_requires_api_key() -> None:
 
     with pytest.raises(LanguageModelUnavailableError, match="OPENAI_API_KEY"):
         asyncio.run(collect_model_response(model, "teste"))
+
+
+def test_openai_adapter_reports_provider_token_usage() -> None:
+    client = FakeOpenAIClient()
+    model = OpenAIResponsesLanguageModel(
+        api_key="test-key",
+        model="test-model",
+        instructions="Seja breve.",
+        max_output_tokens=100,
+        timeout_seconds=10,
+        client=client,
+    )
+    reported = []
+
+    async def collect() -> str:
+        return "".join(
+            [
+                chunk
+                async for chunk in model.stream_response(
+                    "teste", on_usage=reported.append
+                )
+            ]
+        )
+
+    assert asyncio.run(collect()) == "Olá!"
+    assert reported[0].model == "test-model-2026-09-01"
+    assert reported[0].input_tokens == 120
+    assert reported[0].cached_input_tokens == 20
+    assert reported[0].output_tokens == 30
+    assert reported[0].reasoning_output_tokens == 5
+    assert reported[0].total_tokens == 150
 
 
 def test_openai_adapter_sends_bounded_conversation_history() -> None:

@@ -10,10 +10,11 @@ from time import perf_counter
 
 import numpy as np
 
-from app.llm.base import ConversationMessage, LanguageModel
+from app.llm.base import ConversationMessage, LanguageModel, TokenUsage
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.tts.base import SynthesisResult, TextToSpeech
 from app.tts.chunking import split_text_for_speech
+from app.usage.store import UsageStore, UsageTurn
 
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
@@ -46,12 +47,14 @@ class ConversationManager:
         text_to_speech: TextToSpeech,
         max_turns: int,
         tts_chunk_characters: int = 240,
+        usage_store: UsageStore | None = None,
     ) -> None:
         self._speech_to_text = speech_to_text
         self._language_model = language_model
         self._text_to_speech = text_to_speech
         self._max_messages = max_turns * 2
         self._tts_chunk_characters = tts_chunk_characters
+        self._usage_store = usage_store
         self._states: dict[str, ConversationState] = {}
 
     def forget(self, session_id: str) -> None:
@@ -112,11 +115,13 @@ class ConversationManager:
                 },
             )
             response_text = ""
+            token_usage: list[TokenUsage] = []
             for attempt in range(2):
                 response_parts: list[str] = []
                 async for delta in self._language_model.stream_response(
                     transcription.text,
                     history=tuple(state.history),
+                    on_usage=token_usage.append,
                 ):
                     if first_text_seconds is None and delta.strip():
                         first_text_seconds = perf_counter() - started_at
@@ -143,6 +148,35 @@ class ConversationManager:
                     "total_seconds": round(total_text_seconds, 3),
                 },
             )
+            if self._usage_store is not None and token_usage:
+                combined_usage = TokenUsage(
+                    model=token_usage[-1].model,
+                    input_tokens=sum(item.input_tokens for item in token_usage),
+                    cached_input_tokens=sum(item.cached_input_tokens for item in token_usage),
+                    output_tokens=sum(item.output_tokens for item in token_usage),
+                    reasoning_output_tokens=sum(
+                        item.reasoning_output_tokens for item in token_usage
+                    ),
+                    total_tokens=sum(item.total_tokens for item in token_usage),
+                )
+                try:
+                    await asyncio.to_thread(
+                        self._usage_store.record,
+                        UsageTurn(
+                            source="usb" if session_id == "usb" else "webrtc",
+                            session_id=session_id,
+                            usage=combined_usage,
+                            request_count=len(token_usage),
+                            audio_seconds=transcription.audio_seconds,
+                            first_text_seconds=first_text_seconds,
+                            total_seconds=total_text_seconds,
+                        ),
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "USAGE_RECORD_FAILED",
+                        extra={"error_type": type(exc).__name__},
+                    )
             state.history.extend(
                 (
                     ConversationMessage(role="user", content=transcription.text),

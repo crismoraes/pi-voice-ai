@@ -52,6 +52,20 @@ class Settings(BaseSettings):
     openai_timeout_seconds: float = Field(
         default=30, ge=1, le=120, alias="OPENAI_TIMEOUT_SECONDS"
     )
+    usage_db_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "usage.db", alias="USAGE_DB_PATH"
+    )
+    usage_pricing_model: str = Field(default="gpt-6-luna", alias="USAGE_PRICING_MODEL")
+    usage_input_price_per_million: float = Field(
+        default=0.10, ge=0, alias="USAGE_INPUT_PRICE_PER_MILLION"
+    )
+    usage_cached_input_price_per_million: float = Field(
+        default=0.01, ge=0, alias="USAGE_CACHED_INPUT_PRICE_PER_MILLION"
+    )
+    usage_output_price_per_million: float = Field(
+        default=0.50, ge=0, alias="USAGE_OUTPUT_PRICE_PER_MILLION"
+    )
+    usage_pricing_date: str = Field(default="2026-09-26", alias="USAGE_PRICING_DATE")
     llm_instructions: str = Field(
         default=(
             "Responda em português brasileiro, de forma natural, concisa e sem Markdown."
@@ -136,6 +150,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "STT_MIN_AUDIO_SECONDS must be lower than STT_MAX_AUDIO_SECONDS"
             )
+        return self
+
+    @model_validator(mode="after")
+    def resolve_usage_db_path(self) -> "Settings":
+        if not self.usage_db_path.is_absolute():
+            self.usage_db_path = PROJECT_ROOT / self.usage_db_path
         return self
 
     @model_validator(mode="after")

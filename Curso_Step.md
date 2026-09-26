@@ -1033,6 +1033,32 @@ confundir a própria voz do alto-falante com uma nova pergunta. O barge-in WebRT
 permanece habilitado e não é afetado por essa escolha. Com captura, conversa, voz,
 níveis de mixer, recuperação de falha e documentação validados, a Fase 9 foi concluída.
 
+## Fase 10 — medindo tokens e estimando custos
+
+O evento final do streaming da Responses API contém o uso calculado pelo provedor.
+A aplicação captura essas contagens no servidor e associa cada chamada à duração e
+latência do turno. Isso demonstra que o custo inclui instruções e histórico da
+conversa, além da frase atual.
+
+O exercício da aula cria um banco SQLite local com dados numéricos e uma página em
+`/dashboard.html`. O aluno compara entrada, cache, saída, total e custo por fala,
+além dos acumulados de 7, 30, 90 ou 365 dias. O projeto não grava áudio, transcrição
+ou resposta. A tabela de preços fica configurável porque tarifas e aliases podem
+mudar, e o dashboard chama o valor monetário de estimativa.
+
+Fluxo ensinado:
+
+```text
+Fala -> STT local -> Responses API -> response.completed.usage
+                                      |
+                                      v
+                              SQLite local -> dashboard
+```
+
+A documentação oficial descreve os campos de uso na
+[Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+e publica a [tabela de preços](https://developers.openai.com/api/docs/pricing?tab=suite).
+
 # Perguntas frequentes e troubleshooting do curso
 
 Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
@@ -1213,6 +1239,11 @@ journalctl -u pi-voice-ai.service -f
 Nas versões seguintes ao primeiro diagnóstico, o próprio serviço restaura os níveis
 definidos por `USB_PLAYBACK_VOLUME_PERCENT` e `USB_CAPTURE_VOLUME_PERCENT` durante a
 inicialização. Os comandos manuais continuam úteis para testar o hardware isolado.
+
+O sintoma reapareceu durante a avaliação do Whisper Small: serviço, modelo e
+`arecord` estavam ativos, mixer em 75%/100%, mas não surgiam eventos de fala. O Pi
+não havia reiniciado. Resetar somente a interface P10S com `usbreset 1234:5684` e
+reiniciar o serviço recriou a captura, sem reboot do sistema operacional.
 
 ## Por que o barge-in USB começa desativado?
 

@@ -13,10 +13,12 @@ from app import __version__
 from app.api.assistant import language_model, router as assistant_router
 from app.api.health import router as health_router
 from app.api.signaling import router as signaling_router
+from app.api.usage import router as usage_router
 from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
+from app.usage.runtime import usage_store
 from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
 from app.webrtc.manager import peer_manager, speech_to_text, text_to_speech
 
@@ -30,6 +32,7 @@ conversation_manager = ConversationManager(
     text_to_speech=text_to_speech,
     max_turns=settings.conversation_max_turns,
     tts_chunk_characters=settings.tts_chunk_characters,
+    usage_store=usage_store,
 )
 vad_factory = lambda: SherpaSileroVoiceActivityDetector(
     model_path=settings.vad_model_path,
@@ -65,6 +68,13 @@ usb_audio = (
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    try:
+        await asyncio.to_thread(usage_store.initialize)
+    except Exception as exc:
+        logger.warning(
+            "USAGE_STORE_INITIALIZATION_FAILED",
+            extra={"error_type": type(exc).__name__},
+        )
     await asyncio.gather(speech_to_text.warm_up(), text_to_speech.warm_up())
     logger.info("APP_MODELS_READY")
     if usb_audio is not None:
@@ -91,6 +101,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(signaling_router)
 app.include_router(assistant_router)
+app.include_router(usage_router)
 app.mount(
     "/",
     StaticFiles(directory=str(PROJECT_ROOT / "web"), html=True),

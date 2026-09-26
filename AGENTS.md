@@ -285,6 +285,15 @@ logs. The user's USB speech is often misunderstood, and recent segments include
 several very short 0.49–0.94 second utterances. Test a 1.2-second ending-silence
 setting and inspect these signal metrics before changing the selected Whisper model.
 
+The user authorized the token and cost dashboard as the first bounded Phase 10
+item. The Responses API adapter now captures provider-reported input, cached input,
+output, reasoning and total token counts from the completed streaming response.
+Numeric per-turn usage, latency and configured USD estimates are stored in the
+ignored local SQLite database `data/usage.db`. Audio, transcripts, prompts and
+assistant text are not stored. Read-only summary and recent-turn APIs feed
+`/dashboard.html`. Pricing is environment-configurable and dated because provider
+prices can change. This authorization does not yet declare all of Phase 10 complete.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
