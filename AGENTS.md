@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2, 3, 4 and 5 complete
+## Current implementation state — Phases 0, 1, 2, 3, 4 and 5 complete; Phase 6 validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -185,8 +185,32 @@ contain no errors. The user completed the physical browser test with a 5.50-seco
 Portuguese question. STT took 0.79 seconds, RTF 0.14; first LLM text arrived in
 0.97 seconds and completed in 1.13 seconds. The correct Washington, D.C. answer
 produced 2.79 seconds of audible speech in 0.56 seconds, RTF 0.20. Phase 5 is
-complete at version `0.5.0`. Do not begin Phase 6 without explicit user
-authorization.
+complete at version `0.5.0`.
+
+The user authorized Phase 6. Version `0.6.0.dev0` adds automatic utterance
+segmentation with the official sherpa-onnx Silero VAD model and a transport-neutral
+`ConversationManager`. The VAD receives the existing 16 kHz mono stream, uses a
+0.5 threshold, 0.3-second minimum speech and 0.8-second ending silence. Its 643,854
+byte model is downloaded outside Git and checked against the recorded SHA-256.
+
+Each automatic turn runs local STT, streams an OpenAI text response, runs local TTS
+and queues the synthesized samples on the peer's WebRTC output. An SSE stream reports
+speech boundaries, transcript metrics, text deltas, LLM timing, TTS timing and ready
+state to the browser. Manual capture remains available when automatic mode is off.
+
+Conversation history is isolated by peer, limited to six user/assistant pairs and
+deleted on disconnect. Only text context is sent to OpenAI; audio stays local. While
+a turn is being processed and played, microphone frames are ignored to prevent echo
+feedback. Barge-in remains Phase 7 work and is not enabled.
+
+Fourteen tests pass on Windows and Raspberry Pi ARM64. The real VAD loaded on both
+platforms and segmented synthesized Portuguese speech. A deployed two-turn check
+finished with four history messages, delivered two spoken responses over WebRTC and
+produced 463 audible frames on Windows without log errors. Synthetic speech exposed
+expected Whisper Tiny word errors, while the second response still proved the first
+recognized turn was present in context. Physical browser validation with human speech
+remains required before Phase 6 is complete and `v0.6.0` is released. Do not begin
+Phase 7 without explicit user authorization.
 
 ## Project Goal
 

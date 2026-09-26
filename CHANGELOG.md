@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### Added
+
+- Silero VAD local para detectar início e fim da fala sem controle manual.
+- `ConversationManager` independente do transporte, integrando STT, LLM e TTS.
+- Histórico limitado por peer e contexto de múltiplos turnos na Responses API.
+- Eventos SSE da conversa automática e modo correspondente na interface web.
+- Download do modelo VAD com checksum e verificador de conversa implantada.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.6.0.dev0`.
+- Barge-in e transcrições parciais ficam explicitamente desabilitados até suas fases.
+
+### Validated
+
+- Quatorze testes no Windows e no Raspberry Pi ARM64.
+- Modelo VAD carregado nos dois ambientes e pergunta portuguesa segmentada por silêncio.
+- Dois turnos implantados na mesma sessão, com quatro mensagens no histórico ao final.
+- Duas respostas TTS entregues por WebRTC, totalizando 463 frames audíveis no Windows.
+
+### Pending
+
+- Validação física do VAD e da memória de conversa no navegador antes de `v0.6.0`.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added

@@ -5,13 +5,77 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2, 3, 4 e 5 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2, 3, 4 e 5 concluídas; Fase 6 em validação.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
 adiciona TTS português local e retorno de voz por WebRTC.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 6 — conversa automática com VAD e contexto
+
+A interface pode manter o microfone aberto e detectar automaticamente quando o
+usuário começa e termina de falar. Cada segmento completo percorre o pipeline sem
+cliques adicionais:
+
+```text
+WebRTC -> Silero VAD -> STT local -> OpenAI com contexto -> TTS local -> WebRTC
+```
+
+O VAD usa o modelo oficial `silero_vad.onnx` do sherpa-onnx em áudio mono de
+16 kHz, janelas de 512 amostras e silêncio final padrão de 0,8 s. O modelo tem
+643.854 bytes e é instalado fora do Git com checksum:
+
+```bash
+./scripts/download_vad_model.sh
+```
+
+Referências: [Silero VAD no sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/vad/silero-vad.html)
+e [exemplo Python oficial](https://github.com/k2-fsa/sherpa-onnx/blob/master/python-api-examples/vad-microphone.py).
+
+O `ConversationManager` não depende do WebRTC. Ele orquestra STT, streaming do LLM
+e TTS, e mantém até seis pares de pergunta e resposta por peer. Esse histórico é
+enviado como mensagens à Responses API somente nos turnos seguintes. Ao desconectar,
+o estado da conversa é descartado.
+
+Configuração:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `VAD_ENGINE` | `sherpa-silero` | Adaptador de detecção de fala |
+| `VAD_MODEL_PATH` | `models/silero_vad.onnx` | Arquivo ONNX fora do Git |
+| `VAD_THRESHOLD` | `0.5` | Limiar de probabilidade de fala |
+| `VAD_MIN_SILENCE_SECONDS` | `0.8` | Silêncio que encerra a frase |
+| `VAD_MIN_SPEECH_SECONDS` | `0.3` | Menor fala aceita |
+| `VAD_MAX_SPEECH_SECONDS` | `30` | Limite de uma frase |
+| `VAD_NUM_THREADS` | `1` | Threads do detector |
+| `CONVERSATION_MAX_TURNS` | `6` | Pares mantidos no contexto |
+
+O navegador abre um fluxo SSE por peer e recebe eventos de fala iniciada, fim da
+fala, transcrição, deltas do assistente, síntese e prontidão para o próximo turno.
+A gravação manual continua disponível ao desmarcar **Conversa automática**.
+
+Quatorze testes passaram no Windows e no Pi ARM64. O verificador implantado executou
+dois turnos de áudio na mesma sessão, detectou cada final por silêncio, entregou as
+duas respostas faladas por WebRTC e confirmou que o segundo turno recebeu as duas
+mensagens do primeiro. O peer Windows recebeu 463 frames audíveis, com pico PCM
+14.223, e os logs não apresentaram erros.
+
+Para repetir com um ou mais WAVs:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\live_conversation_check.py `
+  --url https://home-ai.local:8443 `
+  --ca-file "$env:LOCALAPPDATA\mkcert\rootCA.pem" `
+  --audio-file primeira-frase.wav `
+  --audio-file segunda-frase.wav
+```
+
+Durante STT, LLM, síntese e reprodução, novos frames do microfone são ignorados para
+evitar que o assistente responda à própria voz. Interromper uma resposta em andamento
+será implementado como barge-in na Fase 7. A Fase 6 aguarda a validação física de
+detecção automática e memória no navegador antes da publicação de `v0.6.0`.
 
 ## Fase 5 — TTS local e resposta falada
 

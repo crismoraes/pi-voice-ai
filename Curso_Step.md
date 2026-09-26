@@ -816,3 +816,71 @@ fala foram transcritos em 0,79 s, RTF `0,14`. O modelo respondeu corretamente
 Washington, D.C.; o primeiro texto apareceu em 0,97 s e terminou em 1,13 s. O Pi
 gerou 2,79 s de voz em 0,56 s, RTF `0,20`, e o navegador reproduziu a resposta.
 Esse teste encerrou a Fase 5 no marco `v0.5.0`.
+
+## Fase 6 — conversa automática e contexto
+
+### Objetivo da aula
+
+Retirar o botão de finalização do caminho principal. O microfone permanece aberto,
+o Raspberry Pi identifica uma frase completa pelo silêncio e executa STT, LLM e TTS.
+Perguntas posteriores recebem o histórico recente da mesma sessão.
+
+### VAD local
+
+Foi escolhido o `silero_vad.onnx` oficial suportado pelo sherpa-onnx. O detector usa
+16 kHz, janela de 512 amostras, limiar `0,5`, fala mínima de 0,3 s e silêncio final
+de 0,8 s. O arquivo observado tinha 643.854 bytes e SHA-256
+`9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6`.
+
+```bash
+./scripts/download_vad_model.sh
+```
+
+O script é idempotente: aceita o arquivo existente somente quando o checksum passa.
+O bootstrap agora instala STT, TTS e VAD sem armazenar modelos no Git.
+
+### Orquestração independente do transporte
+
+`ConversationManager` recebe as abstrações `SpeechToText`, `LanguageModel` e
+`TextToSpeech`. Cada peer possui histórico e lock próprios. Um turno emite:
+
+```text
+speech_started -> speech_ended -> transcribing -> transcript
+-> assistant_delta(s) -> assistant_done -> tts_done -> ready
+```
+
+O navegador acompanha os eventos por SSE e continua recebendo o áudio pelo WebRTC.
+A fila de eventos é limitada; se o cliente parar de consumir, os eventos antigos são
+descartados sem bloquear áudio ou inferência. O histórico conserva no máximo seis
+pares e é apagado ao fechar o peer. Prompts, transcrições e respostas não são logs.
+
+### Compatibilidade com o modo manual
+
+A caixa **Conversa automática** vem marcada. Ao desmarcá-la, os endpoints manuais de
+captura, streaming textual e síntese da Fase 5 continuam disponíveis. O loopback de
+diagnóstico também permanece separado.
+
+Enquanto um turno é processado e reproduzido, a entrada do VAD é pausada. Isso evita
+realimentação da voz do assistente. A interrupção intencional, chamada barge-in, é o
+objetivo da Fase 7 e ainda não está ativa.
+
+### Validação inicial
+
+Quatorze testes passaram no Windows e no Raspberry Pi. O teste de integração usa
+dois peers WebRTC, um VAD determinístico e adaptadores falsos para comprovar toda a
+sequência automática. Outro teste executa duas rodadas no gerenciador e verifica que
+o segundo pedido recebe o primeiro par de mensagens.
+
+O Silero real carregou no Windows e segmentou uma pergunta portuguesa sintetizada.
+Na implantação `0.6.0.dev0`, um teste de dois turnos produziu quatro mensagens de
+histórico ao final. O segundo LLM recebeu `history_messages: 2`, confirmando o uso
+do primeiro turno. As duas respostas chegaram pelo WebRTC; o Windows observou 463
+frames audíveis e pico PCM 14.223. Não houve erro no journald.
+
+O Whisper Tiny teve erros nas frases sintetizadas, mas o segundo modelo respondeu
+usando exatamente o conteúdo que havia sido reconhecido no primeiro turno. Isso
+separa a validação da memória da avaliação de qualidade do STT.
+
+Falta validar com voz humana no navegador: falar sem clicar em finalizar, aguardar a
+resposta e fazer uma segunda pergunta dependente da primeira. Depois desse teste, a
+Fase 6 poderá ser publicada como `v0.6.0`.

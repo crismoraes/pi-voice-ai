@@ -1,4 +1,4 @@
-"""Run one automatic voice turn against a live PiVoice AI deployment."""
+"""Run automatic voice turns against a live PiVoice AI deployment."""
 
 from __future__ import annotations
 
@@ -20,13 +20,21 @@ from av.audio.resampler import AudioResampler
 from httpx import AsyncClient
 
 
-class WavThenSilenceTrack(MediaStreamTrack):
+class QueuedWavTrack(MediaStreamTrack):
     kind = "audio"
     sample_rate = 16_000
     frame_samples = 320
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, paths: list[Path]) -> None:
         super().__init__()
+        self._clips = [self._load(path) for path in paths]
+        self._next_clip = 0
+        self._samples = np.empty(0, dtype=np.int16)
+        self._offset = 0
+        self._timestamp = 0
+        self._started_at: float | None = None
+
+    def _load(self, path: Path) -> np.ndarray:
         resampler = AudioResampler(format="s16", layout="mono", rate=self.sample_rate)
         chunks: list[np.ndarray] = []
         with av.open(str(path)) as container:
@@ -37,11 +45,17 @@ class WavThenSilenceTrack(MediaStreamTrack):
                 chunks.append(converted.to_ndarray().reshape(-1))
         if not chunks:
             raise ValueError(f"No audio samples found in {path}")
-        padding = np.zeros(self.sample_rate * 3, dtype=np.int16)
-        self._samples = np.concatenate((padding[: self.sample_rate // 4], *chunks, padding))
+        return np.concatenate(chunks).astype(np.int16, copy=False)
+
+    def play_next(self) -> None:
+        if self._next_clip >= len(self._clips):
+            raise RuntimeError("No queued WAV remains")
+        leading_silence = np.zeros(self.sample_rate // 4, dtype=np.int16)
+        self._samples = np.concatenate(
+            (leading_silence, self._clips[self._next_clip])
+        )
+        self._next_clip += 1
         self._offset = 0
-        self._timestamp = 0
-        self._started_at: float | None = None
 
     async def recv(self) -> AudioFrame:
         if self.readyState != "live":
@@ -54,9 +68,12 @@ class WavThenSilenceTrack(MediaStreamTrack):
             if wait > 0:
                 await asyncio.sleep(wait)
 
-        end = self._offset + self.frame_samples
-        chunk = self._samples[self._offset:end]
-        self._offset = end
+        if self._offset < len(self._samples):
+            end = self._offset + self.frame_samples
+            chunk = self._samples[self._offset:end]
+            self._offset = end
+        else:
+            chunk = np.empty(0, dtype=np.int16)
         if len(chunk) < self.frame_samples:
             chunk = np.pad(chunk, (0, self.frame_samples - len(chunk)))
         frame = AudioFrame.from_ndarray(
@@ -70,9 +87,14 @@ class WavThenSilenceTrack(MediaStreamTrack):
         return frame
 
 
-async def check_conversation(base_url: str, ca_file: Path, audio_file: Path) -> dict:
+async def check_conversation(
+    base_url: str,
+    ca_file: Path,
+    audio_files: list[Path],
+) -> dict:
     peer = RTCPeerConnection()
-    peer.addTrack(WavThenSilenceTrack(audio_file))
+    input_track = QueuedWavTrack(audio_files)
+    peer.addTrack(input_track)
     connected = asyncio.get_running_loop().create_future()
     received_track = asyncio.get_running_loop().create_future()
     receiver_task: asyncio.Task[None] | None = None
@@ -142,7 +164,8 @@ async def check_conversation(base_url: str, ca_file: Path, audio_file: Path) -> 
                 output_track = await asyncio.wait_for(received_track, timeout=10)
                 receiver_task = asyncio.create_task(receive_audio(output_track))
 
-                events: list[tuple[str, dict]] = []
+                current_events: list[tuple[str, dict]] = []
+                turns: list[dict] = []
                 event_name = "message"
                 data = ""
                 completed_turn = False
@@ -153,31 +176,25 @@ async def check_conversation(base_url: str, ca_file: Path, audio_file: Path) -> 
                         data = line[5:].strip()
                     elif not line and data:
                         payload = json.loads(data)
-                        events.append((event_name, payload))
                         if event_name == "tts_done":
                             completed_turn = True
-                        elif event_name == "ready" and completed_turn:
-                            break
+                            current_events.append((event_name, payload))
+                        elif event_name == "ready":
+                            if completed_turn:
+                                turns.append(summarize_turn(current_events))
+                                current_events = []
+                                completed_turn = False
+                            if len(turns) == len(audio_files):
+                                break
+                            input_track.play_next()
+                        else:
+                            current_events.append((event_name, payload))
                         event_name = "message"
                         data = ""
-
-                event_map: dict[str, dict] = {}
-                response_text = ""
-                for event, payload in events:
-                    event_map[event] = payload
-                    if event == "assistant_delta":
-                        response_text += payload["text"]
-                required = {"speech_started", "speech_ended", "transcript", "assistant_done", "tts_done"}
-                missing = required.difference(event_map)
-                if missing:
-                    raise RuntimeError(f"Missing conversation events: {sorted(missing)}")
                 if audible_frames == 0:
                     raise RuntimeError("No assistant speech arrived over WebRTC")
                 return {
-                    "transcript": event_map["transcript"],
-                    "response_text": response_text,
-                    "assistant": event_map["assistant_done"],
-                    "tts": event_map["tts_done"],
+                    "turns": turns,
                     "received_peak": received_peak,
                     "audible_frames": audible_frames,
                 }
@@ -197,11 +214,42 @@ async def check_conversation(base_url: str, ca_file: Path, audio_file: Path) -> 
             await asyncio.gather(receiver_task, return_exceptions=True)
 
 
+def summarize_turn(events: list[tuple[str, dict]]) -> dict:
+    event_map: dict[str, dict] = {}
+    response_text = ""
+    for event, payload in events:
+        event_map[event] = payload
+        if event == "assistant_delta":
+            response_text += payload["text"]
+    required = {
+        "speech_started",
+        "speech_ended",
+        "transcript",
+        "assistant_done",
+        "tts_done",
+    }
+    missing = required.difference(event_map)
+    if missing:
+        raise RuntimeError(f"Missing conversation events: {sorted(missing)}")
+    return {
+        "transcript": event_map["transcript"],
+        "response_text": response_text,
+        "assistant": event_map["assistant_done"],
+        "tts": event_map["tts_done"],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--ca-file", required=True, type=Path)
-    parser.add_argument("--audio-file", required=True, type=Path)
+    parser.add_argument(
+        "--audio-file",
+        required=True,
+        action="append",
+        type=Path,
+        help="WAV to send; repeat for multiple turns in the same session",
+    )
     args = parser.parse_args()
     result = asyncio.run(
         check_conversation(args.url.rstrip("/"), args.ca_file, args.audio_file)
