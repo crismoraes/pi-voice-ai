@@ -24,6 +24,14 @@
   após a validação física em português.
 - O health check de implantação também valida o dashboard e a API de consumo.
 - Banco local de consumo recebe permissão `0600` em sistemas POSIX.
+
+### Validated
+
+- Vinte e quatro testes aprovados no Windows e no Raspberry Pi ARM64.
+- Encerramento controlado do `arecord` recuperado em três segundos, com restauração
+  do mixer, novo processo de captura e serviço continuamente ativo.
+- Reboot real preservou a inicialização automática, captura USB, endpoints e banco;
+  `NRestarts=0`, `ExecMainStatus=0`, sem throttling nem erros no journal do boot.
 - Versão de desenvolvimento elevada para `0.9.1.dev0` após o marco USB.
 - O contrato de LLM pode entregar metadados finais de uso junto ao streaming.
 

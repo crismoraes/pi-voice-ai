@@ -73,6 +73,13 @@ O diagnóstico reúne estado do systemd, health check, dashboard, API de consumo
 dispositivos/processos ALSA, recursos do Pi e avisos recentes. O deploy só termina
 depois de validar também a página do dashboard e sua API.
 
+Na validação remota, 24 testes passaram no Raspberry Pi. O encerramento proposital
+do `arecord` criou um novo processo após três segundos sem reiniciar a aplicação.
+Um reboot real confirmou serviço habilitado e ativo, `NRestarts=0`, captura P10S
+aberta, endpoints saudáveis, banco de consumo com modo `0600`, temperatura de 45 °C,
+`throttled=0x0` e nenhum erro no journal do boot. A aceitação final do marco 1.0
+depende de uma conversa física após esse reboot.
+
 ## Fase 9 — áudio USB
 
 O modo `AUDIO_MODE=usb` usa `arecord` e `aplay` do ALSA para conectar um microfone

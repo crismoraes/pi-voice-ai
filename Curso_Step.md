@@ -1082,6 +1082,21 @@ Para coletar uma visão sanitizada do sistema em uma aula ou atendimento remoto:
 O script não lê `.env`. Ele mostra systemd, endpoints, ALSA, memória, disco,
 temperatura, throttling e avisos recentes.
 
+### Validação remota da inicialização e recuperação
+
+Os 24 testes passaram no Pi. Para validar o supervisor sem desconectar o hardware,
+o processo `arecord` foi encerrado uma vez de forma controlada. O journal registrou
+`USB_CAPTURE_RETRY_SCHEDULED`, restaurou o mixer e registrou
+`USB_CAPTURE_RESTARTED` após três segundos, com um novo PID e o serviço ainda ativo.
+
+Depois de um reboot real, o SSH voltou na terceira tentativa da verificação remota.
+O diagnóstico confirmou `active/running`, unidade habilitada, `NRestarts=0`,
+`ExecMainStatus=0`, P10S disponível para captura e reprodução e `arecord` aberto.
+Health, dashboard e API de consumo responderam; `data/usage.db` estava em modo
+`0600`. O Pi tinha 6,6 GiB disponíveis, temperatura de 45 °C, `throttled=0x0` e
+nenhum erro no journal desse boot. A última verificação do curso é falar uma frase
+real e ouvir a resposta depois desse reboot.
+
 # Perguntas frequentes e troubleshooting do curso
 
 Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
