@@ -47,6 +47,7 @@ peer_manager.configure_conversations(
 usb_audio = (
     UsbAudioConversation(
         conversation_manager=conversation_manager,
+        text_to_speech=text_to_speech,
         vad_factory=vad_factory,
         capture_device=settings.usb_capture_device,
         playback_device=settings.usb_playback_device,
@@ -54,6 +55,7 @@ usb_audio = (
         mixer_card=settings.usb_mixer_card,
         playback_volume_percent=settings.usb_playback_volume_percent,
         capture_volume_percent=settings.usb_capture_volume_percent,
+        error_message=settings.usb_error_message,
         enable_barge_in=settings.usb_enable_barge_in,
     )
     if settings.audio_mode == "usb"

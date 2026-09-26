@@ -11,7 +11,7 @@ from time import perf_counter
 import numpy as np
 
 from app.conversation.manager import ConversationManager
-from app.tts.base import SynthesisResult
+from app.tts.base import SynthesisResult, TextToSpeech
 from app.vad.base import VoiceActivityDetector
 
 logger = logging.getLogger("pi_voice_ai.usb_audio")
@@ -127,6 +127,7 @@ class UsbAudioConversation:
         self,
         *,
         conversation_manager: ConversationManager,
+        text_to_speech: TextToSpeech,
         vad_factory: Callable[[], VoiceActivityDetector],
         capture_device: str,
         playback_device: str,
@@ -134,10 +135,12 @@ class UsbAudioConversation:
         mixer_card: str = "P10S",
         playback_volume_percent: int = 75,
         capture_volume_percent: int = 100,
+        error_message: str = "Desculpe, não consegui concluir a resposta. Tente novamente.",
         enable_barge_in: bool = False,
         process_factory: ProcessFactory = asyncio.create_subprocess_exec,
     ) -> None:
         self._conversation_manager = conversation_manager
+        self._text_to_speech = text_to_speech
         self._vad_factory = vad_factory
         self._capture_device = capture_device
         self._playback_device = playback_device
@@ -145,6 +148,7 @@ class UsbAudioConversation:
         self._mixer_card = mixer_card
         self._playback_volume_percent = playback_volume_percent
         self._capture_volume_percent = capture_volume_percent
+        self._error_message = error_message
         self._enable_barge_in = enable_barge_in
         self._process_factory = process_factory
         self._capture_process: asyncio.subprocess.Process | None = None
@@ -327,6 +331,7 @@ class UsbAudioConversation:
             raise
         except Exception:
             logger.exception("USB_CONVERSATION_FAILED")
+            await self._play_error_message()
         finally:
             if self._conversation_task is current_task:
                 self._conversation_task = None
@@ -335,6 +340,22 @@ class UsbAudioConversation:
                 if self._vad is not None:
                     self._vad.reset()
                 logger.info("USB_CONVERSATION_READY")
+
+    async def _play_error_message(self) -> None:
+        try:
+            if self._playback is None:
+                self._playback = AlsaPlayback(
+                    self._playback_device, self._process_factory
+                )
+            synthesis = await self._text_to_speech.synthesize(self._error_message)
+            await self._playback.play(synthesis)
+            await self._playback.finish()
+            logger.info(
+                "USB_ERROR_MESSAGE_PLAYED",
+                extra={"audio_seconds": round(synthesis.audio_seconds, 3)},
+            )
+        except Exception:
+            logger.exception("USB_ERROR_MESSAGE_FAILED")
 
     async def _interrupt_conversation(self) -> None:
         task = self._conversation_task

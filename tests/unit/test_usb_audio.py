@@ -73,6 +73,20 @@ class FakeConversationManager:
         self.forgotten.append(session_id)
 
 
+class FakeTextToSpeech:
+    async def synthesize(self, _: str) -> SynthesisResult:
+        return SynthesisResult(
+            samples=np.zeros(100, dtype=np.float32),
+            sample_rate=22_050,
+            processing_seconds=0.01,
+        )
+
+
+class FailingConversationManager(FakeConversationManager):
+    async def process(self, *_: object, **__: object) -> None:
+        raise RuntimeError("network unavailable")
+
+
 def test_alsa_playback_reuses_process_and_writes_pcm() -> None:
     async def run() -> None:
         calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
@@ -120,6 +134,7 @@ def test_usb_audio_starts_and_stops_arecord() -> None:
         conversations = FakeConversationManager()
         adapter = UsbAudioConversation(
             conversation_manager=conversations,  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
             vad_factory=FakeVad,  # type: ignore[arg-type]
             capture_device="plughw:CARD=P10S,DEV=0",
             playback_device="plughw:CARD=P10S,DEV=0",
@@ -151,5 +166,35 @@ def test_usb_audio_starts_and_stops_arecord() -> None:
         await adapter.stop()
         assert processes[2].terminated
         assert conversations.forgotten == ["usb"]
+
+    asyncio.run(run())
+
+
+def test_usb_audio_plays_local_message_when_conversation_fails() -> None:
+    async def run() -> None:
+        calls: list[tuple[object, ...]] = []
+        processes: list[FakeProcess] = []
+
+        async def factory(*args: object, **_: object) -> FakeProcess:
+            calls.append(args)
+            process = FakeProcess()
+            processes.append(process)
+            return process
+
+        adapter = UsbAudioConversation(
+            conversation_manager=FailingConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=FakeVad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+            process_factory=factory,
+        )
+        task = asyncio.create_task(adapter._run_turn(np.zeros(1600, dtype=np.float32)))
+        adapter._conversation_task = task
+        await task
+
+        assert calls[0][0] == "aplay"
+        assert processes[0].stdin is not None
+        assert len(processes[0].stdin.data) == 200
 
     asyncio.run(run())

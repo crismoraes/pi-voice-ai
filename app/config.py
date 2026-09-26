@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     usb_capture_volume_percent: int = Field(
         default=100, ge=0, le=100, alias="USB_CAPTURE_VOLUME_PERCENT"
     )
+    usb_error_message: str = Field(
+        default="Desculpe, não consegui concluir a resposta. Tente novamente.",
+        alias="USB_ERROR_MESSAGE",
+        min_length=1,
+        max_length=300,
+    )
     usb_enable_barge_in: bool = Field(default=False, alias="USB_ENABLE_BARGE_IN")
     openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-6-luna", alias="OPENAI_MODEL")

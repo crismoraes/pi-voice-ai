@@ -1002,6 +1002,8 @@ permitindo que o alto-falante comece antes do fim da síntese.
 Antes de abrir o microfone, o adaptador usa `amixer` para restaurar os níveis
 configurados de reprodução e captura. Isso transforma a correção aplicada durante o
 troubleshooting em comportamento reproduzível após reinícios ou resets da interface.
+Como o modo USB não possui uma tela obrigatória, uma falha do turno também gera um
+aviso falado local. A mensagem pode ser alterada por `USB_ERROR_MESSAGE`.
 
 O modo é selecionado no `.env` por `AUDIO_MODE=usb`. Os dispositivos de entrada e
 saída têm configurações separadas, então uma fase futura pode usar interfaces USB
@@ -1123,6 +1125,21 @@ somente quando a conclusão vem vazia e mantém qualquer falha posterior explíc
 logs. Procure `CONVERSATION_LLM_EMPTY_RETRY`. Uma repetição bem-sucedida terá depois
 `ASSISTANT_DONE`; repetidas falhas exigem verificar chave, modelo, rede e resposta da
 API sem registrar a chave ou o conteúdo privado.
+
+## O microfone funcionou, mas uma falha de rede deixou o assistente em silêncio
+
+Um caso real chegou ao LLM e falhou com `Temporary failure in name resolution`.
+Isso indica indisponibilidade de DNS ou rede, não defeito do microfone. Verifique:
+
+```bash
+getent hosts api.openai.com
+ping -c 1 1.1.1.1
+journalctl -u pi-voice-ai.service --since "5 minutes ago" --no-pager
+```
+
+O adaptador USB agora tenta falar `USB_ERROR_MESSAGE` usando o TTS local quando um
+turno falha. Depois retorna ao estado pronto, permitindo repetir a pergunta quando a
+rede voltar. Se até esse aviso falhar, procure `USB_ERROR_MESSAGE_FAILED` nos logs.
 
 ## O modo USB está ativo, mas falar não produz resposta
 
