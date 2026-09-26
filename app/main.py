@@ -38,6 +38,7 @@ peer_manager.configure_conversations(
         max_speech_seconds=settings.vad_max_speech_seconds,
         num_threads=settings.vad_num_threads,
     ),
+    enable_barge_in=settings.enable_barge_in,
 )
 
 

@@ -5,7 +5,7 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1, 2, 3, 4, 5 e 6 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0 a 6 concluídas; Fase 7 em validação.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
@@ -13,6 +13,22 @@ adiciona TTS português local e retorno de voz por WebRTC. A versão `v0.6.0`
 adiciona detecção automática de fala e contexto de múltiplos turnos.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 7 — interrupção por voz
+
+Com `ENABLE_BARGE_IN=true`, o VAD continua acompanhando o microfone enquanto o
+assistente processa ou reproduz uma resposta. Ao detectar uma nova fala, o servidor
+cancela o turno em andamento, remove o áudio de resposta ainda enfileirado e captura
+a nova frase. O navegador recebe o evento `interrupted` com a fase interrompida e a
+duração de áudio descartada.
+
+```text
+resposta em andamento -> nova fala -> cancelar -> limpar áudio -> novo turno
+```
+
+O cancelamento preserva os turnos já concluídos no histórico. A implementação e os
+testes locais estão concluídos em `0.7.0.dev0`; ainda faltam a validação implantada e
+o teste físico no navegador antes da publicação de `v0.7.0`.
 
 ## Fase 6 — conversa automática com VAD e contexto
 

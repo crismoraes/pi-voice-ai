@@ -895,3 +895,22 @@ o peer fechou normalmente e o serviço permaneceu ativo, sem erros. As palavras
 incomuns foram transcritas de formas diferentes pelo Whisper Tiny; as respostas
 usaram coerentemente o texto reconhecido. Com isso, a Fase 6 foi concluída e
 publicada como `v0.6.0`.
+
+## Fase 7 — barge-in
+
+### Objetivo da aula
+
+Permitir que o usuário interrompa o assistente apenas começando a falar. O VAD passa
+a receber o microfone também durante o processamento e a reprodução da resposta.
+Quando encontra uma nova fala, o servidor cancela a tarefa corrente, esvazia o áudio
+do assistente e usa o mesmo segmento para iniciar o próximo turno.
+
+O evento SSE `interrupted` informa se a interrupção ocorreu em `processing` ou
+`playback` e quantos segundos de áudio enfileirado foram descartados. O cliente exibe
+essa mudança imediatamente. `ENABLE_BARGE_IN` permite desativar o comportamento sem
+alterar o restante do pipeline.
+
+A primeira validação automatizada usa uma resposta de cinco segundos, inicia nova
+fala durante `playback`, confirma o cancelamento e verifica que o segundo turno chega
+ao estado `ready`. A validação no Raspberry Pi e o teste com voz humana ainda são
+necessários antes do marco `v0.7.0`.

@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Added
+
+- Barge-in por VAD durante processamento e reprodução da resposta automática.
+- Evento SSE `interrupted` com fase do turno e áudio pendente descartado.
+- Verificador WebRTC que envia uma segunda fala durante a primeira resposta.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.7.0.dev0`.
+- O VAD permanece ativo enquanto a conversa está ocupada quando
+  `ENABLE_BARGE_IN=true`.
+
+### Validated
+
+- Quinze testes locais, incluindo cancelamento da reprodução, limpeza do áudio e
+  início do turno seguinte.
+
+### Pending
+
+- Validação WebRTC implantada e interrupção física pelo navegador antes de `v0.7.0`.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added

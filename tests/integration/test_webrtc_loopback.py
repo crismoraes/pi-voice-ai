@@ -81,6 +81,7 @@ async def exercise_audio_loopback() -> None:
     original_tts = peer_manager._text_to_speech
     original_conversation_manager = peer_manager._conversation_manager
     original_vad_factory = peer_manager._vad_factory
+    original_barge_in_enabled = peer_manager._barge_in_enabled
     peer_manager._speech_to_text = FakeSpeechToText()
     peer_manager._text_to_speech = FakeTextToSpeech()
 
@@ -199,6 +200,7 @@ async def exercise_audio_loopback() -> None:
         peer_manager._text_to_speech = original_tts
         peer_manager._conversation_manager = original_conversation_manager
         peer_manager._vad_factory = original_vad_factory
+        peer_manager._barge_in_enabled = original_barge_in_enabled
         await browser_peer.close()
         await peer_manager.close_all()
 

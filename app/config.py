@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     conversation_max_turns: int = Field(
         default=6, ge=1, le=20, alias="CONVERSATION_MAX_TURNS"
     )
+    enable_barge_in: bool = Field(default=True, alias="ENABLE_BARGE_IN")
     tts_engine: str = Field(default="sherpa-piper", alias="TTS_ENGINE")
     tts_model_dir: Path = Field(
         default=PROJECT_ROOT / "models" / "vits-piper-pt_BR-jeff-medium",

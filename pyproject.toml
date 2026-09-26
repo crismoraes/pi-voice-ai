@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pi-voice-ai"
-version = "0.6.0"
+version = "0.7.0.dev0"
 description = "Low-latency voice assistant foundation for Raspberry Pi 5"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1, 2, 3, 4, 5 and 6 complete
+## Current implementation state — Phases 0 through 6 complete; Phase 7 validation
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -213,8 +213,18 @@ recognized turn was present in context. Physical browser validation detected
 first text arrived in 1.32 and 0.94 seconds, and local TTS took 0.34 seconds for each
 response. The same peer's history advanced through 4, 6, 8 and the configured
 12-message limit. Every turn completed, the peer closed normally and the service
-remained active without journal errors. Phase 6 is complete at version `0.6.0`. Do
-not begin Phase 7 without explicit user authorization.
+remained active without journal errors. Phase 6 is complete at version `0.6.0`.
+Phase 7 began only after the user's explicit authorization.
+
+The user authorized Phase 7. Version `0.7.0.dev0` keeps VAD active while an automatic
+turn is processing or playing. New detected speech cancels the current task, clears
+queued assistant audio and continues collecting that same utterance for the next
+turn. The `interrupted` SSE event reports whether processing or playback was stopped
+and how much queued audio was discarded. `ENABLE_BARGE_IN` controls the behavior.
+Fifteen local tests pass, including a five-second queued response interrupted during
+playback followed by a second completed turn. Raspberry Pi deployment, live WebRTC
+validation and a physical browser test remain required before `v0.7.0`. Do not begin
+Phase 8 without explicit user authorization.
 
 ## Project Goal
 

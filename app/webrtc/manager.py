@@ -81,6 +81,13 @@ class AssistantAudioTrack(MediaStreamTrack):
         self._speech_samples = np.concatenate((remaining, new_samples))
         self._speech_offset = 0
 
+    def interrupt_speech(self) -> float:
+        """Discard queued assistant speech and return its remaining duration."""
+        remaining_samples = max(0, len(self._speech_samples) - self._speech_offset)
+        self._speech_samples = np.empty(0, dtype=np.int16)
+        self._speech_offset = 0
+        return remaining_samples / self.sample_rate
+
     def _take_speech(self, sample_count: int) -> np.ndarray | None:
         if self._speech_offset >= len(self._speech_samples):
             return None
@@ -134,6 +141,7 @@ class PeerSession:
     output_track: AssistantAudioTrack | None = None
     automatic_conversation: bool = False
     conversation_busy: bool = False
+    conversation_phase: str | None = None
     vad: VoiceActivityDetector | None = None
     conversation_task: asyncio.Task[None] | None = None
     event_queue: asyncio.Queue[tuple[str, dict[str, object]] | None] = field(
@@ -161,14 +169,18 @@ class PeerConnectionManager:
         self._max_samples = int(max_audio_seconds * self.sample_rate)
         self._conversation_manager: ConversationManager | None = None
         self._vad_factory: Callable[[], VoiceActivityDetector] | None = None
+        self._barge_in_enabled = False
 
     def configure_conversations(
         self,
         conversation_manager: ConversationManager,
         vad_factory: Callable[[], VoiceActivityDetector],
+        *,
+        enable_barge_in: bool = False,
     ) -> None:
         self._conversation_manager = conversation_manager
         self._vad_factory = vad_factory
+        self._barge_in_enabled = enable_barge_in
 
     @property
     def active_peer_count(self) -> int:
@@ -381,11 +393,15 @@ class PeerConnectionManager:
         samples: np.ndarray,
     ) -> None:
         vad = session.vad
-        if not session.automatic_conversation or session.conversation_busy or vad is None:
+        if not session.automatic_conversation or vad is None:
+            return
+        if session.conversation_busy and not self._barge_in_enabled:
             return
         speech_was_detected = vad.is_speech_detected
         segments = vad.accept(samples)
         if not speech_was_detected and vad.is_speech_detected:
+            if session.conversation_busy:
+                self._interrupt_conversation(peer_id, session)
             self._emit_nowait(session, "speech_started", {})
             logger.info("VAD_SPEECH_STARTED", extra={"peer_id": peer_id})
         for segment in segments:
@@ -399,7 +415,9 @@ class PeerConnectionManager:
                 )
                 self._emit_nowait(session, "ready", {})
                 continue
+            vad.reset()
             session.conversation_busy = True
+            session.conversation_phase = "processing"
             self._emit_nowait(
                 session,
                 "speech_ended",
@@ -417,12 +435,34 @@ class PeerConnectionManager:
             )
             break
 
+    def _interrupt_conversation(self, peer_id: str, session: PeerSession) -> None:
+        phase = session.conversation_phase or "processing"
+        task = session.conversation_task
+        if task is not None and not task.done():
+            task.cancel()
+        session.conversation_task = None
+        session.conversation_busy = False
+        session.conversation_phase = None
+        remaining_audio_seconds = 0.0
+        if session.output_track is not None:
+            remaining_audio_seconds = session.output_track.interrupt_speech()
+        payload: dict[str, object] = {
+            "phase": phase,
+            "remaining_audio_seconds": round(remaining_audio_seconds, 3),
+        }
+        self._emit_nowait(session, "interrupted", payload)
+        logger.info(
+            "CONVERSATION_INTERRUPTED",
+            extra={"peer_id": peer_id, **payload},
+        )
+
     async def _run_automatic_conversation(
         self,
         peer_id: str,
         session: PeerSession,
         samples: np.ndarray,
     ) -> None:
+        current_task = asyncio.current_task()
         try:
             if self._conversation_manager is None or session.output_track is None:
                 raise RuntimeError("Automatic conversation is unavailable")
@@ -432,12 +472,17 @@ class PeerConnectionManager:
                 lambda event, payload: self._emit(session, event, payload),
             )
             if result is not None:
+                session.conversation_phase = "playback"
                 session.output_track.queue_speech(
                     result.synthesis.samples,
                     result.synthesis.sample_rate,
                 )
                 await asyncio.sleep(result.synthesis.audio_seconds)
         except asyncio.CancelledError:
+            logger.info(
+                "CONVERSATION_TURN_CANCELLED",
+                extra={"peer_id": peer_id},
+            )
             raise
         except Exception as exc:
             logger.exception(
@@ -450,11 +495,14 @@ class PeerConnectionManager:
                 {"message": "Não foi possível concluir a conversa."},
             )
         finally:
-            session.conversation_busy = False
-            if session.vad is not None:
-                session.vad.reset()
-            if session.automatic_conversation and peer_id in self._sessions:
-                await self._emit(session, "ready", {})
+            if session.conversation_task is current_task:
+                session.conversation_task = None
+                session.conversation_busy = False
+                session.conversation_phase = None
+                if session.vad is not None:
+                    session.vad.reset()
+                if session.automatic_conversation and peer_id in self._sessions:
+                    await self._emit(session, "ready", {})
 
     @staticmethod
     async def _emit(

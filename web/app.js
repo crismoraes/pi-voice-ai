@@ -190,6 +190,12 @@ function openConversationEvents() {
     receivingAutomaticResponse = false;
     setStatus("Fala detectada", "recording");
   });
+  eventSource.addEventListener("interrupted", (message) => {
+    const result = JSON.parse(message.data);
+    const phase = result.phase === "playback" ? "reprodução" : "processamento";
+    assistantMetricsText.textContent += ` · interrompida durante ${phase}`;
+    setStatus("Resposta interrompida — ouvindo", "recording");
+  });
   eventSource.addEventListener("speech_ended", () => {
     setStatus("Fim da fala detectado", "connecting");
   });
