@@ -41,6 +41,12 @@ som sem cancelamento de eco. Depois de validar ganho, distância e ausência de
 realimentação, `USB_ENABLE_BARGE_IN=true` permite testar interrupções locais. Para
 voltar ao navegador, use `AUDIO_MODE=webrtc` e reinicie o serviço.
 
+A primeira validação física completou o fluxo pelo hardware USB. Em um turno de
+3,244 s, o STT levou 0,540 s; a voz começou a ser enfileirada em 0,191 s e 18,472 s
+de resposta foram reproduzidos em cinco trechos. O troubleshooting real da P10S,
+incluindo volume, processo antigo e reset do endpoint, está no final de
+`Curso_Step.md`.
+
 ## Fase 8 — desempenho
 
 A versão `0.8.0` mede modelos, precisão, threads, buffering e entrega de voz.

@@ -18,6 +18,15 @@
 - Interface bidirecional P10S identificada por ALSA como
   `plughw:CARD=P10S,DEV=0`, com captura e reprodução USB.
 
+### Validated
+
+- Conversa física concluída pelo microfone e alto-falante USB: 3,244 s de fala,
+  STT em 0,540 s e 18,472 s de resposta reproduzidos em cinco trechos.
+- Diagnóstico da P10S recuperou captura após remover um processo antigo, restaurar
+  volume e resetar o endpoint USB; a captura nativa entregou 192.000 bytes por segundo.
+- Perguntas frequentes do curso reúnem os problemas reais e seus procedimentos de
+  diagnóstico, correção e verificação.
+
 ## [0.8.0] - 2026-09-26
 
 ### Added

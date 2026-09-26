@@ -262,7 +262,15 @@ transport-independent conversation pipeline, and streams Piper chunks to one
 playback process. `AUDIO_MODE=webrtc` remains the default. USB mode is selected by
 `AUDIO_MODE=usb`, with separate capture/playback device settings and a configurable
 capture period. USB barge-in defaults off until physical echo behavior is validated.
-Do not publish `v0.9.0` or begin Phase 10 before physical USB validation.
+The first physical USB conversation passed after troubleshooting the P10S: playback
+volume was initially zero, a diagnostic `aplay` process remained open, and the
+capture endpoint required `usbreset 1234:5684`. Native capture then returned 192,000
+bytes for one second at 48 kHz stereo. A physical 3.244-second turn took 0.540 seconds
+for STT; first audio was queued in 0.191 seconds and 18.472 seconds of speech played
+in five chunks. The service returned to ready and remained active. `Curso_Step.md`
+ends with a FAQ and troubleshooting chapter built from the real project incidents;
+continue adding new observed incidents there. Do not publish `v0.9.0` or begin Phase
+10 until the remaining USB behavior, including the desired barge-in policy, is decided.
 
 ## Project Goal
 

@@ -1008,3 +1008,181 @@ O barge-in local começa desligado. Sem cancelamento acústico de eco, o microfo
 pode interpretar a voz do próprio alto-falante como uma nova fala. Primeiro serão
 validados o fluxo completo, o volume e a distância física; depois a interrupção USB
 poderá ser habilitada conscientemente.
+
+### Primeira validação física USB
+
+Depois de recuperar a interface P10S, o usuário falou no microfone e ouviu a resposta
+no alto-falante USB. No último turno observado, o VAD encerrou 3,244 s de fala e o
+Whisper terminou em 0,540 s, RTF `0,167`. O modelo iniciou texto em 4,814 s após uma
+resposta vazia e sua repetição automática. A voz começou a ser enfileirada em 0,191 s.
+O Piper produziu 18,472 s de áudio em cinco trechos, com 3,075 s de síntese e RTF
+`0,166`. A reprodução terminou normalmente, o adaptador voltou ao estado pronto e
+o serviço permaneceu ativo.
+
+# Perguntas frequentes e troubleshooting do curso
+
+Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
+caso, comece pelo sintoma, confira o estado atual, altere somente o componente com
+problema e repita uma verificação objetiva.
+
+## Como obter um diagnóstico geral do serviço?
+
+Use primeiro comandos somente de leitura:
+
+```bash
+systemctl status pi-voice-ai.service --no-pager
+systemctl show pi-voice-ai.service \
+  -p ActiveState -p SubState -p NRestarts -p ExecMainStatus
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager
+```
+
+`ActiveState=active`, `SubState=running`, `ExecMainStatus=0` e `NRestarts=0` indicam
+um processo estável. Procure `ERROR`, `Traceback`, `APP_STARTED` e o evento da etapa
+que deveria ter ocorrido. Um health check HTTP confirma o servidor, mas não prova
+sozinho que microfone, modelo e alto-falante estão funcionando.
+
+## Por que `id\_ed25519.pub` não foi encontrado no Windows?
+
+**Sintoma:** `ssh-keygen -lf` informou `No such file or directory`.
+
+**Causa observada:** a barra invertida antes do sublinhado veio da formatação do
+texto e virou parte do nome. O arquivo padrão chama-se `id_ed25519.pub`.
+
+**Diagnóstico e solução:**
+
+```powershell
+Get-ChildItem (Join-Path $env:USERPROFILE '.ssh')
+ssh-keygen -lf (Join-Path $env:USERPROFILE '.ssh\id_ed25519.pub')
+```
+
+Copie somente o arquivo `.pub` ao Pi. A chave privada sem `.pub` permanece no
+Windows. Verifique a autenticação com `ssh voicepi "hostname"`.
+
+## O endereço IP do Raspberry Pi mudou. Preciso alterar o projeto?
+
+O endereço não é gravado no código ou no `.env` da aplicação. O alias SSH deve usar
+o hostname quando a rede o resolve:
+
+```sshconfig
+Host voicepi
+    HostName home-ai.local
+    User cristiano
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+```
+
+Teste `ssh voicepi "hostname"`. Se mDNS não funcionar, altere apenas `HostName` no
+arquivo SSH do Windows ou configure uma reserva DHCP no roteador.
+
+## Por que o primeiro health check falhou logo após instalar o serviço?
+
+**Sintoma:** `curl` não conectou à porta enquanto o systemd já havia criado e
+habilitado a unidade.
+
+**Causa observada:** o teste ocorreu antes de o Uvicorn abrir a porta.
+
+**Solução:** `scripts/healthcheck.sh` passou a repetir a tentativa por até 20
+segundos. Confirme separadamente:
+
+```bash
+systemctl is-active pi-voice-ai.service
+./scripts/healthcheck.sh
+```
+
+## Por que HTTPS funciona pelo hostname, mas falha por `127.0.0.1` ou por outro IP?
+
+O certificado de desenvolvimento precisa conter exatamente o nome usado na URL.
+Durante o health check local, o projeto usa o hostname coberto pelo certificado e
+resolve esse nome para loopback. No navegador, abra o hostname ou IP incluído quando
+o certificado foi criado. Se o IP mudar e não estiver no certificado, prefira o
+hostname estável ou gere um novo certificado de desenvolvimento.
+
+## O navegador não libera o microfone
+
+Confirme que a página usa HTTPS, que o certificado está confiável no Windows e que
+a permissão do microfone foi concedida para esse site. Feche peers antigos antes de
+repetir o teste. O endpoint de remoção é idempotente, então uma segunda solicitação
+de fechamento pode retornar sucesso mesmo quando a conexão já foi limpa.
+
+## A transcrição troca algumas palavras
+
+O Whisper Tiny foi escolhido após benchmark por ter menor latência e melhor resultado
+no corpus curto usado no Pi, mas ainda comete erros em palavras incomuns. Verifique
+se a intenção foi preservada e compare áudio, tempo de inferência e texto antes de
+trocar de modelo. A Fase 8 mediu Tiny e Base, INT8 e FP32; nesse hardware, o Base foi
+mais lento e não melhorou aquela amostra.
+
+## A OpenAI terminou uma chamada sem texto
+
+Esse comportamento apareceu em testes reais. O pipeline faz uma única repetição
+somente quando a conclusão vem vazia e mantém qualquer falha posterior explícita nos
+logs. Procure `CONVERSATION_LLM_EMPTY_RETRY`. Uma repetição bem-sucedida terá depois
+`ASSISTANT_DONE`; repetidas falhas exigem verificar chave, modelo, rede e resposta da
+API sem registrar a chave ou o conteúdo privado.
+
+## O modo USB está ativo, mas falar não produz resposta
+
+**Sintoma observado:** o serviço estava ativo e `arecord` aparecia como processo,
+mas não havia eventos `USB_VAD_SPEECH_STARTED` e nenhum áudio retornava.
+
+**Diagnóstico inicial:**
+
+```bash
+arecord -l
+aplay -l
+pgrep -a arecord
+pgrep -a aplay
+amixer -c P10S contents
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager
+```
+
+No caso real, a saída `PCM Playback Volume` estava em zero, um `aplay` usado no
+diagnóstico anterior continuou aberto e o endpoint de captura parou de entregar
+frames. Um teste nativo retornou zero bytes e `Input/output error`.
+
+Pare o serviço antes de testar o dispositivo isoladamente:
+
+```bash
+sudo systemctl stop pi-voice-ai.service
+pgrep -a arecord
+pgrep -a aplay
+```
+
+Encerre somente processos identificados como pertencentes ao teste. Se a captura
+continuar sem frames, resete apenas a interface conhecida e restaure os níveis:
+
+```bash
+sudo usbreset 1234:5684
+amixer -c P10S sset PCM 75% unmute
+amixer -c P10S sset Mic 100% cap
+```
+
+O formato nativo informado pela P10S é `S16_LE`, 48 kHz e dois canais. A verificação
+real produziu 192.000 bytes em um segundo:
+
+```bash
+timeout 4 arecord -q -D hw:CARD=P10S,DEV=0 \
+  -d 1 -t raw -f S16_LE -c 2 -r 48000 | wc -c
+```
+
+Depois, reinicie e procure a sequência `USB_AUDIO_STARTED`, `USB_VAD_SPEECH_STARTED`,
+`CONVERSATION_TURN_COMPLETED`, `USB_PLAYBACK_COMPLETED` e `USB_CONVERSATION_READY`:
+
+```bash
+sudo systemctl restart pi-voice-ai.service
+systemctl is-active pi-voice-ai.service
+journalctl -u pi-voice-ai.service -f
+```
+
+## Por que o barge-in USB começa desativado?
+
+O navegador dispõe de processamento acústico próprio. Na ligação USB direta, a voz
+do alto-falante pode voltar ao microfone e parecer uma nova fala. Primeiro ajuste o
+volume, a distância e a direção física. Depois habilite `USB_ENABLE_BARGE_IN=true`,
+reinicie e confirme nos logs que a reprodução não dispara interrupções sozinha.
+
+## Que informações nunca devem aparecer em uma aula ou diagnóstico publicado?
+
+Não mostre a chave privada SSH, senha, `OPENAI_API_KEY`, conteúdo do `.env`, chave
+TLS privada ou endereço de rede privada sem necessidade. Prefira eventos, tempos,
+contagens, nomes de configuração e saídas sanitizadas.
