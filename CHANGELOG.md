@@ -17,7 +17,8 @@
 - Wheels ARM64 de sherpa-onnx e NumPy instalados sem compilação.
 - Whisper Tiny real no Pi com RTF de `0,171` em uma referência inglesa de 6,625 s.
 - Fluxo implantado validado do Windows ao Pi por WebRTC, com RTF de `0,175`.
-- Transcrição física validada com várias frases reais em português no navegador.
+- Transcrição física validada com várias frases reais em português no navegador;
+  a última teve 18,06 s, processamento de 3,346 s e RTF de `0,185`.
 
 ### Changed
 

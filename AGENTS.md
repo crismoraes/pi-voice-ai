@@ -142,7 +142,8 @@ text with RTF 0.171 (1.134 s inference for 6.625 s audio). The live deployment t
 also sent 6.539 s over WebRTC and completed local inference in 1.147 s, RTF 0.175.
 The user tested several real Portuguese utterances in the browser. The last long
 sample was understandable and preserved its subject and sentence sequence, with
-some word errors expected from Whisper Tiny. Phase 3 is complete at version `0.3.0`.
+some word errors expected from Whisper Tiny. Its 18.06 s of audio were decoded in
+3.346 s, RTF 0.185. Phase 3 is complete at version `0.3.0`.
 
 ## Project Goal
 

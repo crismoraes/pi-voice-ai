@@ -654,7 +654,8 @@ check respondeu, o serviço permaneceu ativo e os logs não mostraram erros.
 
 O usuário realizou várias transcrições físicas pelo navegador em português. A última
 foi uma fala longa sobre o teste de um novo sistema no Raspberry Pi 5 e sobre as
-próximas etapas. O resultado preservou o assunto e a sequência da mensagem, embora
-tenha trocado algumas palavras. Esse nível confirmou o funcionamento de ponta a
-ponta e também registrou a limitação de qualidade do Whisper Tiny. A Fase 3 foi
+próximas etapas. O Pi processou 18,06 s de áudio em 3,346 s, RTF 0,185. O resultado
+preservou o assunto e a sequência da mensagem, embora tenha trocado algumas
+palavras. Esse nível confirmou o funcionamento de ponta a ponta e também registrou
+a limitação de qualidade do Whisper Tiny. A Fase 3 foi
 concluída no marco `v0.3.0`.

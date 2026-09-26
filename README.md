@@ -73,8 +73,9 @@ O teste da implantação enviou o mesmo WAV do Windows ao Pi por WebRTC, capturo
 captura, carregamento do modelo, transcrição e encerramento do peer sem erros. A
 validação física também passou com várias frases em português capturadas no
 navegador. A última amostra produziu uma transcrição longa e compreensível sobre o
-teste do sistema no Raspberry Pi 5. O Whisper Tiny cometeu alguns erros de palavras,
-registrados como uma limitação de qualidade do modelo pequeno.
+teste do sistema no Raspberry Pi 5. O Pi processou seus 18,06 s em 3,346 s, RTF
+`0,185`. O Whisper Tiny cometeu alguns erros de palavras, registrados como uma
+limitação de qualidade do modelo pequeno.
 
 Para repetir um benchmark:
 
