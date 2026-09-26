@@ -132,6 +132,8 @@ class UsbAudioConversation:
         capture_device: str,
         playback_device: str,
         period_frames: int = 512,
+        capture_retry_seconds: float = 3,
+        zero_stream_seconds: float = 10,
         mixer_card: str = "P10S",
         playback_volume_percent: int = 75,
         capture_volume_percent: int = 100,
@@ -145,6 +147,8 @@ class UsbAudioConversation:
         self._capture_device = capture_device
         self._playback_device = playback_device
         self._period_frames = period_frames
+        self._capture_retry_seconds = capture_retry_seconds
+        self._zero_stream_seconds = zero_stream_seconds
         self._mixer_card = mixer_card
         self._playback_volume_percent = playback_volume_percent
         self._capture_volume_percent = capture_volume_percent
@@ -157,6 +161,7 @@ class UsbAudioConversation:
         self._vad: VoiceActivityDetector | None = None
         self._playback: AlsaPlayback | None = None
         self._busy = False
+        self._stopping = False
 
     @property
     def running(self) -> bool:
@@ -165,8 +170,23 @@ class UsbAudioConversation:
     async def start(self) -> None:
         if self.running:
             return
+        self._stopping = False
         self._vad = await asyncio.to_thread(self._vad_factory)
         await self._configure_mixer()
+        await self._start_capture_process()
+        self._capture_task = asyncio.create_task(self._capture_supervisor())
+        logger.info(
+            "USB_AUDIO_STARTED",
+            extra={
+                "capture_device": self._capture_device,
+                "playback_device": self._playback_device,
+                "sample_rate": self.sample_rate,
+                "period_frames": self._period_frames,
+                "barge_in": self._enable_barge_in,
+            },
+        )
+
+    async def _start_capture_process(self) -> None:
         try:
             self._capture_process = await self._process_factory(
                 "arecord",
@@ -194,17 +214,6 @@ class UsbAudioConversation:
             raise UsbAudioUnavailableError(
                 f"arecord exited with status {self._capture_process.returncode}: {stderr}"
             )
-        self._capture_task = asyncio.create_task(self._capture_loop())
-        logger.info(
-            "USB_AUDIO_STARTED",
-            extra={
-                "capture_device": self._capture_device,
-                "playback_device": self._playback_device,
-                "sample_rate": self.sample_rate,
-                "period_frames": self._period_frames,
-                "barge_in": self._enable_barge_in,
-            },
-        )
 
     async def _configure_mixer(self) -> None:
         commands = (
@@ -249,6 +258,7 @@ class UsbAudioConversation:
             )
 
     async def stop(self) -> None:
+        self._stopping = True
         if self._capture_task is not None:
             self._capture_task.cancel()
             with suppress(asyncio.CancelledError):
@@ -271,15 +281,61 @@ class UsbAudioConversation:
         self._busy = False
         logger.info("USB_AUDIO_STOPPED")
 
+    async def _capture_supervisor(self) -> None:
+        while not self._stopping:
+            try:
+                await self._capture_loop()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("USB_CAPTURE_FAILED")
+
+            process = self._capture_process
+            if process is not None and process.returncode is None:
+                process.terminate()
+                await process.wait()
+            self._capture_process = None
+            if self._stopping:
+                return
+
+            logger.warning(
+                "USB_CAPTURE_RETRY_SCHEDULED",
+                extra={"retry_seconds": self._capture_retry_seconds},
+            )
+            await asyncio.sleep(self._capture_retry_seconds)
+            try:
+                await self._configure_mixer()
+                await self._start_capture_process()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.error(
+                    "USB_CAPTURE_RESTART_FAILED",
+                    extra={"error_type": type(exc).__name__},
+                )
+                continue
+            logger.info("USB_CAPTURE_RESTARTED")
+
     async def _capture_loop(self) -> None:
         process = self._capture_process
         if process is None or process.stdout is None:
             raise UsbAudioUnavailableError("ALSA capture output is unavailable")
         byte_count = self._period_frames * 2
+        zero_frames = 0
         try:
             while True:
                 data = await process.stdout.readexactly(byte_count)
                 samples = np.frombuffer(data, dtype="<i2").astype(np.float32) / 32768.0
+                if self._zero_stream_seconds > 0 and not np.any(samples):
+                    zero_frames += len(samples)
+                    if zero_frames >= self.sample_rate * self._zero_stream_seconds:
+                        logger.warning(
+                            "USB_CAPTURE_ZERO_STREAM",
+                            extra={"seconds": self._zero_stream_seconds},
+                        )
+                        return
+                else:
+                    zero_frames = 0
                 await self._accept_samples(samples)
         except asyncio.IncompleteReadError:
             stderr = await self._read_stderr(process)
@@ -290,8 +346,6 @@ class UsbAudioConversation:
             )
         except asyncio.CancelledError:
             raise
-        except Exception:
-            logger.exception("USB_CAPTURE_FAILED")
 
     async def _accept_samples(self, samples: np.ndarray) -> None:
         vad = self._vad

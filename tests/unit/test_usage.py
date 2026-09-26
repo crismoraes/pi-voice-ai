@@ -1,3 +1,5 @@
+import os
+import stat
 from pathlib import Path
 
 from app.llm.base import TokenUsage
@@ -20,7 +22,8 @@ def make_store(path: Path) -> UsageStore:
 
 
 def test_usage_store_records_numeric_history_and_estimates_cost(tmp_path: Path) -> None:
-    store = make_store(tmp_path / "usage.db")
+    database_path = tmp_path / "usage.db"
+    store = make_store(database_path)
     usage = TokenUsage(
         model="gpt-6-luna",
         input_tokens=1_000,
@@ -47,6 +50,8 @@ def test_usage_store_records_numeric_history_and_estimates_cost(tmp_path: Path) 
     assert recent[0]["source"] == "usb"
     assert "session_hash" not in recent[0]
     assert set(recent[0]).isdisjoint({"transcript", "response_text", "audio"})
+    if os.name == "posix":
+        assert stat.S_IMODE(database_path.stat().st_mode) == 0o600
 
 
 def test_usage_store_does_not_price_an_unconfigured_model(tmp_path: Path) -> None:

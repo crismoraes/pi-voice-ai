@@ -3,10 +3,27 @@ set -Eeuo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 models_dir="$project_dir/models"
-model_name="sherpa-onnx-whisper-tiny"
+model_variant="${1:-small}"
+
+case "$model_variant" in
+    tiny)
+        model_name="sherpa-onnx-whisper-tiny"
+        model_prefix="tiny"
+        expected_sha256="c46116994e539aa165266d96b325252728429c12535eb9d8b6a2b10f129e66b1"
+        ;;
+    small)
+        model_name="sherpa-onnx-whisper-small"
+        model_prefix="small"
+        expected_sha256="486a46afbb7ba798507190ffe02fea2dd726049af212e774537efac6afb210a6"
+        ;;
+    *)
+        printf 'Unsupported STT model variant: %s (use tiny or small)\n' "$model_variant" >&2
+        exit 2
+        ;;
+esac
+
 model_dir="$models_dir/$model_name"
 archive="$(mktemp --suffix=.tar.bz2)"
-expected_sha256="c46116994e539aa165266d96b325252728429c12535eb9d8b6a2b10f129e66b1"
 download_url="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/$model_name.tar.bz2"
 
 cleanup() {
@@ -15,9 +32,9 @@ cleanup() {
 trap cleanup EXIT
 
 required_files=(
-    "$model_dir/tiny-encoder.int8.onnx"
-    "$model_dir/tiny-decoder.int8.onnx"
-    "$model_dir/tiny-tokens.txt"
+    "$model_dir/$model_prefix-encoder.int8.onnx"
+    "$model_dir/$model_prefix-decoder.int8.onnx"
+    "$model_dir/$model_prefix-tokens.txt"
 )
 
 model_complete=true

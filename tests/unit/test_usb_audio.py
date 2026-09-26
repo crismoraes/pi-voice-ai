@@ -15,6 +15,11 @@ class FakeStreamReader:
         return b""
 
 
+class ZeroStreamReader(FakeStreamReader):
+    async def readexactly(self, size: int) -> bytes:
+        return bytes(size)
+
+
 class FakeStreamWriter:
     def __init__(self) -> None:
         self.data = bytearray()
@@ -34,9 +39,11 @@ class FakeStreamWriter:
 
 
 class FakeProcess:
-    def __init__(self, *, capture: bool = False) -> None:
+    def __init__(self, *, capture: bool = False, zero_stream: bool = False) -> None:
         self.stdin = None if capture else FakeStreamWriter()
-        self.stdout = FakeStreamReader() if capture else None
+        self.stdout = (
+            ZeroStreamReader() if zero_stream else FakeStreamReader()
+        ) if capture else None
         self.stderr = FakeStreamReader()
         self.returncode: int | None = None
         self.terminated = False
@@ -196,5 +203,41 @@ def test_usb_audio_plays_local_message_when_conversation_fails() -> None:
         assert calls[0][0] == "aplay"
         assert processes[0].stdin is not None
         assert len(processes[0].stdin.data) == 200
+
+    asyncio.run(run())
+
+
+def test_usb_audio_restarts_a_zero_pcm_capture_stream() -> None:
+    async def run() -> None:
+        arecord_count = 0
+
+        async def factory(*args: object, **_: object) -> FakeProcess:
+            nonlocal arecord_count
+            if args[0] == "arecord":
+                arecord_count += 1
+                return FakeProcess(capture=True, zero_stream=arecord_count == 1)
+            return FakeProcess()
+
+        adapter = UsbAudioConversation(
+            conversation_manager=FakeConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=FakeVad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+            period_frames=512,
+            capture_retry_seconds=0.001,
+            zero_stream_seconds=0.032,
+            process_factory=factory,
+        )
+
+        await adapter.start()
+        for _ in range(100):
+            if arecord_count >= 2:
+                break
+            await asyncio.sleep(0.001)
+
+        assert arecord_count == 2
+        assert adapter.running
+        await adapter.stop()
 
     asyncio.run(run())

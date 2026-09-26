@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -40,6 +41,10 @@ class UsageStore:
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.path.exists():
+            self.path.touch(mode=0o600)
+        elif os.name == "posix":
+            self.path.chmod(0o600)
         with self._connect() as connection:
             connection.execute(
                 """

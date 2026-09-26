@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     usb_capture_period_frames: int = Field(
         default=512, ge=128, le=4096, alias="USB_CAPTURE_PERIOD_FRAMES"
     )
+    usb_capture_retry_seconds: float = Field(
+        default=3, ge=0.1, le=60, alias="USB_CAPTURE_RETRY_SECONDS"
+    )
+    usb_zero_stream_seconds: float = Field(
+        default=10, ge=0, le=300, alias="USB_ZERO_STREAM_SECONDS"
+    )
     usb_mixer_card: str = Field(
         default="P10S", alias="USB_MIXER_CARD", min_length=1
     )
@@ -76,7 +82,7 @@ class Settings(BaseSettings):
     tls_key_file: Path | None = Field(default=None, alias="TLS_KEY_FILE")
     stt_engine: str = Field(default="sherpa-whisper", alias="STT_ENGINE")
     stt_model_dir: Path = Field(
-        default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-tiny",
+        default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-small",
         alias="STT_MODEL_DIR",
     )
     stt_language: str = Field(default="pt", alias="STT_LANGUAGE")
@@ -97,7 +103,7 @@ class Settings(BaseSettings):
     )
     vad_threshold: float = Field(default=0.5, ge=0.05, le=0.95, alias="VAD_THRESHOLD")
     vad_min_silence_seconds: float = Field(
-        default=0.8, ge=0.1, le=5, alias="VAD_MIN_SILENCE_SECONDS"
+        default=1.0, ge=0.1, le=5, alias="VAD_MIN_SILENCE_SECONDS"
     )
     vad_min_speech_seconds: float = Field(
         default=0.3, ge=0.1, le=5, alias="VAD_MIN_SPEECH_SECONDS"

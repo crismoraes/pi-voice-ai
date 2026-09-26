@@ -285,14 +285,26 @@ logs. The user's USB speech is often misunderstood, and recent segments include
 several very short 0.49–0.94 second utterances. Test a 1.2-second ending-silence
 setting and inspect these signal metrics before changing the selected Whisper model.
 
-The user authorized the token and cost dashboard as the first bounded Phase 10
-item. The Responses API adapter now captures provider-reported input, cached input,
-output, reasoning and total token counts from the completed streaming response.
+The user authorized the token and cost dashboard as the first Phase 10 item and
+later authorized continuing the full phase. The Responses API adapter captures
+provider-reported input, cached input, output, reasoning and total token counts.
 Numeric per-turn usage, latency and configured USD estimates are stored in the
-ignored local SQLite database `data/usage.db`. Audio, transcripts, prompts and
-assistant text are not stored. Read-only summary and recent-turn APIs feed
-`/dashboard.html`. Pricing is environment-configurable and dated because provider
-prices can change. This authorization does not yet declare all of Phase 10 complete.
+ignored local SQLite database `data/usage.db`; audio, transcripts, prompts and
+assistant text are not stored. Read-only APIs feed `/dashboard.html`. Pricing is
+environment-configurable and dated because provider prices can change.
+
+Phase 10 stabilization is in validation. A physical Portuguese comparison selected
+Whisper Small INT8 with three threads and 1.0 second of ending silence: it is slower
+than Tiny but the user reported excellent recognition. The bootstrap now reads
+`STT_MODEL_DIR` before downloading and reproducibly installs either Tiny or Small
+with fixed SHA-256 checks. Small is the safe-template default. USB capture now
+supervises `arecord`, restores the mixer and retries after process termination or a
+configurable period of all-zero PCM. `scripts/diagnose_pi.sh` collects sanitized
+service, endpoint, ALSA, resource and journal status without reading `.env`.
+Deployment health checks cover `/health`, the dashboard page and usage summary API.
+The usage database is restricted to mode 0600 on POSIX. Do not mark Phase 10 or
+release `v1.0.0` until these changes pass on the Pi, survive an actual reboot and a
+physical USB conversation is confirmed.
 
 ## Project Goal
 

@@ -4,6 +4,10 @@
 
 ### Added
 
+- Supervisão da captura USB com reabertura do `arecord` após encerramento e
+  watchdog configurável para fluxo PCM totalmente zerado.
+- Diagnóstico sanitizado de systemd, endpoints, ALSA, recursos e journal em
+  `scripts/diagnose_pi.sh`.
 - Métricas sanitizadas de pico, RMS e saturação do áudio antes do STT para
   diagnosticar qualidade do microfone sem registrar fala ou transcrição.
 - Histórico local SQLite com tokens de entrada, cache, saída e raciocínio informados
@@ -14,6 +18,12 @@
 
 ### Changed
 
+- Bootstrap instala o modelo Whisper selecionado no `.env`, com suporte reproduzível
+  a Tiny e Small e verificação SHA-256 de ambos.
+- Whisper Small INT8, três threads e 1,0 s de silêncio final passam a ser os padrões
+  após a validação física em português.
+- O health check de implantação também valida o dashboard e a API de consumo.
+- Banco local de consumo recebe permissão `0600` em sistemas POSIX.
 - Versão de desenvolvimento elevada para `0.9.1.dev0` após o marco USB.
 - O contrato de LLM pode entregar metadados finais de uso junto ao streaming.
 

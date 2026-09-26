@@ -33,14 +33,26 @@ fi
 
 "$project_dir/.venv/bin/python" -m pip install --upgrade 'pip>=25,<27'
 "$project_dir/.venv/bin/python" -m pip install -e "$project_dir[dev]"
-"$project_dir/scripts/download_stt_model.sh"
-"$project_dir/scripts/download_tts_model.sh"
-"$project_dir/scripts/download_vad_model.sh"
 
 if [[ ! -f "$project_dir/.env" ]]; then
     cp "$project_dir/.env.example" "$project_dir/.env"
     chmod 600 "$project_dir/.env"
     printf 'Created %s from .env.example; configure it locally on the Pi.\n' "$project_dir/.env"
 fi
+
+configured_stt_dir="$(sed -n 's/^STT_MODEL_DIR=//p' "$project_dir/.env" | tail -n 1 | tr -d '\r')"
+stt_model_name="${configured_stt_dir##*/}"
+case "$stt_model_name" in
+    sherpa-onnx-whisper-tiny) stt_model_variant="tiny" ;;
+    sherpa-onnx-whisper-small) stt_model_variant="small" ;;
+    *)
+        printf 'STT_MODEL_DIR must select sherpa-onnx-whisper-tiny or sherpa-onnx-whisper-small for bootstrap.\n' >&2
+        exit 1
+        ;;
+esac
+
+"$project_dir/scripts/download_stt_model.sh" "$stt_model_variant"
+"$project_dir/scripts/download_tts_model.sh"
+"$project_dir/scripts/download_vad_model.sh"
 
 printf 'Bootstrap complete: %s\n' "$project_dir"

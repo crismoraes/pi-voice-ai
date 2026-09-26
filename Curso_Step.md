@@ -1059,6 +1059,29 @@ A documentação oficial descreve os campos de uso na
 [Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
 e publica a [tabela de preços](https://developers.openai.com/api/docs/pricing?tab=suite).
 
+### Preparação do sistema estável
+
+O teste físico posterior mostrou uma decisão diferente do benchmark curto da Fase
+8: o Whisper Small INT8 entendeu o português com muito mais consistência, embora
+leve alguns segundos a mais. Por isso, a reconstrução da Fase 10 usa Small como
+padrão, três threads e `VAD_MIN_SILENCE_SECONDS=1.0`. O bootstrap lê o caminho
+configurado no `.env`, escolhe `tiny` ou `small` e verifica o SHA-256 do pacote.
+
+O áudio USB também ganhou supervisão. O serviço reabre `arecord` quando o processo
+termina ou quando chegam somente amostras PCM de valor zero por dez segundos. Esse
+caso é diferente de silêncio acústico: mesmo uma sala silenciosa normalmente tem
+ruído de fundo no conversor. Se a interface USB inteira ficar travada, o reset
+seletivo documentado no troubleshooting continua sendo a recuperação final.
+
+Para coletar uma visão sanitizada do sistema em uma aula ou atendimento remoto:
+
+```bash
+./scripts/diagnose_pi.sh
+```
+
+O script não lê `.env`. Ele mostra systemd, endpoints, ALSA, memória, disco,
+temperatura, throttling e avisos recentes.
+
 # Perguntas frequentes e troubleshooting do curso
 
 Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
@@ -1146,11 +1169,11 @@ de fechamento pode retornar sucesso mesmo quando a conexão já foi limpa.
 
 ## A transcrição troca algumas palavras
 
-O Whisper Tiny foi escolhido após benchmark por ter menor latência e melhor resultado
-no corpus curto usado no Pi, mas ainda comete erros em palavras incomuns. Verifique
-se a intenção foi preservada e compare áudio, tempo de inferência e texto antes de
-trocar de modelo. A Fase 8 mediu Tiny e Base, INT8 e FP32; nesse hardware, o Base foi
-mais lento e não melhorou aquela amostra.
+O Whisper Tiny foi escolhido no benchmark curto da Fase 8 pela menor latência. No
+uso físico contínuo em português, porém, o usuário aprovou o Whisper Small INT8 por
+entender as falas com muito mais consistência. O custo observado foi uma espera de
+aproximadamente cinco a seis segundos em algumas perguntas. A configuração atual
+prioriza essa precisão; Tiny continua disponível para comparar latência.
 
 Quando a dificuldade se tornou frequente no microfone USB, os logs mostraram vários
 segmentos curtos, entre 0,49 s e 0,94 s. O diagnóstico passou a registrar somente
@@ -1239,6 +1262,11 @@ journalctl -u pi-voice-ai.service -f
 Nas versões seguintes ao primeiro diagnóstico, o próprio serviço restaura os níveis
 definidos por `USB_PLAYBACK_VOLUME_PERCENT` e `USB_CAPTURE_VOLUME_PERCENT` durante a
 inicialização. Os comandos manuais continuam úteis para testar o hardware isolado.
+
+Na Fase 10, `USB_CAPTURE_RETRY_SECONDS=3` reinicia automaticamente uma captura que
+encerrou e `USB_ZERO_STREAM_SECONDS=10` detecta um fluxo digital totalmente zerado.
+Procure `USB_CAPTURE_RETRY_SCHEDULED`, `USB_CAPTURE_RESTARTED` e
+`USB_CAPTURE_ZERO_STREAM` no journal. Essa recuperação não reinicia o Raspberry Pi.
 
 O sintoma reapareceu durante a avaliação do Whisper Small: serviço, modelo e
 `arecord` estavam ativos, mixer em 75%/100%, mas não surgiam eventos de fala. O Pi

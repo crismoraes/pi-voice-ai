@@ -5,7 +5,7 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 9 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0 a 9 concluídas; Fase 10 em validação.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
@@ -49,6 +49,29 @@ preços, o turno continua com os tokens reais e fica sem estimativa monetária.
 Os valores padrão correspondem ao modo Standard publicado para `gpt-6-luna` na
 [página oficial de preços](https://developers.openai.com/api/docs/pricing?tab=suite).
 Atualize a configuração quando a tabela oficial mudar.
+
+### Estabilização para o marco 1.0
+
+O bootstrap agora lê `STT_MODEL_DIR` do `.env` e instala exatamente o modelo
+selecionado. `tiny` e `small` têm arquivos e SHA-256 fixados no instalador; assim,
+uma reconstrução limpa não volta silenciosamente ao Tiny. A configuração padrão
+usa o Whisper Small INT8, três threads e 1,0 s de silêncio final, combinação que o
+teste físico em português aprovou pela qualidade de transcrição.
+
+No modo USB, o processo de captura é supervisionado. Se `arecord` terminar ou
+entregar PCM completamente zerado pelo período configurado, a aplicação restaura o
+mixer e reabre a captura. As opções são `USB_CAPTURE_RETRY_SECONDS` e
+`USB_ZERO_STREAM_SECONDS`; valor zero desativa apenas o detector de fluxo zerado.
+
+Para uma inspeção remota sem ler o `.env` ou credenciais:
+
+```bash
+./scripts/diagnose_pi.sh
+```
+
+O diagnóstico reúne estado do systemd, health check, dashboard, API de consumo,
+dispositivos/processos ALSA, recursos do Pi e avisos recentes. O deploy só termina
+depois de validar também a página do dashboard e sua API.
 
 ## Fase 9 — áudio USB
 
@@ -117,7 +140,7 @@ com três threads. No TTS curto, três threads reduziram o processamento de cerc
 | Base INT8 | 0,719 s | 0,490 | Mais erros neste áudio |
 | Base FP32 | 0,969 s | 0,661 | Mais lento e mais erros |
 
-Tiny INT8 permaneceu em produção. No benchmark longo, 240 caracteres entregaram o
+Tiny INT8 permaneceu em produção naquele marco. No benchmark longo, 240 caracteres entregaram o
 primeiro trecho em cerca de 0,605 s e completaram a síntese em 2,449 s; limites
 menores criaram mais chamadas sem antecipar a primeira sentença. O teste WebRTC
 entregou primeiro áudio em 0,257 s e 0,362 s nos turnos aquecidos. O pré-carregamento
@@ -191,7 +214,7 @@ Configuração:
 | `VAD_ENGINE` | `sherpa-silero` | Adaptador de detecção de fala |
 | `VAD_MODEL_PATH` | `models/silero_vad.onnx` | Arquivo ONNX fora do Git |
 | `VAD_THRESHOLD` | `0.5` | Limiar de probabilidade de fala |
-| `VAD_MIN_SILENCE_SECONDS` | `0.8` | Silêncio que encerra a frase |
+| `VAD_MIN_SILENCE_SECONDS` | `1.0` | Silêncio que encerra a frase |
 | `VAD_MIN_SPEECH_SECONDS` | `0.3` | Menor fala aceita |
 | `VAD_MAX_SPEECH_SECONDS` | `30` | Limite de uma frase |
 | `VAD_NUM_THREADS` | `1` | Threads do detector |
@@ -898,8 +921,6 @@ git check-ignore -v .env
 | `TTS_ENGINE` | `sherpa-piper`, selecionado e medido no ARM64 |
 | `LOG_LEVEL` | Nível de logs |
 | `ENABLE_BARGE_IN` | Interrupção da resposta por fala do usuário |
-| `ENABLE_PARTIAL_TRANSCRIPTS` | Transcrições parciais |
-| `ENABLE_STREAMING_LLM` | Respostas incrementais do LLM |
 
 ## Validação e versionamento
 
