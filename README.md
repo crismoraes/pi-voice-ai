@@ -5,10 +5,10 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0, 1 e 2 concluídas; Fase 3 em validação.** O marco `v0.1.0`
+**Estado: Fases 0, 1, 2 e 3 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
-entrega a fundação FastAPI e o loopback WebRTC. A versão de desenvolvimento
-`0.3.0.dev0` adiciona STT local; TTS e integração OpenAI ainda não foram implementados.
+entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
+local; TTS e integração OpenAI ainda não foram implementados.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -71,7 +71,10 @@ corretamente em 1,134 s para 6,625 s de áudio, RTF `0,171`.
 O teste da implantação enviou o mesmo WAV do Windows ao Pi por WebRTC, capturou
 6,539 s e concluiu a inferência local em 1,147 s, RTF `0,175`. Os logs confirmaram
 captura, carregamento do modelo, transcrição e encerramento do peer sem erros. A
-qualidade com fala real em português ainda precisa de validação física no navegador.
+validação física também passou com várias frases em português capturadas no
+navegador. A última amostra produziu uma transcrição longa e compreensível sobre o
+teste do sistema no Raspberry Pi 5. O Whisper Tiny cometeu alguns erros de palavras,
+registrados como uma limitação de qualidade do modelo pequeno.
 
 Para repetir um benchmark:
 

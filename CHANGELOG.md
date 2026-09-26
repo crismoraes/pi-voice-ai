@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-26
+
 ### Added
 
 - Pipeline local de STT com interface substituível e Whisper Tiny via sherpa-onnx.
@@ -15,10 +17,11 @@
 - Wheels ARM64 de sherpa-onnx e NumPy instalados sem compilação.
 - Whisper Tiny real no Pi com RTF de `0,171` em uma referência inglesa de 6,625 s.
 - Fluxo implantado validado do Windows ao Pi por WebRTC, com RTF de `0,175`.
+- Transcrição física validada com várias frases reais em português no navegador.
 
 ### Changed
 
-- Versão de desenvolvimento avançada para `0.3.0.dev0`.
+- Versão publicada como `0.3.0`.
 - Bootstrap instala o modelo STT em `models/`, fora do Git.
 
 ### Fixed

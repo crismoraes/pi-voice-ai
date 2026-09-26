@@ -648,8 +648,13 @@ um teste de regressão.
 ### Resultado atual
 
 O código, as dependências, o modelo, os testes ARM64, o benchmark e o serviço
-`0.3.0.dev0` foram implantados. O teste ao vivo enviou um WAV do Windows ao Pi por
+`0.3.0` foram implantados. O teste ao vivo enviou um WAV do Windows ao Pi por
 WebRTC, capturou 6,539 s e concluiu a inferência em 1,147 s, RTF 0,175. O health
-check respondeu, o serviço permaneceu ativo e os logs não mostraram erros. Falta a
-confirmação da qualidade com fala real em português pelo navegador; esse resultado
-não é presumido.
+check respondeu, o serviço permaneceu ativo e os logs não mostraram erros.
+
+O usuário realizou várias transcrições físicas pelo navegador em português. A última
+foi uma fala longa sobre o teste de um novo sistema no Raspberry Pi 5 e sobre as
+próximas etapas. O resultado preservou o assunto e a sequência da mensagem, embora
+tenha trocado algumas palavras. Esse nível confirmou o funcionamento de ponta a
+ponta e também registrou a limitação de qualidade do Whisper Tiny. A Fase 3 foi
+concluída no marco `v0.3.0`.

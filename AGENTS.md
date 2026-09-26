@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0, 1 and 2 complete, Phase 3 in validation
+## Current implementation state — Phases 0, 1, 2 and 3 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -113,7 +113,7 @@ Peer deletion is intentionally idempotent. The physical browser test exposed a r
 where the connection-state callback removed a closed peer before the browser sent
 its DELETE request. Both the first cleanup request and later repeats return 204.
 
-The user authorized Phase 3. Version `0.3.0.dev0` implements manual utterance
+The user authorized Phase 3. Version `0.3.0` implements manual utterance
 capture and local offline STT. `MediaRelay` splits the inbound WebRTC track between
 the optional loopback and a 16 kHz mono capture consumer. The `SpeechToText`
 abstraction is currently implemented by sherpa-onnx 1.13.8 with the multilingual
@@ -140,7 +140,9 @@ Six tests pass on Windows Python 3.12 and Pi Python 3.13 ARM64. The Pi installed
 binary wheels and loaded the real model. An English reference produced the correct
 text with RTF 0.171 (1.134 s inference for 6.625 s audio). The live deployment test
 also sent 6.539 s over WebRTC and completed local inference in 1.147 s, RTF 0.175.
-Portuguese browser quality remains to be validated before Phase 3 is complete.
+The user tested several real Portuguese utterances in the browser. The last long
+sample was understandable and preserved its subject and sentence sequence, with
+some word errors expected from Whisper Tiny. Phase 3 is complete at version `0.3.0`.
 
 ## Project Goal
 
