@@ -51,6 +51,9 @@ usb_audio = (
         capture_device=settings.usb_capture_device,
         playback_device=settings.usb_playback_device,
         period_frames=settings.usb_capture_period_frames,
+        mixer_card=settings.usb_mixer_card,
+        playback_volume_percent=settings.usb_playback_volume_percent,
+        capture_volume_percent=settings.usb_capture_volume_percent,
         enable_barge_in=settings.usb_enable_barge_in,
     )
     if settings.audio_mode == "usb"

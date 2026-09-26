@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     usb_capture_period_frames: int = Field(
         default=512, ge=128, le=4096, alias="USB_CAPTURE_PERIOD_FRAMES"
     )
+    usb_mixer_card: str = Field(
+        default="P10S", alias="USB_MIXER_CARD", min_length=1
+    )
+    usb_playback_volume_percent: int = Field(
+        default=75, ge=0, le=100, alias="USB_PLAYBACK_VOLUME_PERCENT"
+    )
+    usb_capture_volume_percent: int = Field(
+        default=100, ge=0, le=100, alias="USB_CAPTURE_VOLUME_PERCENT"
+    )
     usb_enable_barge_in: bool = Field(default=False, alias="USB_ENABLE_BARGE_IN")
     openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-6-luna", alias="OPENAI_MODEL")

@@ -33,8 +33,14 @@ AUDIO_MODE=usb
 USB_CAPTURE_DEVICE=plughw:CARD=P10S,DEV=0
 USB_PLAYBACK_DEVICE=plughw:CARD=P10S,DEV=0
 USB_CAPTURE_PERIOD_FRAMES=512
+USB_MIXER_CARD=P10S
+USB_PLAYBACK_VOLUME_PERCENT=75
+USB_CAPTURE_VOLUME_PERCENT=100
 USB_ENABLE_BARGE_IN=false
 ```
+
+Ao iniciar em modo USB, o serviço aplica os níveis configurados com `amixer` antes
+de abrir a captura. Isso evita que um reset ou reinício deixe a reprodução em zero.
 
 O barge-in USB começa desativado porque o microfone pode captar a própria caixa de
 som sem cancelamento de eco. Depois de validar ganho, distância e ausência de

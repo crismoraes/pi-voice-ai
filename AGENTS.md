@@ -261,7 +261,10 @@ to the `audio` group. Version `0.9.0.dev0` introduces an ALSA adapter built on
 transport-independent conversation pipeline, and streams Piper chunks to one
 playback process. `AUDIO_MODE=webrtc` remains the default. USB mode is selected by
 `AUDIO_MODE=usb`, with separate capture/playback device settings and a configurable
-capture period. USB barge-in defaults off until physical echo behavior is validated.
+capture period. Before capture starts, the adapter restores the configured ALSA
+playback and capture levels through `amixer`; mixer failures are logged without
+blocking devices that expose different control names. USB barge-in defaults off
+until physical echo behavior is validated.
 The first physical USB conversation passed after troubleshooting the P10S: playback
 volume was initially zero, a diagnostic `aplay` process remained open, and the
 capture endpoint required `usbreset 1234:5684`. Native capture then returned 192,000

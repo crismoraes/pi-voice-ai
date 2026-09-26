@@ -109,10 +109,12 @@ def test_alsa_playback_reuses_process_and_writes_pcm() -> None:
 def test_usb_audio_starts_and_stops_arecord() -> None:
     async def run() -> None:
         calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
-        process = FakeProcess(capture=True)
+        processes: list[FakeProcess] = []
 
         async def factory(*args: object, **kwargs: object) -> FakeProcess:
             calls.append((args, kwargs))
+            process = FakeProcess(capture=args[0] == "arecord")
+            processes.append(process)
             return process
 
         conversations = FakeConversationManager()
@@ -127,16 +129,27 @@ def test_usb_audio_starts_and_stops_arecord() -> None:
 
         await adapter.start()
         assert adapter.running
-        assert calls[0][0][:4] == (
+        assert calls[0][0][:8] == (
+            "amixer",
+            "-q",
+            "-c",
+            "P10S",
+            "sset",
+            "PCM",
+            "75%",
+            "unmute",
+        )
+        assert calls[1][0][5:] == ("Mic", "100%", "cap")
+        assert calls[2][0][:4] == (
             "arecord",
             "-q",
             "-D",
             "plughw:CARD=P10S,DEV=0",
         )
-        assert "--period-size" in calls[0][0]
+        assert "--period-size" in calls[2][0]
 
         await adapter.stop()
-        assert process.terminated
+        assert processes[2].terminated
         assert conversations.forgotten == ["usb"]
 
     asyncio.run(run())

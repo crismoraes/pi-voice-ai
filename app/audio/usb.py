@@ -131,6 +131,9 @@ class UsbAudioConversation:
         capture_device: str,
         playback_device: str,
         period_frames: int = 512,
+        mixer_card: str = "P10S",
+        playback_volume_percent: int = 75,
+        capture_volume_percent: int = 100,
         enable_barge_in: bool = False,
         process_factory: ProcessFactory = asyncio.create_subprocess_exec,
     ) -> None:
@@ -139,6 +142,9 @@ class UsbAudioConversation:
         self._capture_device = capture_device
         self._playback_device = playback_device
         self._period_frames = period_frames
+        self._mixer_card = mixer_card
+        self._playback_volume_percent = playback_volume_percent
+        self._capture_volume_percent = capture_volume_percent
         self._enable_barge_in = enable_barge_in
         self._process_factory = process_factory
         self._capture_process: asyncio.subprocess.Process | None = None
@@ -156,6 +162,7 @@ class UsbAudioConversation:
         if self.running:
             return
         self._vad = await asyncio.to_thread(self._vad_factory)
+        await self._configure_mixer()
         try:
             self._capture_process = await self._process_factory(
                 "arecord",
@@ -194,6 +201,48 @@ class UsbAudioConversation:
                 "barge_in": self._enable_barge_in,
             },
         )
+
+    async def _configure_mixer(self) -> None:
+        commands = (
+            ("PCM", f"{self._playback_volume_percent}%", "unmute"),
+            ("Mic", f"{self._capture_volume_percent}%", "cap"),
+        )
+        configured = True
+        for control, level, state in commands:
+            process = await self._process_factory(
+                "amixer",
+                "-q",
+                "-c",
+                self._mixer_card,
+                "sset",
+                control,
+                level,
+                state,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            return_code = await process.wait()
+            if return_code != 0:
+                configured = False
+                detail = await self._read_stderr(process)
+                logger.warning(
+                    "USB_MIXER_CONFIGURATION_FAILED",
+                    extra={
+                        "card": self._mixer_card,
+                        "control": control,
+                        "return_code": return_code,
+                        "detail": detail,
+                    },
+                )
+        if configured:
+            logger.info(
+                "USB_MIXER_CONFIGURED",
+                extra={
+                    "card": self._mixer_card,
+                    "playback_percent": self._playback_volume_percent,
+                    "capture_percent": self._capture_volume_percent,
+                },
+            )
 
     async def stop(self) -> None:
         if self._capture_task is not None:

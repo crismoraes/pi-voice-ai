@@ -999,6 +999,10 @@ segue pelo mesmo `ConversationManager`, Whisper local, OpenAI e Piper já valida
 Na saída, todos os trechos TTS do turno são escritos em um único processo `aplay`,
 permitindo que o alto-falante comece antes do fim da síntese.
 
+Antes de abrir o microfone, o adaptador usa `amixer` para restaurar os níveis
+configurados de reprodução e captura. Isso transforma a correção aplicada durante o
+troubleshooting em comportamento reproduzível após reinícios ou resets da interface.
+
 O modo é selecionado no `.env` por `AUDIO_MODE=usb`. Os dispositivos de entrada e
 saída têm configurações separadas, então uma fase futura pode usar interfaces USB
 distintas sem alterar VAD, STT, LLM, TTS ou histórico. O modo WebRTC continua
@@ -1173,6 +1177,10 @@ sudo systemctl restart pi-voice-ai.service
 systemctl is-active pi-voice-ai.service
 journalctl -u pi-voice-ai.service -f
 ```
+
+Nas versões seguintes ao primeiro diagnóstico, o próprio serviço restaura os níveis
+definidos por `USB_PLAYBACK_VOLUME_PERCENT` e `USB_CAPTURE_VOLUME_PERCENT` durante a
+inicialização. Os comandos manuais continuam úteis para testar o hardware isolado.
 
 ## Por que o barge-in USB começa desativado?
 

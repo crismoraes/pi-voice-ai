@@ -6,6 +6,7 @@
 
 - Adaptador ALSA para conversa local com microfone e alto-falante USB.
 - Configuração de dispositivos USB, período de captura e barge-in local.
+- Restauração automática dos níveis ALSA de captura e reprodução na inicialização.
 - Testes do ciclo de vida do `arecord` e do streaming PCM para um único `aplay`.
 
 ### Changed
@@ -24,6 +25,7 @@
   STT em 0,540 s e 18,472 s de resposta reproduzidos em cinco trechos.
 - Diagnóstico da P10S recuperou captura após remover um processo antigo, restaurar
   volume e resetar o endpoint USB; a captura nativa entregou 192.000 bytes por segundo.
+- Testes confirmam os comandos de mixer antes da abertura do `arecord`.
 - Perguntas frequentes do curso reúnem os problemas reais e seus procedimentos de
   diagnóstico, correção e verificação.
 
