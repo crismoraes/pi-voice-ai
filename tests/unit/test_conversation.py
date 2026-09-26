@@ -50,6 +50,19 @@ class FakeTextToSpeech(TextToSpeech):
         )
 
 
+class EmptyThenTextLanguageModel(LanguageModel):
+    model = "retry-test"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def stream_response(self, text: str, *, history=()):
+        self.calls += 1
+        if self.calls == 1:
+            return
+        yield "Resposta recuperada."
+
+
 async def run_two_turns() -> tuple[list[tuple[str, dict[str, object]]], ContextAwareLanguageModel]:
     model = ContextAwareLanguageModel()
     manager = ConversationManager(
@@ -82,6 +95,31 @@ def test_conversation_pipeline_streams_events_and_keeps_context() -> None:
     assert [event for event, _ in events].count("transcript") == 2
     assert [event for event, _ in events].count("assistant_delta") == 2
     assert [event for event, _ in events].count("tts_done") == 2
+
+
+def test_conversation_retries_one_empty_model_response() -> None:
+    async def exercise() -> tuple[object, EmptyThenTextLanguageModel]:
+        model = EmptyThenTextLanguageModel()
+        manager = ConversationManager(
+            speech_to_text=FakeSpeechToText(),
+            language_model=model,
+            text_to_speech=FakeTextToSpeech(),
+            max_turns=2,
+        )
+
+        async def emit(event: str, payload: dict[str, object]) -> None:
+            pass
+
+        result = await manager.process(
+            "retry-peer", np.zeros(16_000, dtype=np.float32), emit
+        )
+        return result, model
+
+    result, model = asyncio.run(exercise())
+
+    assert result is not None
+    assert result.response_text == "Resposta recuperada."
+    assert model.calls == 2
 
 
 def test_missing_vad_model_is_reported(tmp_path: Path) -> None:

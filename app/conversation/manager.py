@@ -85,7 +85,6 @@ class ConversationManager:
 
             started_at = perf_counter()
             first_text_seconds: float | None = None
-            response_parts: list[str] = []
             logger.info(
                 "CONVERSATION_LLM_STARTED",
                 extra={
@@ -94,18 +93,28 @@ class ConversationManager:
                     "history_messages": len(state.history),
                 },
             )
-            async for delta in self._language_model.stream_response(
-                transcription.text,
-                history=tuple(state.history),
-            ):
-                if first_text_seconds is None:
-                    first_text_seconds = perf_counter() - started_at
-                response_parts.append(delta)
-                await emit("assistant_delta", {"text": delta})
+            response_text = ""
+            for attempt in range(2):
+                response_parts: list[str] = []
+                async for delta in self._language_model.stream_response(
+                    transcription.text,
+                    history=tuple(state.history),
+                ):
+                    if first_text_seconds is None and delta.strip():
+                        first_text_seconds = perf_counter() - started_at
+                    response_parts.append(delta)
+                    await emit("assistant_delta", {"text": delta})
+                response_text = "".join(response_parts).strip()
+                if response_text:
+                    break
+                if attempt == 0:
+                    logger.warning(
+                        "CONVERSATION_LLM_EMPTY_RETRY",
+                        extra={"peer_id": session_id},
+                    )
 
             total_text_seconds = perf_counter() - started_at
             first_text_seconds = first_text_seconds or total_text_seconds
-            response_text = "".join(response_parts).strip()
             if not response_text:
                 raise RuntimeError("The language model returned no text")
             await emit(

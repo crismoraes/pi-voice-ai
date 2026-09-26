@@ -917,5 +917,14 @@ A validação unitária usa uma resposta de cinco segundos, inicia nova fala dur
 No teste WebRTC implantado, o primeiro áudio gerou 2,453 s de resposta falada. A
 segunda fala foi detectada durante a reprodução e removeu os 1,573 s restantes. O
 novo turno terminou normalmente, gerou 2,436 s de voz e o Windows recebeu 140 frames
-audíveis. O serviço permaneceu ativo e não houve erro nessa execução. Resta validar
-a interrupção com voz humana no navegador antes do marco `v0.7.0`.
+audíveis. O serviço permaneceu ativo e não houve erro nessa execução.
+
+Na validação física, o usuário perguntou sobre Moisés e interrompeu a resposta para
+pedir informações sobre Jesus. O servidor removeu 28,194 s dos 36,351 s de áudio da
+primeira resposta. A nova fala teve 2,54 s, STT de 0,60 s, primeiro texto em 1,60 s,
+resposta textual em 2,48 s e 23,61 s de voz sintetizados em 4,67 s, RTF `0,20`.
+
+Duas chamadas anteriores da OpenAI terminaram sem texto. O pipeline passou a repetir
+uma única vez somente nesse caso, mantendo os erros explícitos se a repetição também
+vier vazia. Dezesseis testes passaram nos dois ambientes. A validação encerrou a
+Fase 7 no marco `v0.7.0`.

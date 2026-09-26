@@ -5,12 +5,13 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 6 concluídas; Fase 7 em validação.** O marco `v0.1.0`
+**Estado: Fases 0 a 7 concluídas.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
 adiciona TTS português local e retorno de voz por WebRTC. A versão `v0.6.0`
-adiciona detecção automática de fala e contexto de múltiplos turnos.
+adiciona detecção automática de fala e contexto de múltiplos turnos. A versão
+`v0.7.0` permite interromper uma resposta ao começar uma nova fala.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
@@ -26,11 +27,17 @@ duração de áudio descartada.
 resposta em andamento -> nova fala -> cancelar -> limpar áudio -> novo turno
 ```
 
-O cancelamento preserva os turnos já concluídos no histórico. Quinze testes passaram
+O cancelamento preserva os turnos já concluídos no histórico. Dezesseis testes passaram
 no Windows e no Pi. Na validação WebRTC implantada, uma nova fala interrompeu a
 reprodução, descartou 1,573 s de áudio pendente e completou o segundo turno. O Windows
-recebeu 140 frames audíveis e os logs do teste não mostraram erros. Falta o teste
-físico no navegador antes da publicação de `v0.7.0`.
+recebeu 140 frames audíveis e os logs do teste não mostraram erros.
+
+Na validação física, a pergunta sobre Moisés gerou 36,351 s de voz. Uma nova fala
+interrompeu a reprodução com 28,194 s ainda pendentes e iniciou a pergunta sobre
+Jesus. O novo segmento de 2,54 s foi transcrito em 0,60 s, recebeu o primeiro texto
+em 1,60 s e gerou 23,61 s de voz em 4,67 s, RTF `0,20`. Respostas vazias ocasionais
+do modelo agora recebem uma única tentativa adicional. A Fase 7 está concluída na
+versão `v0.7.0`.
 
 ## Fase 6 — conversa automática com VAD e contexto
 

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Current implementation state — Phases 0 through 6 complete; Phase 7 validation
+## Current implementation state — Phases 0 through 7 complete
 
 The repository is `pi-voice-ai` inside the parent workspace `RaspberryPI5`; execute
 Git commands from the clone.
@@ -216,17 +216,21 @@ response. The same peer's history advanced through 4, 6, 8 and the configured
 remained active without journal errors. Phase 6 is complete at version `0.6.0`.
 Phase 7 began only after the user's explicit authorization.
 
-The user authorized Phase 7. Version `0.7.0.dev0` keeps VAD active while an automatic
+The user authorized Phase 7. Version `0.7.0` keeps VAD active while an automatic
 turn is processing or playing. New detected speech cancels the current task, clears
 queued assistant audio and continues collecting that same utterance for the next
 turn. The `interrupted` SSE event reports whether processing or playback was stopped
 and how much queued audio was discarded. `ENABLE_BARGE_IN` controls the behavior.
-Fifteen tests pass on Windows and Raspberry Pi, including a five-second queued
+Sixteen tests pass on Windows and Raspberry Pi, including a five-second queued
 response interrupted during playback followed by a second completed turn. The live
 deployed WebRTC check interrupted playback with 1.573 seconds queued, completed the
 new turn, received 140 audible frames on Windows and produced no errors in that run.
-The service is active at `0.7.0.dev0`. A physical browser test remains required before
-`v0.7.0`. Do not begin Phase 8 without explicit user authorization.
+The physical browser test interrupted a 36.351-second answer about Moses with 28.194
+seconds still queued, then completed the new request about Jesus. The new 2.54-second
+utterance took 0.60 seconds for STT, 1.60 seconds to first text and 4.67 seconds to
+synthesize 23.61 seconds of speech. Two earlier OpenAI calls returned no text, so the
+conversation pipeline now retries once only for an empty completion. Phase 7 is
+complete at `0.7.0`. Do not begin Phase 8 without explicit user authorization.
 
 ## Project Goal
 

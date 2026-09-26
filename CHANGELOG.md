@@ -2,29 +2,32 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-26
+
 ### Added
 
 - Barge-in por VAD durante processamento e reprodução da resposta automática.
 - Evento SSE `interrupted` com fase do turno e áudio pendente descartado.
 - Verificador WebRTC que envia uma segunda fala durante a primeira resposta.
+- Nova tentativa única quando o modelo conclui uma resposta sem produzir texto.
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `0.7.0.dev0`.
+- Versão publicada como `0.7.0`.
 - O VAD permanece ativo enquanto a conversa está ocupada quando
   `ENABLE_BARGE_IN=true`.
 
 ### Validated
 
-- Quinze testes no Windows e no Raspberry Pi, incluindo cancelamento da reprodução,
+- Dezesseis testes no Windows e no Raspberry Pi, incluindo cancelamento da reprodução,
   limpeza do áudio e início do turno seguinte.
 - Barge-in WebRTC implantado durante `playback`, com 1,573 s de áudio pendente
   descartado, segundo turno completo e 140 frames audíveis recebidos no Windows.
-- Serviço `0.7.0.dev0` ativo, health check aprovado e teste bem-sucedido sem erros.
-
-### Pending
-
-- Interrupção física pelo navegador antes de `v0.7.0`.
+- Serviço `0.7.0` ativo, health check aprovado e teste bem-sucedido sem erros.
+- Validação física interrompeu uma resposta com 28,194 s de áudio pendente e iniciou
+  corretamente um novo turno sobre Jesus.
+- Segundo segmento de 2,54 s transcrito em 0,60 s; primeiro texto em 1,60 s e 23,61 s
+  de voz sintetizados em 4,67 s, RTF `0,20`.
 
 ## [0.6.0] - 2026-09-26
 
