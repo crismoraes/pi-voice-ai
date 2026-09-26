@@ -88,6 +88,11 @@ class AssistantAudioTrack(MediaStreamTrack):
         self._speech_offset = 0
         return remaining_samples / self.sample_rate
 
+    @property
+    def pending_speech_seconds(self) -> float:
+        remaining_samples = max(0, len(self._speech_samples) - self._speech_offset)
+        return remaining_samples / self.sample_rate
+
     def _take_speech(self, sample_count: int) -> np.ndarray | None:
         if self._speech_offset >= len(self._speech_samples):
             return None
@@ -210,7 +215,7 @@ class PeerConnectionManager:
                     self._relay.subscribe(track, buffered=False)
                 )
                 peer_connection.addTrack(session.output_track)
-                capture_track = self._relay.subscribe(track)
+                capture_track = self._relay.subscribe(track, buffered=False)
                 session.capture_task = asyncio.create_task(
                     self._consume_audio(peer_id, session, capture_track)
                 )
@@ -470,14 +475,13 @@ class PeerConnectionManager:
                 peer_id,
                 samples,
                 lambda event, payload: self._emit(session, event, payload),
+                play_audio=lambda synthesis: self._queue_conversation_audio(
+                    session, synthesis
+                ),
             )
             if result is not None:
                 session.conversation_phase = "playback"
-                session.output_track.queue_speech(
-                    result.synthesis.samples,
-                    result.synthesis.sample_rate,
-                )
-                await asyncio.sleep(result.synthesis.audio_seconds)
+                await asyncio.sleep(session.output_track.pending_speech_seconds)
         except asyncio.CancelledError:
             logger.info(
                 "CONVERSATION_TURN_CANCELLED",
@@ -503,6 +507,16 @@ class PeerConnectionManager:
                     session.vad.reset()
                 if session.automatic_conversation and peer_id in self._sessions:
                     await self._emit(session, "ready", {})
+
+    @staticmethod
+    async def _queue_conversation_audio(
+        session: PeerSession,
+        synthesis: SynthesisResult,
+    ) -> None:
+        if session.output_track is None:
+            raise AudioTrackUnavailableError("Audio track is not ready")
+        session.conversation_phase = "playback"
+        session.output_track.queue_speech(synthesis.samples, synthesis.sample_rate)
 
     @staticmethod
     async def _emit(
@@ -568,6 +582,7 @@ speech_to_text = SherpaWhisperSpeechToText(
     model_dir=settings.stt_model_dir,
     language=settings.stt_language,
     num_threads=settings.stt_num_threads,
+    precision=settings.stt_model_precision,
 )
 if settings.tts_engine not in {"piper", "sherpa-piper"}:
     raise ValueError(f"Unsupported TTS_ENGINE: {settings.tts_engine}")

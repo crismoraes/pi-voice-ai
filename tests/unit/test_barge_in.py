@@ -44,12 +44,12 @@ class PlaybackConversation:
         self.calls = 0
         self.second_turn = asyncio.Event()
 
-    async def process(self, session_id, samples, emit):
+    async def process(self, session_id, samples, emit, play_audio=None):
         self.calls += 1
         if self.calls > 1:
             self.second_turn.set()
             return None
-        return ConversationResult(
+        result = ConversationResult(
             transcription=TranscriptionResult(
                 text="primeiro turno",
                 audio_seconds=1.0,
@@ -64,6 +64,9 @@ class PlaybackConversation:
                 processing_seconds=0.01,
             ),
         )
+        if play_audio is not None:
+            await play_audio(result.synthesis)
+        return result
 
     def forget(self, session_id: str) -> None:
         pass

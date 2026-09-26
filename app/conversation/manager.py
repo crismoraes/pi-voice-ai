@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from time import perf_counter
@@ -16,6 +17,7 @@ from app.tts.base import SynthesisResult, TextToSpeech
 
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
+AudioHandler = Callable[[SynthesisResult], Awaitable[None]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,11 +45,13 @@ class ConversationManager:
         language_model: LanguageModel,
         text_to_speech: TextToSpeech,
         max_turns: int,
+        tts_chunk_characters: int = 240,
     ) -> None:
         self._speech_to_text = speech_to_text
         self._language_model = language_model
         self._text_to_speech = text_to_speech
         self._max_messages = max_turns * 2
+        self._tts_chunk_characters = tts_chunk_characters
         self._states: dict[str, ConversationState] = {}
 
     def forget(self, session_id: str) -> None:
@@ -58,6 +62,7 @@ class ConversationManager:
         session_id: str,
         samples: np.ndarray,
         emit: EventHandler,
+        play_audio: AudioHandler | None = None,
     ) -> ConversationResult | None:
         state = self._states.setdefault(session_id, ConversationState())
         async with state.lock:
@@ -137,7 +142,45 @@ class ConversationManager:
                 "CONVERSATION_TTS_STARTED",
                 extra={"peer_id": session_id, "input_characters": len(response_text)},
             )
-            synthesis = await self._text_to_speech.synthesize(response_text)
+            tts_started_at = perf_counter()
+            first_audio_seconds: float | None = None
+            syntheses: list[SynthesisResult] = []
+            text_chunks = self._split_tts_text(response_text)
+            for index, text_chunk in enumerate(text_chunks, start=1):
+                synthesis_chunk = await self._text_to_speech.synthesize(text_chunk)
+                syntheses.append(synthesis_chunk)
+                if play_audio is not None:
+                    await play_audio(synthesis_chunk)
+                if first_audio_seconds is None:
+                    first_audio_seconds = perf_counter() - tts_started_at
+                    logger.info(
+                        "CONVERSATION_FIRST_AUDIO_QUEUED",
+                        extra={
+                            "peer_id": session_id,
+                            "seconds": round(first_audio_seconds, 3),
+                        },
+                    )
+                await emit(
+                    "tts_chunk",
+                    {
+                        "index": index,
+                        "total": len(text_chunks),
+                        "audio_seconds": round(synthesis_chunk.audio_seconds, 3),
+                        "processing_seconds": round(
+                            synthesis_chunk.processing_seconds, 3
+                        ),
+                    },
+                )
+            sample_rate = syntheses[0].sample_rate
+            if any(item.sample_rate != sample_rate for item in syntheses):
+                raise RuntimeError("TTS chunks returned different sample rates")
+            synthesis = SynthesisResult(
+                samples=np.concatenate([item.samples for item in syntheses]),
+                sample_rate=sample_rate,
+                processing_seconds=sum(
+                    item.processing_seconds for item in syntheses
+                ),
+            )
             await emit(
                 "tts_done",
                 {
@@ -145,6 +188,8 @@ class ConversationManager:
                     "processing_seconds": round(synthesis.processing_seconds, 3),
                     "real_time_factor": round(synthesis.real_time_factor, 3),
                     "sample_rate": synthesis.sample_rate,
+                    "chunks": len(syntheses),
+                    "first_audio_seconds": round(first_audio_seconds or 0, 3),
                 },
             )
             logger.info(
@@ -156,6 +201,8 @@ class ConversationManager:
                     "first_text_seconds": round(first_text_seconds, 3),
                     "llm_seconds": round(total_text_seconds, 3),
                     "tts_seconds": round(synthesis.processing_seconds, 3),
+                    "first_audio_seconds": round(first_audio_seconds or 0, 3),
+                    "tts_chunks": len(syntheses),
                     "response_audio_seconds": round(synthesis.audio_seconds, 3),
                     "history_messages": len(state.history),
                 },
@@ -167,3 +214,23 @@ class ConversationManager:
                 total_text_seconds=total_text_seconds,
                 synthesis=synthesis,
             )
+
+    def _split_tts_text(self, text: str) -> list[str]:
+        sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+        chunks: list[str] = []
+        current = ""
+        for sentence in sentences:
+            words = sentence.split()
+            for word in words:
+                candidate = f"{current} {word}".strip()
+                if current and len(candidate) > self._tts_chunk_characters:
+                    chunks.append(current)
+                    current = word
+                else:
+                    current = candidate
+            if current and sentence.rstrip().endswith((".", "!", "?")):
+                chunks.append(current)
+                current = ""
+        if current:
+            chunks.append(current)
+        return chunks or [text]

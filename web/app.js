@@ -221,6 +221,9 @@ function openConversationEvents() {
     assistantMetricsText.textContent = `${result.model} · primeiro texto ${result.first_text_seconds.toFixed(2)} s · total ${result.total_seconds.toFixed(2)} s`;
     setStatus("Sintetizando voz no Raspberry Pi…", "connecting");
   });
+  eventSource.addEventListener("tts_chunk", () => {
+    setStatus("Reproduzindo resposta…", "connected");
+  });
   eventSource.addEventListener("tts_done", (message) => {
     const result = JSON.parse(message.data);
     assistantMetricsText.textContent += ` · voz ${result.processing_seconds.toFixed(2)} s · áudio ${result.audio_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;

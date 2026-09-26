@@ -22,10 +22,17 @@ logger = logging.getLogger("pi_voice_ai.stt")
 class SherpaWhisperSpeechToText(SpeechToText):
     """Lazy-loaded Whisper Tiny recognizer for final utterances."""
 
-    def __init__(self, model_dir: Path, language: str, num_threads: int) -> None:
+    def __init__(
+        self,
+        model_dir: Path,
+        language: str,
+        num_threads: int,
+        precision: str = "int8",
+    ) -> None:
         self._model_dir = model_dir
         self._language = language
         self._num_threads = num_threads
+        self._precision = precision
         self._recognizer: Any | None = None
         self._decode_lock = asyncio.Lock()
 
@@ -33,9 +40,12 @@ class SherpaWhisperSpeechToText(SpeechToText):
         if self._recognizer is not None:
             return self._recognizer
 
-        encoder = self._model_dir / "tiny-encoder.int8.onnx"
-        decoder = self._model_dir / "tiny-decoder.int8.onnx"
-        tokens = self._model_dir / "tiny-tokens.txt"
+        token_files = sorted(self._model_dir.glob("*-tokens.txt"))
+        tokens = token_files[0] if len(token_files) == 1 else self._model_dir / "tokens"
+        prefix = tokens.name.removesuffix("-tokens.txt")
+        precision_suffix = ".int8" if self._precision == "int8" else ""
+        encoder = self._model_dir / f"{prefix}-encoder{precision_suffix}.onnx"
+        decoder = self._model_dir / f"{prefix}-decoder{precision_suffix}.onnx"
         missing = [path for path in (encoder, decoder, tokens) if not path.is_file()]
         if missing:
             names = ", ".join(path.name for path in missing)
@@ -66,6 +76,7 @@ class SherpaWhisperSpeechToText(SpeechToText):
             extra={
                 "engine": "sherpa-whisper",
                 "language": self._language,
+                "precision": self._precision,
                 "seconds": round(perf_counter() - started, 3),
             },
         )

@@ -5,7 +5,7 @@ O Windows é a estação de desenvolvimento e administração remota. O objetivo
 manter STT e TTS locais e enviar texto ao LLM da OpenAI, com documentação suficiente
 para reconstruir o projeto e ensinar sua implementação.
 
-**Estado: Fases 0 a 7 concluídas.** O marco `v0.1.0`
+**Estado: Fases 0 a 7 concluídas; Fase 8 em desenvolvimento.** O marco `v0.1.0`
 registra a estação Windows, SSH e baseline do Raspberry Pi. A versão `v0.2.0`
 entrega a fundação FastAPI e o loopback WebRTC. A versão `v0.3.0` adiciona STT
 local. A versão `v0.4.0` adiciona respostas de texto da OpenAI. A versão `v0.5.0`
@@ -14,6 +14,26 @@ adiciona detecção automática de fala e contexto de múltiplos turnos. A vers�
 `v0.7.0` permite interromper uma resposta ao começar uma nova fala.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
+
+## Fase 8 — desempenho
+
+A versão `0.8.0.dev0` mede modelos, precisão, threads, buffering e entrega de voz.
+O STT agora descobre o prefixo do modelo Whisper e aceita `STT_MODEL_PRECISION=int8`
+ou `fp32`, permitindo comparar Tiny e Base sem código específico para cada tamanho.
+O áudio de entrada WebRTC usa o relay sem fila intermediária.
+
+Respostas faladas são divididas por sentenças, limitadas por
+`TTS_CHUNK_CHARACTERS`. Cada trecho é enviado ao WebRTC assim que fica pronto,
+enquanto o Pi sintetiza os seguintes. O evento `tts_chunk` marca o início da
+reprodução e as métricas incluem o tempo até o primeiro áudio.
+
+A linha de base no Pi 5 indicou STT Tiny INT8 de 1,467 s em aproximadamente 0,324 s
+com três threads. No TTS curto, três threads reduziram o processamento de cerca de
+0,218 s para 0,182 s, mantendo um núcleo livre. Os benchmarks de modelos e o teste
+implantado do novo streaming ainda estão em andamento.
+
+Referências oficiais: [modelos Whisper do sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/whisper/tiny.en.html)
+e [catálogo TTS](https://k2-fsa.github.io/sherpa/onnx/tts/all/).
 
 ## Fase 7 — interrupção por voz
 

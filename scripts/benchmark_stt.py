@@ -39,6 +39,7 @@ async def run(path: Path) -> None:
         model_dir=settings.stt_model_dir,
         language=settings.stt_language,
         num_threads=settings.stt_num_threads,
+        precision=settings.stt_model_precision,
     )
     result = await service.transcribe(load_audio(path))
     print(

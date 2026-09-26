@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -38,6 +39,9 @@ class Settings(BaseSettings):
     )
     stt_language: str = Field(default="pt", alias="STT_LANGUAGE")
     stt_num_threads: int = Field(default=4, ge=1, le=16, alias="STT_NUM_THREADS")
+    stt_model_precision: Literal["int8", "fp32"] = Field(
+        default="int8", alias="STT_MODEL_PRECISION"
+    )
     stt_min_audio_seconds: float = Field(
         default=0.5, ge=0.1, le=5, alias="STT_MIN_AUDIO_SECONDS"
     )
@@ -73,6 +77,9 @@ class Settings(BaseSettings):
     tts_speed: float = Field(default=1.0, ge=0.5, le=2.0, alias="TTS_SPEED")
     tts_max_text_characters: int = Field(
         default=2000, ge=100, le=10000, alias="TTS_MAX_TEXT_CHARACTERS"
+    )
+    tts_chunk_characters: int = Field(
+        default=240, ge=40, le=1000, alias="TTS_CHUNK_CHARACTERS"
     )
 
     model_config = SettingsConfigDict(

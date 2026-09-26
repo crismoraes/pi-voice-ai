@@ -928,3 +928,24 @@ Duas chamadas anteriores da OpenAI terminaram sem texto. O pipeline passou a rep
 uma única vez somente nesse caso, mantendo os erros explícitos se a repetição também
 vier vazia. Dezesseis testes passaram nos dois ambientes. A validação encerrou a
 Fase 7 no marco `v0.7.0`.
+
+## Fase 8 — otimização orientada por medições
+
+### Linha de base
+
+O Pi 5 possui quatro Cortex-A76, 8 GiB de RAM, temperatura inicial de 41,7 °C e
+`throttled=0x0`. Foram executadas três rodadas com uma a quatro threads. Para um WAV
+de 1,467 s, o Whisper Tiny INT8 teve medianas de 0,496 s, 0,352 s, 0,324 s e 0,327 s.
+No TTS curto, as medianas foram 0,344 s, 0,218 s, 0,182 s e 0,176 s. Três threads
+oferecem desempenho próximo do melhor e deixam um núcleo para WebRTC e VAD.
+
+### Primeiras mudanças
+
+O adaptador Whisper passou a localizar os arquivos Tiny ou Base e selecionar INT8 ou
+FP32 por configuração. A captura WebRTC usa `MediaRelay` sem buffering intermediário.
+No caminho de saída, o texto é separado por sentenças; o primeiro áudio é enfileirado
+assim que o primeiro trecho fica pronto, em paralelo temporal com a síntese restante.
+O evento `tts_chunk` atualiza a interface no primeiro trecho.
+
+O Whisper Base oficial foi baixado somente para benchmark. O Tiny ocupa 245 MiB e o
+Base 433 MiB no Pi. A seleção final depende da comparação de latência e transcrição.

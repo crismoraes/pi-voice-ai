@@ -27,6 +27,7 @@ conversation_manager = ConversationManager(
     language_model=language_model,
     text_to_speech=text_to_speech,
     max_turns=settings.conversation_max_turns,
+    tts_chunk_characters=settings.tts_chunk_characters,
 )
 peer_manager.configure_conversations(
     conversation_manager,

@@ -122,6 +122,44 @@ def test_conversation_retries_one_empty_model_response() -> None:
     assert model.calls == 2
 
 
+def test_conversation_queues_tts_in_sentence_chunks() -> None:
+    class SentenceModel(LanguageModel):
+        async def stream_response(self, text: str, *, history=()):
+            yield "Primeira frase. Segunda frase."
+
+    async def exercise() -> tuple[object, list[float], list[str]]:
+        manager = ConversationManager(
+            speech_to_text=FakeSpeechToText(),
+            language_model=SentenceModel(),
+            text_to_speech=FakeTextToSpeech(),
+            max_turns=2,
+            tts_chunk_characters=20,
+        )
+        queued: list[float] = []
+        events: list[str] = []
+
+        async def emit(event: str, payload: dict[str, object]) -> None:
+            events.append(event)
+
+        async def play_audio(synthesis: SynthesisResult) -> None:
+            queued.append(synthesis.audio_seconds)
+
+        result = await manager.process(
+            "chunk-peer",
+            np.zeros(16_000, dtype=np.float32),
+            emit,
+            play_audio=play_audio,
+        )
+        return result, queued, events
+
+    result, queued, events = asyncio.run(exercise())
+
+    assert result is not None
+    assert queued == [0.5, 0.5]
+    assert result.synthesis.audio_seconds == 1.0
+    assert events.count("tts_chunk") == 2
+
+
 def test_missing_vad_model_is_reported(tmp_path: Path) -> None:
     with pytest.raises(VoiceActivityDetectionUnavailableError, match="VAD model"):
         SherpaSileroVoiceActivityDetector(

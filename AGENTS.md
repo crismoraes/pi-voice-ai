@@ -232,6 +232,16 @@ synthesize 23.61 seconds of speech. Two earlier OpenAI calls returned no text, s
 conversation pipeline now retries once only for an empty completion. Phase 7 is
 complete at `0.7.0`. Do not begin Phase 8 without explicit user authorization.
 
+The user authorized Phase 8. Version `0.8.0.dev0` adds Whisper model-prefix discovery,
+INT8/FP32 selection, unbuffered WebRTC capture relay and sentence-sized TTS streaming.
+The first audio chunk is queued while later chunks are still synthesized, and
+`tts_chunk` reports playback progress. Baseline Raspberry Pi 5 medians favor three
+threads: Tiny INT8 STT took about 0.324 seconds for 1.467 seconds of audio; short TTS
+took about 0.182 seconds versus 0.218 with two threads. The official Whisper Base
+benchmark model occupies 433 MiB versus 245 MiB for Tiny. Model comparison, deployed
+latency validation and physical validation remain before `v0.8.0`. Do not begin
+Phase 9 without explicit user authorization.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

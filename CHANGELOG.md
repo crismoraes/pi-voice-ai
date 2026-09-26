@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Added
+
+- Streaming de TTS por sentenças com evento `tts_chunk` e tempo até o primeiro áudio.
+- Seleção `int8`/`fp32` e descoberta do tamanho do modelo Whisper pelo diretório.
+
+### Changed
+
+- Versão de desenvolvimento elevada para `0.8.0.dev0`.
+- Relay da captura WebRTC sem fila intermediária para priorizar áudio recente.
+
+### Validated
+
+- Linha de base de uma a quatro threads para STT e TTS no Raspberry Pi 5.
+- STT Tiny INT8 com mediana aproximada de 0,324 s em três threads para 1,467 s de áudio.
+- TTS curto com mediana aproximada de 0,182 s em três threads, contra 0,218 s em duas.
+
+### Pending
+
+- Comparação Tiny/Base e INT8/FP32, implantação do TTS em trechos e validação física.
+
 ## [0.7.0] - 2026-09-26
 
 ### Added
