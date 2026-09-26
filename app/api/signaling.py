@@ -4,9 +4,10 @@ from typing import Literal
 
 from aiortc import RTCSessionDescription
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.stt.base import SpeechToTextUnavailableError
+from app.tts.base import TextToSpeechUnavailableError
 from app.webrtc.manager import (
     AudioDurationError,
     AudioTrackUnavailableError,
@@ -34,6 +35,21 @@ class Transcription(BaseModel):
     audio_seconds: float
     processing_seconds: float
     real_time_factor: float
+
+
+class LoopbackSetting(BaseModel):
+    enabled: bool
+
+
+class SpeechRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class SpeechSynthesis(BaseModel):
+    audio_seconds: float
+    processing_seconds: float
+    real_time_factor: float
+    sample_rate: int
 
 
 @router.post("/offer", response_model=Answer)
@@ -89,4 +105,40 @@ async def finish_transcription(peer_id: str) -> Transcription:
         audio_seconds=round(result.audio_seconds, 3),
         processing_seconds=round(result.processing_seconds, 3),
         real_time_factor=round(result.real_time_factor, 3),
+    )
+
+
+@router.put(
+    "/peers/{peer_id}/loopback",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def configure_loopback(peer_id: str, setting: LoopbackSetting) -> None:
+    try:
+        peer_manager.set_loopback(peer_id, setting.enabled)
+    except PeerNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "WebRTC peer not found") from exc
+    except AudioTrackUnavailableError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+
+@router.post(
+    "/peers/{peer_id}/speech",
+    response_model=SpeechSynthesis,
+)
+async def synthesize_speech(peer_id: str, request: SpeechRequest) -> SpeechSynthesis:
+    try:
+        result = await peer_manager.synthesize_speech(peer_id, request.text)
+    except PeerNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "WebRTC peer not found") from exc
+    except AudioTrackUnavailableError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    except TextToSpeechUnavailableError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+    return SpeechSynthesis(
+        audio_seconds=round(result.audio_seconds, 3),
+        processing_seconds=round(result.processing_seconds, 3),
+        real_time_factor=round(result.real_time_factor, 3),
+        sample_rate=result.sample_rate,
     )

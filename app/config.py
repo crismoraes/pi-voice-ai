@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     stt_max_audio_seconds: float = Field(
         default=30, ge=1, le=120, alias="STT_MAX_AUDIO_SECONDS"
     )
+    tts_engine: str = Field(default="sherpa-piper", alias="TTS_ENGINE")
+    tts_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "vits-piper-pt_BR-jeff-medium",
+        alias="TTS_MODEL_DIR",
+    )
+    tts_num_threads: int = Field(default=2, ge=1, le=8, alias="TTS_NUM_THREADS")
+    tts_speed: float = Field(default=1.0, ge=0.5, le=2.0, alias="TTS_SPEED")
+    tts_max_text_characters: int = Field(
+        default=2000, ge=100, le=10000, alias="TTS_MAX_TEXT_CHARACTERS"
+    )
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -71,6 +81,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "STT_MIN_AUDIO_SECONDS must be lower than STT_MAX_AUDIO_SECONDS"
             )
+        return self
+
+    @model_validator(mode="after")
+    def resolve_tts_model_dir(self) -> "Settings":
+        if not self.tts_model_dir.is_absolute():
+            self.tts_model_dir = PROJECT_ROOT / self.tts_model_dir
         return self
 
 

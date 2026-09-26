@@ -6,17 +6,21 @@ import asyncio
 import logging
 from contextlib import suppress
 from dataclasses import dataclass, field
+from fractions import Fraction
 from uuid import uuid4
 
 import numpy as np
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
 from aiortc.mediastreams import MediaStreamError
+from av import AudioFrame
 from av.audio.resampler import AudioResampler
 
 from app.config import get_settings
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.stt.sherpa_whisper import SherpaWhisperSpeechToText
+from app.tts.base import SynthesisResult, TextToSpeech
+from app.tts.sherpa_piper import SherpaPiperTextToSpeech
 
 logger = logging.getLogger("pi_voice_ai.webrtc")
 
@@ -37,6 +41,82 @@ class AudioDurationError(ValueError):
     """Raised when captured audio is too short to transcribe."""
 
 
+class AssistantAudioTrack(MediaStreamTrack):
+    """Send loopback, silence or queued assistant speech on one WebRTC track."""
+
+    kind = "audio"
+    sample_rate = 48_000
+
+    def __init__(self, source: MediaStreamTrack) -> None:
+        super().__init__()
+        self._source = source
+        self._source_resampler = AudioResampler(
+            format="s16", layout="mono", rate=self.sample_rate
+        )
+        self._loopback_enabled = False
+        self._speech_samples = np.empty(0, dtype=np.int16)
+        self._speech_offset = 0
+        self._timestamp = 0
+
+    def set_loopback(self, enabled: bool) -> None:
+        self._loopback_enabled = enabled
+
+    def queue_speech(self, samples: np.ndarray, sample_rate: int) -> None:
+        clipped = np.clip(samples, -1.0, 1.0)
+        pcm = (clipped * 32767.0).astype(np.int16).reshape(1, -1)
+        source_frame = AudioFrame.from_ndarray(pcm, format="s16", layout="mono")
+        source_frame.sample_rate = sample_rate
+        resampler = AudioResampler(
+            format="s16", layout="mono", rate=self.sample_rate
+        )
+        frames = list(resampler.resample(source_frame))
+        frames.extend(resampler.resample(None))
+        self._speech_samples = np.concatenate(
+            [frame.to_ndarray().reshape(-1) for frame in frames]
+        ).astype(np.int16, copy=False)
+        self._speech_offset = 0
+
+    def _take_speech(self, sample_count: int) -> np.ndarray | None:
+        if self._speech_offset >= len(self._speech_samples):
+            return None
+        end = min(self._speech_offset + sample_count, len(self._speech_samples))
+        chunk = self._speech_samples[self._speech_offset:end]
+        self._speech_offset = end
+        if len(chunk) < sample_count:
+            chunk = np.pad(chunk, (0, sample_count - len(chunk)))
+        return chunk
+
+    async def recv(self) -> AudioFrame:
+        while True:
+            source_frame = await self._source.recv()
+            frames = self._source_resampler.resample(source_frame)
+            if frames:
+                break
+
+        loopback_frame = frames[0]
+        sample_count = loopback_frame.samples
+        speech = self._take_speech(sample_count)
+        if speech is not None:
+            output_frame = AudioFrame.from_ndarray(
+                speech.reshape(1, -1), format="s16", layout="mono"
+            )
+            output_frame.sample_rate = self.sample_rate
+        elif self._loopback_enabled:
+            output_frame = loopback_frame
+        else:
+            output_frame = AudioFrame.from_ndarray(
+                np.zeros((1, sample_count), dtype=np.int16),
+                format="s16",
+                layout="mono",
+            )
+            output_frame.sample_rate = self.sample_rate
+
+        output_frame.pts = self._timestamp
+        output_frame.time_base = Fraction(1, self.sample_rate)
+        self._timestamp += sample_count
+        return output_frame
+
+
 @dataclass(slots=True)
 class PeerSession:
     connection: RTCPeerConnection
@@ -46,6 +126,7 @@ class PeerSession:
     chunks: list[np.ndarray] = field(default_factory=list)
     sample_count: int = 0
     truncated: bool = False
+    output_track: AssistantAudioTrack | None = None
 
 
 class PeerConnectionManager:
@@ -56,12 +137,14 @@ class PeerConnectionManager:
     def __init__(
         self,
         speech_to_text: SpeechToText,
+        text_to_speech: TextToSpeech,
         min_audio_seconds: float,
         max_audio_seconds: float,
     ) -> None:
         self._sessions: dict[str, PeerSession] = {}
         self._relay = MediaRelay()
         self._speech_to_text = speech_to_text
+        self._text_to_speech = text_to_speech
         self._min_samples = int(min_audio_seconds * self.sample_rate)
         self._max_samples = int(max_audio_seconds * self.sample_rate)
 
@@ -86,7 +169,10 @@ class PeerConnectionManager:
             )
             if track.kind == "audio":
                 session.audio_track_ready = True
-                peer_connection.addTrack(self._relay.subscribe(track))
+                session.output_track = AssistantAudioTrack(
+                    self._relay.subscribe(track, buffered=False)
+                )
+                peer_connection.addTrack(session.output_track)
                 capture_track = self._relay.subscribe(track)
                 session.capture_task = asyncio.create_task(
                     self._consume_audio(peer_id, session, capture_track)
@@ -194,6 +280,37 @@ class PeerConnectionManager:
         )
         return result
 
+    def set_loopback(self, peer_id: str, enabled: bool) -> None:
+        session = self._get_session(peer_id)
+        if session.output_track is None:
+            raise AudioTrackUnavailableError("Audio track is not ready")
+        session.output_track.set_loopback(enabled)
+        logger.info(
+            "WEBRTC_LOOPBACK_CHANGED",
+            extra={"peer_id": peer_id, "enabled": enabled},
+        )
+
+    async def synthesize_speech(self, peer_id: str, text: str) -> SynthesisResult:
+        session = self._get_session(peer_id)
+        if session.output_track is None:
+            raise AudioTrackUnavailableError("Audio track is not ready")
+        logger.info(
+            "TTS_STARTED",
+            extra={"peer_id": peer_id, "input_characters": len(text)},
+        )
+        result = await self._text_to_speech.synthesize(text)
+        session.output_track.queue_speech(result.samples, result.sample_rate)
+        logger.info(
+            "TTS_COMPLETED",
+            extra={
+                "peer_id": peer_id,
+                "audio_seconds": round(result.audio_seconds, 3),
+                "processing_seconds": round(result.processing_seconds, 3),
+                "real_time_factor": round(result.real_time_factor, 3),
+            },
+        )
+        return result
+
     def _get_session(self, peer_id: str) -> PeerSession:
         session = self._sessions.get(peer_id)
         if session is None:
@@ -228,8 +345,18 @@ speech_to_text = SherpaWhisperSpeechToText(
     language=settings.stt_language,
     num_threads=settings.stt_num_threads,
 )
+if settings.tts_engine not in {"piper", "sherpa-piper"}:
+    raise ValueError(f"Unsupported TTS_ENGINE: {settings.tts_engine}")
+
+text_to_speech = SherpaPiperTextToSpeech(
+    model_dir=settings.tts_model_dir,
+    num_threads=settings.tts_num_threads,
+    speed=settings.tts_speed,
+    max_text_characters=settings.tts_max_text_characters,
+)
 peer_manager = PeerConnectionManager(
     speech_to_text=speech_to_text,
+    text_to_speech=text_to_speech,
     min_audio_seconds=settings.stt_min_audio_seconds,
     max_audio_seconds=settings.stt_max_audio_seconds,
 )

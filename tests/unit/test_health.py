@@ -29,4 +29,4 @@ def test_browser_client_is_served() -> None:
     response = asyncio.run(get_home_page())
 
     assert response.status_code == 200
-    assert "Assistente de texto" in response.text
+    assert "Assistente de voz" in response.text

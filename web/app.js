@@ -109,8 +109,46 @@ async function streamAssistantResponse(text) {
 
   if (!assistantText.textContent) {
     assistantText.textContent = "O modelo não retornou texto.";
+    setStatus("Pronto para outra frase", "connected");
+    return;
   }
+  await synthesizeAssistantResponse(assistantText.textContent);
+}
+
+async function synthesizeAssistantResponse(text) {
+  if (!peerId) {
+    return;
+  }
+  setStatus("Sintetizando voz no Raspberry Pi…", "connecting");
+  const response = await fetch(`/api/webrtc/peers/${peerId}/speech`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) {
+    throw new Error(await responseError(response));
+  }
+  const result = await response.json();
+  assistantMetricsText.textContent += ` · voz ${result.processing_seconds.toFixed(2)} s · áudio ${result.audio_seconds.toFixed(2)} s · RTF ${result.real_time_factor.toFixed(2)}`;
+  setStatus("Reproduzindo resposta…", "connected");
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, result.audio_seconds * 1000);
+  });
   setStatus("Pronto para outra frase", "connected");
+}
+
+async function configureLoopback() {
+  if (!peerId) {
+    return;
+  }
+  const response = await fetch(`/api/webrtc/peers/${peerId}/loopback`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: loopbackCheckbox.checked }),
+  });
+  if (!response.ok) {
+    throw new Error(await responseError(response));
+  }
 }
 
 async function closeSession({ notifyServer = true } = {}) {
@@ -220,7 +258,7 @@ async function startSession() {
 
     peerConnection.addEventListener("track", async (event) => {
       remoteAudio.srcObject = event.streams[0] ?? new MediaStream([event.track]);
-      remoteAudio.muted = !loopbackCheckbox.checked;
+      remoteAudio.muted = false;
       try {
         await remoteAudio.play();
       } catch (error) {
@@ -262,6 +300,7 @@ async function startSession() {
       sdp: answer.sdp,
       type: answer.type,
     });
+    await configureLoopback();
     setStatus("Conectando áudio…", "connecting");
   } catch (error) {
     errorText.textContent = error.message;
@@ -269,8 +308,12 @@ async function startSession() {
   }
 }
 
-loopbackCheckbox.addEventListener("change", () => {
-  remoteAudio.muted = !loopbackCheckbox.checked;
+loopbackCheckbox.addEventListener("change", async () => {
+  try {
+    await configureLoopback();
+  } catch (error) {
+    errorText.textContent = error.message;
+  }
 });
 startButton.addEventListener("click", startSession);
 recordButton.addEventListener("click", toggleCapture);
