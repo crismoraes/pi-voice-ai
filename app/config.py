@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     stt_model_precision: Literal["int8", "fp32"] = Field(
         default="int8", alias="STT_MODEL_PRECISION"
     )
+    stt_normalize_audio: bool = Field(default=True, alias="STT_NORMALIZE_AUDIO")
+    stt_target_peak: float = Field(
+        default=0.8, ge=0.1, le=0.95, alias="STT_TARGET_PEAK"
+    )
+    stt_max_gain: float = Field(default=12, ge=1, le=30, alias="STT_MAX_GAIN")
     stt_min_audio_seconds: float = Field(
         default=0.5, ge=0.1, le=5, alias="STT_MIN_AUDIO_SECONDS"
     )
@@ -101,9 +106,9 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "models" / "silero_vad.onnx",
         alias="VAD_MODEL_PATH",
     )
-    vad_threshold: float = Field(default=0.5, ge=0.05, le=0.95, alias="VAD_THRESHOLD")
+    vad_threshold: float = Field(default=0.4, ge=0.05, le=0.95, alias="VAD_THRESHOLD")
     vad_min_silence_seconds: float = Field(
-        default=1.0, ge=0.1, le=5, alias="VAD_MIN_SILENCE_SECONDS"
+        default=1.2, ge=0.1, le=5, alias="VAD_MIN_SILENCE_SECONDS"
     )
     vad_min_speech_seconds: float = Field(
         default=0.3, ge=0.1, le=5, alias="VAD_MIN_SPEECH_SECONDS"

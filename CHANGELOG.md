@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- Painel de tecnologia ativa no topo do dashboard com versão, modelos LLM, STT e
+  TTS, execução local/nuvem, modo de áudio, VAD e parâmetros sanitizados.
+- API `/api/system/info` sem credenciais ou caminhos privados.
+- Normalização local e limitada do áudio antes do Whisper, configurável por pico
+  alvo e ganho máximo.
+
+### Changed
+
+- Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
+  após falas reais curtas e sinal baixo no microfone USB.
+- Versão de desenvolvimento elevada para `1.0.1`.
+
 ## [1.0.0] - 2026-09-26
 
 ### Added

@@ -314,6 +314,18 @@ throttling was 0x0 and the boot journal had no errors. The user then completed a
 post-reboot physical USB conversation and reported that it worked perfectly. Phase
 10 is complete at `v1.0.0`.
 
+Post-1.0 work targets a dashboard technology panel and a physical USB recognition
+regression. The dashboard reads sanitized `/api/system/info` data for the running
+version, LLM, STT, TTS, audio mode and VAD; it must never expose credentials or full
+model paths. The Pi was healthy with Whisper Small INT8, Portuguese, three threads,
+maximum capture mixer level and no warnings. Three recent utterances measured 2.020,
+0.548 and 2.436 seconds, with RMS 0.0068–0.0153, peaks 0.0355–0.1193 and no clipping.
+This supports weak input plus premature endpointing rather than a model switch.
+Version 1.0.1 adds bounded local STT normalization (target peak 0.8, maximum gain
+12), changes the default VAD threshold to 0.4 and restores 1.2 seconds of ending
+silence. Do not publish a `v1.0.1` release until Pi tests and a physical conversation
+confirm the adjustment.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

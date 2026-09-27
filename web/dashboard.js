@@ -5,6 +5,19 @@ const daysSelect = document.querySelector("#days");
 function text(id, value) { document.querySelector(`#${id}`).textContent = value; }
 function money(value) { return value == null ? "Sem tarifa" : usd.format(value); }
 
+function renderTechnology(info) {
+  text("app-version", `v${info.version}`);
+  text("tech-llm", info.llm.model);
+  text("tech-llm-detail", `${info.llm.provider} · processamento em nuvem`);
+  text("tech-stt", info.stt.model);
+  const normalization = info.stt.normalization ? `normalização até ${info.stt.target_peak} · ganho máx. ${info.stt.max_gain}×` : "sem normalização";
+  text("tech-stt-detail", `${info.stt.engine} · ${info.stt.language} · ${info.stt.precision.toUpperCase()} · ${info.stt.threads} threads · ${normalization}`);
+  text("tech-tts", info.tts.model);
+  text("tech-tts-detail", `${info.tts.engine} · ${info.tts.threads} threads`);
+  text("tech-audio", `${info.audio.mode.toUpperCase()} · ${info.audio.vad}`);
+  text("tech-audio-detail", `limiar ${info.audio.vad_threshold} · silêncio final ${info.audio.ending_silence_seconds.toFixed(1)} s · HTTPS ${info.audio.tls ? "ativo" : "inativo"}`);
+}
+
 function renderChart(daily) {
   const chart = document.querySelector("#chart");
   if (!daily.length) { chart.innerHTML = '<p class="empty">Ainda não há dados.</p>'; return; }
@@ -32,18 +45,19 @@ async function loadDashboard() {
   text("dashboard-error", "");
   try {
     const days = daysSelect.value;
-    const [summaryResponse, turnsResponse] = await Promise.all([
-      fetch(`/api/usage/summary?days=${days}`), fetch(`/api/usage/turns?days=${days}&limit=100`),
+    const [summaryResponse, turnsResponse, systemResponse] = await Promise.all([
+      fetch(`/api/usage/summary?days=${days}`), fetch(`/api/usage/turns?days=${days}&limit=100`), fetch("/api/system/info"),
     ]);
-    if (!summaryResponse.ok || !turnsResponse.ok) throw new Error("Não foi possível carregar o histórico.");
+    if (!summaryResponse.ok || !turnsResponse.ok || !systemResponse.ok) throw new Error("Não foi possível carregar o dashboard.");
     const summary = await summaryResponse.json();
     const recent = await turnsResponse.json();
+    const system = await systemResponse.json();
     const totals = summary.totals;
     text("turns", number.format(totals.turns)); text("tokens", number.format(totals.total_tokens));
     text("input-tokens", number.format(totals.input_tokens)); text("output-tokens", number.format(totals.output_tokens));
     text("cached-tokens", number.format(totals.cached_input_tokens)); text("cost", money(totals.estimated_cost_usd));
     text("pricing-note", `Estimativa em USD para ${summary.pricing.model} · preços de ${new Date(`${summary.pricing.effective_date}T12:00:00`).toLocaleDateString("pt-BR")}`);
-    renderChart(summary.daily); renderTurns(recent.turns);
+    renderTechnology(system); renderChart(summary.daily); renderTurns(recent.turns);
   } catch (error) { text("dashboard-error", error.message); }
 }
 

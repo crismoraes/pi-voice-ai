@@ -33,11 +33,12 @@ for ((attempt = 1; attempt <= max_attempts; attempt++)); do
     if response="$(curl "${curl_options[@]}" "$app_scheme://$app_host:$app_port/health" 2>&1)"; then
         if [[ "$response" == '{"status":"ok"}' ]]; then
             if curl "${curl_options[@]}" "$app_scheme://$app_host:$app_port/dashboard.html" >/dev/null \
-                && curl "${curl_options[@]}" "$app_scheme://$app_host:$app_port/api/usage/summary?days=30" >/dev/null; then
+                && curl "${curl_options[@]}" "$app_scheme://$app_host:$app_port/api/usage/summary?days=30" >/dev/null \
+                && curl "${curl_options[@]}" "$app_scheme://$app_host:$app_port/api/system/info" >/dev/null; then
                 printf 'Health check passed on attempt %d: %s\n' "$attempt" "$response"
                 exit 0
             fi
-            last_result="health passed, but dashboard or usage API failed"
+            last_result="health passed, but a dashboard endpoint failed"
         else
             last_result="unexpected response: $response"
         fi

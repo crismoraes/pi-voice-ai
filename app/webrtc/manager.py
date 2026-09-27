@@ -583,6 +583,9 @@ speech_to_text = SherpaWhisperSpeechToText(
     language=settings.stt_language,
     num_threads=settings.stt_num_threads,
     precision=settings.stt_model_precision,
+    normalize_audio=settings.stt_normalize_audio,
+    target_peak=settings.stt_target_peak,
+    max_gain=settings.stt_max_gain,
 )
 if settings.tts_engine not in {"piper", "sherpa-piper"}:
     raise ValueError(f"Unsupported TTS_ENGINE: {settings.tts_engine}")

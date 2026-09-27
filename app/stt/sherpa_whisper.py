@@ -20,7 +20,7 @@ logger = logging.getLogger("pi_voice_ai.stt")
 
 
 class SherpaWhisperSpeechToText(SpeechToText):
-    """Lazy-loaded Whisper Tiny recognizer for final utterances."""
+    """Lazy-loaded Whisper recognizer for final utterances."""
 
     def __init__(
         self,
@@ -28,11 +28,17 @@ class SherpaWhisperSpeechToText(SpeechToText):
         language: str,
         num_threads: int,
         precision: str = "int8",
+        normalize_audio: bool = True,
+        target_peak: float = 0.8,
+        max_gain: float = 12,
     ) -> None:
         self._model_dir = model_dir
         self._language = language
         self._num_threads = num_threads
         self._precision = precision
+        self._normalize_audio = normalize_audio
+        self._target_peak = target_peak
+        self._max_gain = max_gain
         self._recognizer: Any | None = None
         self._decode_lock = asyncio.Lock()
 
@@ -86,6 +92,23 @@ class SherpaWhisperSpeechToText(SpeechToText):
         recognizer = self._load_recognizer()
         audio = np.ascontiguousarray(samples, dtype=np.float32)
         audio_seconds = len(audio) / self.sample_rate
+        if self._normalize_audio and len(audio):
+            input_peak = float(np.max(np.abs(audio)))
+            gain = (
+                min(self._max_gain, self._target_peak / input_peak)
+                if 0 < input_peak < self._target_peak
+                else 1.0
+            )
+            if gain > 1:
+                audio = np.clip(audio * gain, -1.0, 1.0)
+            logger.info(
+                "STT_AUDIO_NORMALIZED",
+                extra={
+                    "input_peak": round(input_peak, 4),
+                    "gain": round(gain, 2),
+                    "output_peak": round(float(np.max(np.abs(audio))), 4),
+                },
+            )
         started = perf_counter()
         stream = recognizer.create_stream()
         stream.accept_waveform(self.sample_rate, audio)

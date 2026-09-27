@@ -1120,6 +1120,35 @@ um processo estável. Procure `ERROR`, `Traceback`, `APP_STARTED` e o evento da 
 que deveria ter ocorrido. Um health check HTTP confirma o servidor, mas não prova
 sozinho que microfone, modelo e alto-falante estão funcionando.
 
+## O dashboard pode mostrar os modelos realmente ativos?
+
+Sim. A seção **Tecnologia ativa** consulta `/api/system/info` e apresenta versão,
+LLM, STT, TTS, modo de áudio e VAD. Use essa informação antes de diagnosticar uma
+mudança de qualidade: ela confirma, por exemplo, se o Whisper Small INT8 em português
+está realmente carregado. A API omite chaves, caminhos e conteúdo das conversas.
+
+## O modelo correto está ativo, mas passou a entender pior
+
+Em um diagnóstico posterior ao marco 1.0, o Pi continuava saudável, com Whisper
+Small, português, três threads, captura no máximo e sem warnings. Os três turnos
+recentes tinham apenas 2,020 s, 0,548 s e 2,436 s. RMS e pico estavam baixos, sem
+clipping. Isso indicou sinal fraco e corte da frase, não troca de modelo.
+
+A correção aumentou o silêncio final de 1,0 para 1,2 s, reduziu o limiar do Silero
+de 0,5 para 0,4 e habilitou normalização local limitada antes do Whisper:
+
+```dotenv
+VAD_THRESHOLD=0.4
+VAD_MIN_SILENCE_SECONDS=1.2
+STT_NORMALIZE_AUDIO=true
+STT_TARGET_PEAK=0.8
+STT_MAX_GAIN=12
+```
+
+O ganho máximo evita amplificação sem limite. Confira `STT_AUDIO_NORMALIZED` e
+`CONVERSATION_STT_STARTED` no journal, fale a cerca de 15–30 cm do microfone e
+compare uma frase de pelo menos três segundos antes de mudar novamente o modelo.
+
 ## Por que `id\_ed25519.pub` não foi encontrado no Windows?
 
 **Sintoma:** `ssh-keygen -lf` informou `No such file or directory`.

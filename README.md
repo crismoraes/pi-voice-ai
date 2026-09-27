@@ -33,7 +33,13 @@ as últimas falas. As APIs de leitura são:
 ```text
 GET /api/usage/summary?days=30
 GET /api/usage/turns?days=30&limit=100
+GET /api/system/info
 ```
+
+No topo, **Tecnologia ativa** mostra a versão em execução, modelo OpenAI, Whisper,
+voz Piper, processamento local ou em nuvem, modo de áudio, VAD, idioma, precisão,
+threads e normalização. O endpoint nunca retorna chave OpenAI, caminhos dos modelos
+ou conteúdo das conversas.
 
 O custo é uma estimativa local. Cada linha conserva o modelo, a data e as tarifas
 usadas no cálculo. Se o modelo retornado não corresponder ao modelo da tabela de
@@ -51,6 +57,15 @@ preços, o turno continua com os tokens reais e fica sem estimativa monetária.
 Os valores padrão correspondem ao modo Standard publicado para `gpt-6-luna` na
 [página oficial de preços](https://developers.openai.com/api/docs/pricing?tab=suite).
 Atualize a configuração quando a tabela oficial mudar.
+
+### Qualidade do áudio USB
+
+Após o lançamento 1.0, uma nova amostra mostrou segmentos de `0,548 s` e níveis de
+entrada baixos: RMS entre `0,0068` e `0,0153`, picos entre `0,0355` e `0,1193`, sem
+saturação. O mixer já estava ligado no ganho máximo e o serviço não tinha avisos.
+A configuração passou a esperar 1,2 s de silêncio, usar limiar VAD 0,4 e normalizar
+localmente cada fala antes do Whisper até pico 0,8, limitado a ganho 12×. As métricas
+e o ganho são numéricos; áudio e transcrição não são registrados.
 
 ### Estabilização para o marco 1.0
 
