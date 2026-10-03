@@ -66,6 +66,11 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "data" / "llm-selection.json",
         alias="LLM_SELECTION_PATH",
     )
+    assistant_enabled: bool = Field(default=True, alias="ASSISTANT_ENABLED")
+    assistant_state_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "assistant-state.json",
+        alias="ASSISTANT_STATE_PATH",
+    )
     local_llm_base_url: str = Field(
         default="http://127.0.0.1:8081/v1", alias="LOCAL_LLM_BASE_URL"
     )
@@ -211,6 +216,8 @@ class Settings(BaseSettings):
     def resolve_llm_selection_path(self) -> "Settings":
         if not self.llm_selection_path.is_absolute():
             self.llm_selection_path = PROJECT_ROOT / self.llm_selection_path
+        if not self.assistant_state_path.is_absolute():
+            self.assistant_state_path = PROJECT_ROOT / self.assistant_state_path
         return self
 
     @model_validator(mode="after")

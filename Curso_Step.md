@@ -1100,6 +1100,26 @@ perfeitamente. Essa demonstração concluiu a Fase 10 no marco `v1.0.0`.
 
 ## Pós-1.0 — alternando entre OpenAI e um LLM local
 
+### Controle On/Off para desenvolvimento e testes
+
+Deixar o assistente USB ativo durante programação pode fazer o VAD interpretar
+conversas do ambiente, iniciar o LLM e consumir tokens. O dashboard recebeu uma
+chave global **Voice assistant**. Desligar não muda nem descarrega o modelo
+selecionado: interrompe o turno atual, fecha a captura USB e bloqueia novas
+requisições de voz antes do VAD, STT e LLM. No WebRTC, a conexão pode permanecer
+aberta, mas recebe o evento `paused` e deixa de iniciar turnos automáticos.
+
+```text
+On  -> microfone -> VAD -> STT -> LLM -> TTS
+Off -> captura fechada/ignorada -> zero novos tokens
+```
+
+A API usada pelo dashboard é `PUT /api/system/assistant` com o booleano `enabled`.
+O arquivo ignorado `data/assistant-state.json` usa gravação atômica e permissão
+`0600`; assim, um reboot não volta a ligar silenciosamente o microfone. O `.env`
+define somente o primeiro estado com `ASSISTANT_ENABLED=true`. Esta separação é
+útil no curso: escolher o provedor e permitir captação são decisões independentes.
+
 ### Objetivo da aula
 
 Executar o Qwen3.5 2B Q4_K_M no Raspberry Pi 5 com llama.cpp e permitir que o aluno
@@ -1187,6 +1207,21 @@ systemctl status pi-voice-ai-llm.service --no-pager
 curl --fail http://127.0.0.1:8081/health
 journalctl -u pi-voice-ai-llm.service --since "10 minutes ago" --no-pager
 ```
+
+## Desliguei no dashboard, mas quero confirmar que o microfone USB parou
+
+Com a chave em **Off**, `arecord` não deve aparecer e a API deve informar
+`"enabled": false`. Ao religar, o processo é recriado sem reboot:
+
+```bash
+pgrep -a arecord
+curl -k https://127.0.0.1:8443/api/system/info
+journalctl -u pi-voice-ai.service --since "5 minutes ago" --no-pager
+```
+
+Procure `USB_AUDIO_STOPPED` ao desligar e `USB_AUDIO_STARTED` ao ligar. Se o
+dashboard não refletir a escolha após reiniciar, confira a permissão de
+`data/assistant-state.json` sem publicar seu conteúdo junto com outros dados locais.
 
 ## A escolha do LLM voltou depois de um reboot?
 

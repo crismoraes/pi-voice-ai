@@ -4,6 +4,9 @@
 
 ### Added
 
+- Chave persistente **Voice assistant On/Off** no dashboard para interromper a
+  captura USB, pausar WebRTC e impedir novos consumos de LLM durante desenvolvimento.
+- API `PUT /api/system/assistant` e estado local atômico com permissão `0600`.
 - Seleção persistente e allowlisted de LLM entre OpenAI e llama.cpp no dashboard.
 - Adaptador streaming para o endpoint de chat do llama.cpp, com tokens e tokens/s.
 - Qwen3.5 2B Q4_K_M local, download com SHA-256, build ARM64 fixado e serviço

@@ -204,6 +204,26 @@ def test_assistant_endpoint_streams_deltas_and_metrics() -> None:
     assert 'event: done\ndata: {"model":"fake-model"' in body
 
 
+def test_assistant_endpoint_rejects_requests_while_paused() -> None:
+    original_control = assistant_api.assistant_control
+    assistant_api.assistant_control = SimpleNamespace(enabled=False)
+
+    async def request() -> object:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            return await client.post(
+                "/api/assistant/responses", json={"text": "Do not process this"}
+            )
+
+    try:
+        response = asyncio.run(request())
+    finally:
+        assistant_api.assistant_control = original_control
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "The voice assistant is paused"
+
+
 def test_llama_cpp_adapter_streams_text_and_reports_usage() -> None:
     def handler(request: Request) -> Response:
         assert request.url.path == "/v1/chat/completions"

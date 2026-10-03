@@ -8,7 +8,7 @@ import logging
 from collections.abc import AsyncIterator
 from time import perf_counter
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,7 @@ from app.llm.base import LanguageModelError, TokenUsage
 from app.llm.llama_cpp import LlamaCppLanguageModel
 from app.llm.openai_responses import OpenAIResponsesLanguageModel
 from app.llm.selector import LanguageModelSelector
+from app.runtime.current import assistant_control
 from app.usage.runtime import usage_store
 from app.usage.store import UsageTurn
 
@@ -141,6 +142,11 @@ async def response_events(text: str) -> AsyncIterator[str]:
 
 @router.post("/responses")
 async def create_response(request: AssistantRequest) -> StreamingResponse:
+    if not assistant_control.enabled:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The voice assistant is paused",
+        )
     return StreamingResponse(
         response_events(request.text),
         media_type="text/event-stream",

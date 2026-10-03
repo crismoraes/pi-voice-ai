@@ -223,6 +223,18 @@ th { color: #8c959f; font-weight: 600; }
 .technology-grid strong { display: block; margin-top: 8px; overflow-wrap: anywhere; font-size: 1rem; }
 .technology-grid small { margin-top: 7px; line-height: 1.45; }
 .technology-note { margin: 16px 0 0; color: #b1bac4; font-size: .82rem; }
+.assistant-control { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 18px; padding: 16px; border: 1px solid rgba(86, 211, 100, .35); border-radius: 12px; background: rgba(35, 134, 54, .08); }
+.assistant-control.paused { border-color: #484f58; background: #161b22; }
+.assistant-control strong, .assistant-control small { display: block; }
+.assistant-control small { margin-top: 5px; color: #8c959f; }
+.toggle { display: flex; align-items: center; gap: 10px; color: #f0f3f6; font-weight: 700; cursor: pointer; }
+.toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle-track { width: 48px; height: 26px; padding: 3px; border-radius: 999px; background: #484f58; transition: background .18s ease; }
+.toggle-track span { display: block; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .18s ease; }
+.toggle input:checked + .toggle-track { background: #238636; }
+.toggle input:checked + .toggle-track span { transform: translateX(22px); }
+.toggle input:focus-visible + .toggle-track { outline: 3px solid #58a6ff; outline-offset: 3px; }
+.toggle input:disabled + .toggle-track { opacity: .55; }
 .llm-controls { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.4fr) auto; gap: 12px; align-items: end; margin-top: 20px; }
 .llm-controls label { display: grid; gap: 7px; color: #b1bac4; font-size: .8rem; }
 .llm-controls button { min-height: 42px; }

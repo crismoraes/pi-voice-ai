@@ -19,6 +19,7 @@ from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
+from app.runtime.current import assistant_control
 from app.usage.runtime import usage_store
 from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
 from app.webrtc.manager import peer_manager, speech_to_text, text_to_speech
@@ -67,6 +68,9 @@ usb_audio = (
     if settings.audio_mode == "usb"
     else None
 )
+assistant_control.register(peer_manager.set_enabled)
+if usb_audio is not None:
+    assistant_control.register(usb_audio.set_enabled)
 
 
 @asynccontextmanager
@@ -80,11 +84,16 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         )
     await asyncio.gather(speech_to_text.warm_up(), text_to_speech.warm_up())
     logger.info("APP_MODELS_READY")
+    await peer_manager.set_enabled(assistant_control.enabled)
     if usb_audio is not None:
-        await usb_audio.start()
+        await usb_audio.set_enabled(assistant_control.enabled)
     logger.info(
         "APP_STARTED",
-        extra={"version": __version__, "audio_mode": settings.audio_mode},
+        extra={
+            "version": __version__,
+            "audio_mode": settings.audio_mode,
+            "assistant_enabled": assistant_control.enabled,
+        },
     )
     try:
         yield

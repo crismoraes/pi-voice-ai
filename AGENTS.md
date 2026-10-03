@@ -350,6 +350,16 @@ restarts and no recent errors; llama-server listened only on loopback. The Pi ha
 selection is llama.cpp for the user's physical test. Physical microphone/speaker
 acceptance remains outstanding, so keep version `1.1.0.dev0` and do not tag it.
 
+The user authorized a persistent global Voice assistant On/Off control in the
+English dashboard. Off must stop USB `arecord`, pause automatic WebRTC turns,
+cancel current LLM/playback work and reject the standalone assistant response API,
+so no new STT, LLM tokens or TTS can start from ambient speech. Provider selection
+and assistant enabled state are independent. Persist the boolean atomically in the
+ignored `data/assistant-state.json` with POSIX mode 0600; `ASSISTANT_ENABLED` is only
+the initial default. The sanitized system API may expose the boolean but never
+private paths. Document observed switch, process and persistence checks after Pi
+deployment in AGENTS.md, README.md, Curso_Step.md and CHANGELOG.md.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

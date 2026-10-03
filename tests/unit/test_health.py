@@ -43,6 +43,7 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
     serialized = response.text.lower()
 
     assert response.status_code == 200
+    assert isinstance(payload["assistant"]["enabled"], bool)
     assert payload["llm"]["model"]
     assert payload["llm"]["provider"] in {"openai", "llama.cpp"}
     assert {item["provider"] for item in payload["llm"]["options"]} == {
@@ -70,6 +71,8 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert '<html lang="en">' in response.text
     assert "Active technology" in response.text
     assert "LLM provider" in response.text
+    assert "Voice assistant" in response.text
+    assert 'id="assistant-enabled"' in response.text
     assert "Consumo" not in response.text
     assert 'id="tech-llm"' in response.text
     assert 'id="tech-stt"' in response.text

@@ -22,6 +22,17 @@
           <div><p class="section-kicker">Runtime configuration</p><h2 id="technology-title">Active technology</h2></div>
           <span id="app-version" class="version-badge">—</span>
         </div>
+        <div class="assistant-control">
+          <div>
+            <strong>Voice assistant</strong>
+            <small id="assistant-status">Loading state…</small>
+          </div>
+          <label class="toggle" for="assistant-enabled">
+            <input id="assistant-enabled" type="checkbox" role="switch">
+            <span class="toggle-track" aria-hidden="true"><span></span></span>
+            <span id="assistant-toggle-label">Off</span>
+          </label>
+        </div>
         <div class="llm-controls">
           <label>LLM provider<select id="llm-provider"></select></label>
           <label>Model<select id="llm-model"></select></label>

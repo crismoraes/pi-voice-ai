@@ -72,6 +72,15 @@ class FakeVad:
         return None
 
 
+class CountingVad(FakeVad):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def accept(self, samples: np.ndarray) -> list[np.ndarray]:
+        self.calls += 1
+        return []
+
+
 class FakeConversationManager:
     def __init__(self) -> None:
         self.forgotten: list[str] = []
@@ -173,6 +182,26 @@ def test_usb_audio_starts_and_stops_arecord() -> None:
         await adapter.stop()
         assert processes[2].terminated
         assert conversations.forgotten == ["usb"]
+
+    asyncio.run(run())
+
+
+def test_usb_audio_discards_samples_before_vad_while_disabled() -> None:
+    async def run() -> None:
+        vad = CountingVad()
+        adapter = UsbAudioConversation(
+            conversation_manager=FakeConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=lambda: vad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+        )
+        adapter._vad = vad
+        adapter._enabled = False
+
+        await adapter._accept_samples(np.ones(512, dtype=np.float32))
+
+        assert vad.calls == 0
 
     asyncio.run(run())
 

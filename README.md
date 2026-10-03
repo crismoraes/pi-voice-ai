@@ -21,6 +21,24 @@ Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
 ## LLM selecionável: OpenAI ou llama.cpp local
 
+### Chave global do assistente de voz
+
+O topo do dashboard inclui **Voice assistant On/Off**. Em **Off**, o modo USB
+encerra o `arecord`, o WebRTC deixa de criar novos turnos e qualquer resposta ou
+reprodução em andamento é cancelada. O bloqueio ocorre antes de VAD, STT e LLM,
+portanto uma fala não gera tokens nem custo. `POST /api/assistant/responses` também
+retorna `409` enquanto o assistente está pausado.
+
+```text
+PUT /api/system/assistant
+{"enabled":false}
+```
+
+O estado fica em `data/assistant-state.json`, com modo `0600` no Linux e fora do
+Git. Ele prevalece sobre `ASSISTANT_ENABLED` depois da primeira alteração e
+permanece após reinícios. A captura volta a abrir somente quando o usuário muda a
+chave para **On**. `ASSISTANT_STATE_PATH` permite mudar o arquivo de estado.
+
 O dashboard agora fica integralmente em inglês e permite trocar o provedor e o
 modelo usados nos próximos turnos. As opções atuais são `OpenAI / gpt-6-luna` e
 `Local (llama.cpp) / qwen3.5-2b-q4_k_m`. A seleção é validada contra uma lista
@@ -57,6 +75,8 @@ Configuração do seletor:
 | Variável | Padrão | Função |
 | --- | --- | --- |
 | `LLM_PROVIDER` | `openai` | Seleção inicial quando ainda não há estado salvo |
+| `ASSISTANT_ENABLED` | `true` | Estado inicial antes de existir estado persistido |
+| `ASSISTANT_STATE_PATH` | `data/assistant-state.json` | Estado persistente On/Off |
 | `OPENAI_MODELS` | `gpt-6-luna` | Lista permitida de modelos OpenAI |
 | `LOCAL_LLM_BASE_URL` | `http://127.0.0.1:8081/v1` | API local do llama.cpp |
 | `LOCAL_LLM_MODELS` | `qwen3.5-2b-q4_k_m` | Lista permitida de modelos locais |

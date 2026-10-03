@@ -4,11 +4,21 @@ const daysSelect = document.querySelector("#days");
 const providerSelect = document.querySelector("#llm-provider");
 const modelSelect = document.querySelector("#llm-model");
 const applyButton = document.querySelector("#apply-llm");
+const assistantToggle = document.querySelector("#assistant-enabled");
 let llmOptions = [];
 
 function text(id, value) { document.querySelector(`#${id}`).textContent = value; }
 function money(value) { return value == null ? "No cloud price" : usd.format(value); }
 function providerLabel(provider) { return provider === "openai" ? "OpenAI" : "Local (llama.cpp)"; }
+
+function renderAssistantState(enabled) {
+  assistantToggle.checked = enabled;
+  text("assistant-toggle-label", enabled ? "On" : "Off");
+  text("assistant-status", enabled
+    ? "Listening for a voice request"
+    : "Paused — microphone capture and AI processing are off");
+  document.querySelector(".assistant-control").classList.toggle("paused", !enabled);
+}
 
 function populateModels(selectedModel) {
   const option = llmOptions.find((item) => item.provider === providerSelect.value);
@@ -19,6 +29,7 @@ function populateModels(selectedModel) {
 }
 
 function renderTechnology(info) {
+  renderAssistantState(info.assistant.enabled);
   text("app-version", `v${info.version}`);
   text("tech-llm", info.llm.model);
   text("tech-llm-mode", `LLM · ${info.llm.processing}`);
@@ -97,7 +108,28 @@ async function applyLlm() {
   } catch (error) { text("llm-switch-status", error.message); applyButton.disabled = false; }
 }
 
+async function setAssistantState() {
+  const requested = assistantToggle.checked;
+  assistantToggle.disabled = true;
+  text("assistant-status", requested ? "Starting…" : "Stopping…");
+  try {
+    const response = await fetch("/api/system/assistant", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: requested }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "The assistant state could not be changed.");
+    renderAssistantState(result.enabled);
+  } catch (error) {
+    assistantToggle.checked = !requested;
+    text("assistant-status", error.message);
+  } finally {
+    assistantToggle.disabled = false;
+  }
+}
+
 providerSelect.addEventListener("change", () => populateModels());
 daysSelect.addEventListener("change", loadDashboard);
 applyButton.addEventListener("click", applyLlm);
+assistantToggle.addEventListener("change", setAssistantState);
 loadDashboard();

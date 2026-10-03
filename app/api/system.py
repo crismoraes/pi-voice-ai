@@ -7,6 +7,7 @@ from app import __version__
 from app.api.assistant import language_model
 from app.config import get_settings
 from app.llm.base import LanguageModelUnavailableError
+from app.runtime.current import assistant_control
 
 router = APIRouter(prefix="/api/system", tags=["system"])
 
@@ -14,6 +15,10 @@ router = APIRouter(prefix="/api/system", tags=["system"])
 class LlmSelection(BaseModel):
     provider: str
     model: str
+
+
+class AssistantState(BaseModel):
+    enabled: bool
 
 
 def _model_label(directory_name: str, prefix: str) -> str:
@@ -29,6 +34,7 @@ async def system_info() -> dict[str, object]:
     availability = await language_model.status()
     return {
         "version": __version__,
+        "assistant": {"enabled": assistant_control.enabled},
         "llm": {
             "provider": language_model.provider,
             "model": language_model.model,
@@ -84,3 +90,10 @@ async def select_llm(selection: LlmSelection) -> dict[str, str]:
     except LanguageModelUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"provider": language_model.provider, "model": language_model.model}
+
+
+@router.put("/assistant")
+async def set_assistant_state(state: AssistantState) -> dict[str, bool]:
+    """Pause or resume microphone-driven processing across all transports."""
+    await assistant_control.set_enabled(state.enabled)
+    return {"enabled": assistant_control.enabled}

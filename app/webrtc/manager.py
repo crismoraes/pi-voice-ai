@@ -175,6 +175,7 @@ class PeerConnectionManager:
         self._conversation_manager: ConversationManager | None = None
         self._vad_factory: Callable[[], VoiceActivityDetector] | None = None
         self._barge_in_enabled = False
+        self._assistant_enabled = True
 
     def configure_conversations(
         self,
@@ -193,6 +194,22 @@ class PeerConnectionManager:
 
     def has_peer(self, peer_id: str) -> bool:
         return peer_id in self._sessions
+
+    async def set_enabled(self, enabled: bool) -> None:
+        """Pause or resume automatic processing for every connected peer."""
+        self._assistant_enabled = enabled
+        cancelled: list[asyncio.Task[None]] = []
+        for peer_id, session in self._sessions.items():
+            if session.vad is not None:
+                session.vad.reset()
+            if not enabled and session.conversation_task is not None:
+                cancelled.append(session.conversation_task)
+                self._interrupt_conversation(peer_id, session)
+            if session.automatic_conversation:
+                await self._emit(session, "ready" if enabled else "paused", {})
+        if cancelled:
+            await asyncio.gather(*cancelled, return_exceptions=True)
+        logger.info("WEBRTC_ASSISTANT_STATE_CHANGED", extra={"enabled": enabled})
 
     async def accept_offer(
         self,
@@ -370,11 +387,10 @@ class PeerConnectionManager:
         if session.vad is not None:
             session.vad.reset()
         session.automatic_conversation = enabled
-        await self._emit(
-            session,
-            "ready" if enabled else "manual",
-            {},
-        )
+        event = "manual"
+        if enabled:
+            event = "ready" if self._assistant_enabled else "paused"
+        await self._emit(session, event, {})
         logger.info(
             "CONVERSATION_MODE_CHANGED",
             extra={"peer_id": peer_id, "automatic": enabled},
@@ -398,7 +414,7 @@ class PeerConnectionManager:
         samples: np.ndarray,
     ) -> None:
         vad = session.vad
-        if not session.automatic_conversation or vad is None:
+        if not self._assistant_enabled or not session.automatic_conversation or vad is None:
             return
         if session.conversation_busy and not self._barge_in_enabled:
             return

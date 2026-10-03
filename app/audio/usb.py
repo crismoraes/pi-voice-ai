@@ -162,10 +162,20 @@ class UsbAudioConversation:
         self._playback: AlsaPlayback | None = None
         self._busy = False
         self._stopping = False
+        self._enabled = True
 
     @property
     def running(self) -> bool:
         return self._capture_task is not None and not self._capture_task.done()
+
+    async def set_enabled(self, enabled: bool) -> None:
+        """Open or close the microphone capture for the global runtime control."""
+        self._enabled = enabled
+        if enabled:
+            await self.start()
+        else:
+            await self.stop()
+        logger.info("USB_ASSISTANT_STATE_CHANGED", extra={"enabled": enabled})
 
     async def start(self) -> None:
         if self.running:
@@ -348,6 +358,8 @@ class UsbAudioConversation:
             raise
 
     async def _accept_samples(self, samples: np.ndarray) -> None:
+        if not self._enabled:
+            return
         vad = self._vad
         if vad is None:
             return
