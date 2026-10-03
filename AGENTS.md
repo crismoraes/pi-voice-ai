@@ -360,6 +360,14 @@ the initial default. The sanitized system API may expose the boolean but never
 private paths. Document observed switch, process and persistence checks after Pi
 deployment in AGENTS.md, README.md, Curso_Step.md and CHANGELOG.md.
 
+The first live Off request correctly stopped `arecord`, returned HTTP 409 for a
+standalone LLM request, kept turn and token totals unchanged, and wrote the state
+file with mode 0600. It also exposed duplicate USB state events because
+`python -m app.main` plus `uvicorn.run("app.main:app")` loaded the module twice and
+registered callbacks twice. The runner now passes the existing `app` object to
+Uvicorn. Revalidate single events, On capture recreation and Off persistence after
+deploying this correction.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

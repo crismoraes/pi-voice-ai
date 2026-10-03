@@ -1223,6 +1223,13 @@ Procure `USB_AUDIO_STOPPED` ao desligar e `USB_AUDIO_STARTED` ao ligar. Se o
 dashboard não refletir a escolha após reiniciar, confira a permissão de
 `data/assistant-state.json` sem publicar seu conteúdo junto com outros dados locais.
 
+Na primeira validação, cada mudança produziu dois eventos USB. O processo era
+iniciado com `python -m app.main`, mas `uvicorn.run("app.main:app")` importava o
+módulo novamente e registrava uma segunda cópia dos callbacks globais. Passar o
+objeto `app` já carregado para `uvicorn.run(app)` removeu a segunda importação.
+Esse diagnóstico mostra por que logs duplicados devem ser investigados mesmo quando
+o resultado visível parece correto.
+
 ## A escolha do LLM voltou depois de um reboot?
 
 Confira `data/llm-selection.json` sem publicar outros arquivos de `data/`. Se ele

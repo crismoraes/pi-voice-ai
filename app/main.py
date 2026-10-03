@@ -125,7 +125,7 @@ app.mount(
 def run() -> None:
     """Run the application using environment-backed host and port settings."""
     uvicorn.run(
-        "app.main:app",
+        app,
         host=settings.app_host,
         port=settings.app_port,
         log_config=None,

@@ -25,6 +25,11 @@
 - Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
   após falas reais curtas e sinal baixo no microfone USB.
 
+### Fixed
+
+- Inicialização do Uvicorn deixa de reimportar `app.main`, evitando callbacks e
+  eventos duplicados ao alternar o estado do assistente.
+
 ### Validated
 
 - Vinte e nove testes aprovados no Windows e no Raspberry Pi ARM64.
