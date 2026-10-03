@@ -1236,6 +1236,13 @@ o assistente estava ligado. O teste passou a fornecer um controle **On** isolado
 Estados persistentes são parte da entrada de um teste e precisam ser declarados;
 caso contrário, a suíte pode passar em uma máquina limpa e falhar no dispositivo.
 
+Depois das correções, 33 testes passaram no Pi. Off encerrou `arecord`, salvou o
+arquivo em modo `0600`, bloqueou o endpoint com HTTP 409 e não alterou os 24 turnos
+nem os 6.268 tokens existentes. Um restart preservou Off sem processo de captura.
+On abriu um novo `arecord` e emitiu uma única sequência de eventos; o Off final
+encerrou a captura novamente. Os serviços principal e llama.cpp permaneceram
+ativos, com `NRestarts=0`, `ExecMainStatus=0` e nenhum erro recente.
+
 ## A escolha do LLM voltou depois de um reboot?
 
 Confira `data/llm-selection.json` sem publicar outros arquivos de `data/`. Se ele

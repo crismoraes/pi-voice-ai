@@ -39,6 +39,13 @@ Git. Ele prevalece sobre `ASSISTANT_ENABLED` depois da primeira alteração e
 permanece após reinícios. A captura volta a abrir somente quando o usuário muda a
 chave para **On**. `ASSISTANT_STATE_PATH` permite mudar o arquivo de estado.
 
+Na validação no Pi, Off encerrou `arecord`, criou o estado com permissão `0600` e
+fez uma tentativa direta ao LLM retornar `409`. O histórico permaneceu em 24 turnos
+e 6.268 tokens antes e depois da chamada bloqueada. Off sobreviveu ao restart; On
+criou um novo `arecord`; o Off final o encerrou novamente. Os dois serviços ficaram
+ativos, com zero reinícios e sem erros. A instalação foi deixada em **Off** para
+evitar consumo acidental durante desenvolvimento.
+
 O dashboard agora fica integralmente em inglês e permite trocar o provedor e o
 modelo usados nos próximos turnos. As opções atuais são `OpenAI / gpt-6-luna` e
 `Local (llama.cpp) / qwen3.5-2b-q4_k_m`. A seleção é validada contra uma lista

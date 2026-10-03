@@ -34,7 +34,10 @@
 
 ### Validated
 
-- Vinte e nove testes aprovados no Windows e no Raspberry Pi ARM64.
+- Chave Off encerrou `arecord`, persistiu com modo `0600`, bloqueou o LLM com 409
+  e manteve inalterados 24 turnos e 6.268 tokens; On recriou a captura e Off voltou
+  a encerrá-la, com eventos únicos, zero reinícios e sem erros.
+- Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.
 - Troca OpenAI/llama.cpp nos dois sentidos e persistência local após reinício.

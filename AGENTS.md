@@ -374,6 +374,14 @@ stopped before restart, leaving the prior service active and paused. The streami
 test now injects an isolated enabled control. Persistent runtime state must never
 make tests depend on the machine's current dashboard selection.
 
+Final live validation passed 33 tests on the Pi. Off stopped `arecord`, wrote mode
+0600 state, returned HTTP 409 for a blocked LLM request and left the existing 24
+turns and 6,268 tokens unchanged. Off survived an application restart with no
+capture process. On created one new `arecord` and one set of state events; the final
+Off stopped it again. Both systemd services remained active with `NRestarts=0`,
+`ExecMainStatus=0` and no recent error entries. The deployed assistant is
+intentionally left Off to avoid accidental consumption during development.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
