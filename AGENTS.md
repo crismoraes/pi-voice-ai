@@ -339,6 +339,17 @@ CHANGELOG.md as implementation and Raspberry Pi observations change. Do not publ
 a `v1.1.0` release until remote tests, benchmarks and a physical voice conversation
 validate the local provider.
 
+The first ARM64 deployment of `1.1.0.dev0` passed 29 tests. The direct local
+benchmark returned correct Portuguese text with 1.221 seconds to first text, 8.539
+seconds total and 6.01 generated tokens/s. The application endpoint answered a
+short question correctly with 1.495 seconds to first text and 2.626 seconds total.
+Both switch directions worked, the local selection survived an application restart,
+and its recorded 56 tokens had no cloud cost. Both services were active with zero
+restarts and no recent errors; llama-server listened only on loopback. The Pi had
+5.3 GiB available, no swap use, temperature 46.6 C and throttling 0x0. The final
+selection is llama.cpp for the user's physical test. Physical microphone/speaker
+acceptance remains outstanding, so keep version `1.1.0.dev0` and do not tag it.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

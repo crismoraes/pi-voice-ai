@@ -22,6 +22,15 @@
 - Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
   após falas reais curtas e sinal baixo no microfone USB.
 
+### Validated
+
+- Vinte e nove testes aprovados no Windows e no Raspberry Pi ARM64.
+- Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
+  da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.
+- Troca OpenAI/llama.cpp nos dois sentidos e persistência local após reinício.
+- Tokens locais armazenados sem custo de nuvem; ambos os serviços ativos com zero
+  reinícios, sem erros, 5,3 GiB disponíveis, 46,6 °C e sem throttling.
+
 ## [1.0.0] - 2026-09-26
 
 ### Added

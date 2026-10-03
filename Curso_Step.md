@@ -1160,6 +1160,20 @@ serviços ativos, o endpoint local, uma resposta direta do llama.cpp, uma troca 
 dashboard e uma conversa física. Registre primeiro texto, tempo total, tokens/s,
 RAM, temperatura e throttling. Compare depois com OpenAI usando a mesma pergunta.
 
+Na execução real, a compilação detectou Cortex-A76, ARM `dotprod`, FP16 vetorial e
+OpenMP. O download de 1.280.835.840 bytes passou no SHA-256. Os 29 testes passaram
+no Pi. O benchmark retornou uma explicação correta em português com primeiro texto
+em 1,221 s, conclusão em 8,539 s e 6,01 tokens/s. Uma pergunta curta pelo endpoint
+da aplicação começou em 1,495 s e terminou em 2,626 s. A troca funcionou nos dois
+sentidos e a escolha local sobreviveu ao reinício da aplicação.
+
+O registro de consumo confirmou 48 tokens de entrada, 8 de saída, 56 no total e
+nenhum custo de nuvem. `pi-voice-ai.service` e `pi-voice-ai-llm.service` permaneceram
+ativos, com zero reinícios e nenhum erro recente. O `llama-server` estava ligado
+somente a `127.0.0.1:8081`. Durante a verificação havia 5,3 GiB de RAM disponível,
+temperatura de 46,6 °C, swap sem uso e `throttled=0x0`. Falta a conversa física do
+aluno para avaliar STT, qualidade da resposta e TTS juntos antes do marco 1.1.0.
+
 # Perguntas frequentes e troubleshooting do curso
 
 ## Se eu selecionar llama.cpp e o modelo local estiver desligado?

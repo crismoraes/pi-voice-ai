@@ -68,6 +68,17 @@ Referências: [servidor HTTP oficial do llama.cpp](https://github.com/ggml-org/l
 [Qwen3.5-2B oficial](https://huggingface.co/Qwen/Qwen3.5-2B) e
 [conversão GGUF usada](https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/tree/main).
 
+Na primeira implantação ARM64, 29 testes passaram. O benchmark direto produziu
+uma resposta portuguesa correta, primeiro texto em `1,221 s`, total de `8,539 s`
+e `6,01 tokens/s` para 45 tokens de saída. Pelo endpoint real do PiVoice AI, uma
+pergunta curta recebeu primeiro texto em `1,495 s` e terminou em `2,626 s`. A troca
+OpenAI → llama.cpp → OpenAI → llama.cpp funcionou e a opção local permaneceu ativa
+após reiniciar a aplicação. O turno local guardou 48 tokens de entrada, 8 de saída
+e custo de nuvem nulo. Ambos os serviços ficaram ativos, com `NRestarts=0`, sem
+erros recentes, 5,3 GiB de RAM disponível, temperatura de 46,6 °C e
+`throttled=0x0`. A aceitação física pelo microfone e alto-falante ainda é necessária
+antes de publicar `v1.1.0`.
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de
