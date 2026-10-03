@@ -1475,6 +1475,15 @@ O sintoma reapareceu durante a avaliação do Whisper Small: serviço, modelo e
 não havia reiniciado. Resetar somente a interface P10S com `usbreset 1234:5684` e
 reiniciar o serviço recriou a captura, sem reboot do sistema operacional.
 
+O mesmo diagnóstico foi necessário depois de mudar a chave do dashboard para
+**On**. A API confirmou `enabled=true`, `arecord` foi recriado e o mixer estava em
+100%, mas nenhum evento `USB_VAD_SPEECH_STARTED` apareceu. Com o assistente em
+**Off**, o teste nativo falhou imediatamente com `pcm_read: Input/output error`.
+Após `sudo usbreset 1234:5684` e o restart do serviço, a captura produziu 384.044
+bytes em dois segundos. A chave foi então colocada em **On** novamente. Isso mostra
+que o estado do dashboard e o processo `arecord` confirmam o controle lógico, mas
+um teste nativo ainda é necessário quando o endpoint USB fica travado.
+
 ## Por que o barge-in USB começa desativado?
 
 O navegador dispõe de processamento acústico próprio. Na ligação USB direta, a voz

@@ -43,8 +43,14 @@ Na validação no Pi, Off encerrou `arecord`, criou o estado com permissão `060
 fez uma tentativa direta ao LLM retornar `409`. O histórico permaneceu em 24 turnos
 e 6.268 tokens antes e depois da chamada bloqueada. Off sobreviveu ao restart; On
 criou um novo `arecord`; o Off final o encerrou novamente. Os dois serviços ficaram
-ativos, com zero reinícios e sem erros. A instalação foi deixada em **Off** para
-evitar consumo acidental durante desenvolvimento.
+ativos, com zero reinícios e sem erros.
+
+Se a chave mostrar **On** e `arecord` estiver ativo, mas nenhuma fala chegar ao VAD,
+teste a captura nativa. A P10S pode permanecer enumerada e ainda responder
+`Input/output error`. Nesse caso, `sudo usbreset 1234:5684` seguido do restart do
+serviço recupera somente a interface de áudio, sem reiniciar o Raspberry Pi. Esse
+caso ocorreu em uma retomada por On/Off: depois do reset, a captura voltou a produzir
+384.044 bytes em dois segundos e o assistente foi deixado em **On**.
 
 O dashboard agora fica integralmente em inglês e permite trocar o provedor e o
 modelo usados nos próximos turnos. As opções atuais são `OpenAI / gpt-6-luna` e

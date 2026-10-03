@@ -31,12 +31,16 @@
   eventos duplicados ao alternar o estado do assistente.
 - Teste do endpoint de streaming agora isola explicitamente o estado On e não
   depende do estado persistido usado pelo Raspberry Pi.
+- Interface P10S travada após uma retomada em On foi recuperada com reset somente
+  do dispositivo USB e restart do serviço, sem reboot do Raspberry Pi.
 
 ### Validated
 
 - Chave Off encerrou `arecord`, persistiu com modo `0600`, bloqueou o LLM com 409
   e manteve inalterados 24 turnos e 6.268 tokens; On recriou a captura e Off voltou
   a encerrá-la, com eventos únicos, zero reinícios e sem erros.
+- Após o reset da P10S, a captura nativa produziu 384.044 bytes em dois segundos;
+  o serviço voltou ativo, sem reinícios, com um único `arecord` e estado On.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.

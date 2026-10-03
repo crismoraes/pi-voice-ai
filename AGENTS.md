@@ -382,6 +382,14 @@ Off stopped it again. Both systemd services remained active with `NRestarts=0`,
 `ExecMainStatus=0` and no recent error entries. The deployed assistant is
 intentionally left Off to avoid accidental consumption during development.
 
+A later physical On test exposed a hardware state that the logical switch cannot
+prove healthy: the API reported enabled, `arecord` existed and the P10S mixer was at
+100%, but no VAD speech event appeared. An isolated native capture returned ALSA
+`pcm_read: Input/output error`. `sudo usbreset 1234:5684` plus an application service
+restart restored capture (384,044-byte WAV over two seconds). The assistant was
+then switched back On and left enabled. Diagnose this sequence before changing VAD
+or STT settings when On appears correct but speech is absent.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
