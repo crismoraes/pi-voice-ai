@@ -223,6 +223,10 @@ th { color: #8c959f; font-weight: 600; }
 .technology-grid strong { display: block; margin-top: 8px; overflow-wrap: anywhere; font-size: 1rem; }
 .technology-grid small { margin-top: 7px; line-height: 1.45; }
 .technology-note { margin: 16px 0 0; color: #b1bac4; font-size: .82rem; }
+.llm-controls { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.4fr) auto; gap: 12px; align-items: end; margin-top: 20px; }
+.llm-controls label { display: grid; gap: 7px; color: #b1bac4; font-size: .8rem; }
+.llm-controls button { min-height: 42px; }
+.switch-status { grid-column: 1 / -1; min-height: 20px; color: #b1bac4; font-size: .82rem; }
 
 @media (max-width: 720px) {
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
@@ -230,10 +234,14 @@ th { color: #8c959f; font-weight: 600; }
   .chart-row { grid-template-columns: 58px 1fr 72px; }
   .chart-row span { display: none; }
   .technology-grid { grid-template-columns: repeat(2, 1fr); }
+  .llm-controls { grid-template-columns: 1fr 1fr; }
+  .llm-controls button { grid-column: 1 / -1; }
 }
 
 @media (max-width: 480px) {
   .technology-grid { grid-template-columns: 1fr; }
+  .llm-controls { grid-template-columns: 1fr; }
+  .llm-controls button { grid-column: auto; }
 }
 
 @keyframes pulse {

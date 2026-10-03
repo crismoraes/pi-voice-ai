@@ -4,13 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pi-voice-ai"
-version = "1.0.1"
+version = "1.1.0.dev0"
 description = "Low-latency voice assistant foundation for Raspberry Pi 5"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "aiortc==1.15.0",
     "fastapi==0.141.1",
+    "httpx==0.28.1",
     "numpy==2.4.6",
     "openai==3.19.2",
     "pydantic-settings==2.15.0",
@@ -19,10 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "httpx==0.28.1",
-    "pytest==8.4.2",
-]
+dev = ["pytest==8.4.2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

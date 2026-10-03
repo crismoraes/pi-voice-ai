@@ -4,6 +4,11 @@
 
 ### Added
 
+- Seleção persistente e allowlisted de LLM entre OpenAI e llama.cpp no dashboard.
+- Adaptador streaming para o endpoint de chat do llama.cpp, com tokens e tokens/s.
+- Qwen3.5 2B Q4_K_M local, download com SHA-256, build ARM64 fixado e serviço
+  systemd restrito ao loopback.
+- Dashboard integralmente em inglês, com seletores de provedor e modelo.
 - Painel de tecnologia ativa no topo do dashboard com versão, modelos LLM, STT e
   TTS, execução local/nuvem, modo de áudio, VAD e parâmetros sanitizados.
 - API `/api/system/info` sem credenciais ou caminhos privados.
@@ -12,9 +17,10 @@
 
 ### Changed
 
+- Versão de desenvolvimento elevada para `1.1.0.dev0`.
+- `httpx` passa a ser dependência de runtime para o servidor local.
 - Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
   após falas reais curtas e sinal baixo no microfone USB.
-- Versão de desenvolvimento elevada para `1.0.1`.
 
 ## [1.0.0] - 2026-09-26
 

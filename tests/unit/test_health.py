@@ -44,6 +44,11 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
 
     assert response.status_code == 200
     assert payload["llm"]["model"]
+    assert payload["llm"]["provider"] in {"openai", "llama.cpp"}
+    assert {item["provider"] for item in payload["llm"]["options"]} == {
+        "openai",
+        "llama.cpp",
+    }
     assert payload["stt"]["model"].startswith("Whisper ")
     assert payload["tts"]["model"]
     assert payload["audio"]["mode"] in {"usb", "webrtc"}
@@ -62,7 +67,10 @@ def test_dashboard_contains_active_technology_panel() -> None:
     response = asyncio.run(get_dashboard())
 
     assert response.status_code == 200
-    assert "Tecnologia ativa" in response.text
+    assert '<html lang="en">' in response.text
+    assert "Active technology" in response.text
+    assert "LLM provider" in response.text
+    assert "Consumo" not in response.text
     assert 'id="tech-llm"' in response.text
     assert 'id="tech-stt"' in response.text
     assert 'id="tech-tts"' in response.text

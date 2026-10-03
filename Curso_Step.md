@@ -1098,7 +1098,95 @@ nenhum erro no journal desse boot. Na última verificação, o usuário falou pe
 microfone USB, recebeu a resposta no alto-falante e confirmou que funcionou
 perfeitamente. Essa demonstração concluiu a Fase 10 no marco `v1.0.0`.
 
+## Pós-1.0 — alternando entre OpenAI e um LLM local
+
+### Objetivo da aula
+
+Executar o Qwen3.5 2B Q4_K_M no Raspberry Pi 5 com llama.cpp e permitir que o aluno
+troque de provedor no dashboard sem editar `.env` nem reiniciar a aplicação.
+
+### Por que llama.cpp e Q4_K_M
+
+llama.cpp oferece um servidor HTTP com streaming e endpoints compatíveis com o
+formato OpenAI. A compilação nativa ARM64 usa as instruções do Raspberry Pi. A
+quantização Q4_K_M reduz o Qwen3.5 2B para cerca de 1,28 GB, deixando espaço na
+memória de 8 GB para Whisper Small, Piper, VAD e o sistema operacional. O modelo
+2B prioriza qualidade em português dentro desse limite; o benchmark físico ainda
+deve medir tokens por segundo, primeiro texto, temperatura e qualidade das respostas.
+
+### Arquitetura implementada
+
+```text
+microfone -> VAD -> Whisper -> LanguageModelSelector
+                                |-> OpenAI: gpt-6-luna
+                                +-> llama.cpp: Qwen3.5 2B Q4_K_M
+                                                     |
+alto-falante <- Piper <- texto em streaming ----------+
+```
+
+O servidor local escuta somente em `127.0.0.1:8081`. A interface envia
+`PUT /api/system/llm` com um provedor e modelo presentes na lista permitida. Antes
+da troca local, o backend consulta `/health`. A gravação atômica em
+`data/llm-selection.json` preserva a escolha após reinícios. Uma trava mantém cada
+resposta inteira no mesmo provedor caso alguém clique em **Apply LLM** durante um
+turno.
+
+O modo de raciocínio do Qwen fica desativado para conversa por voz. Isso evita
+tokens internos e reduz o tempo até a resposta. O dashboard mostra provedor,
+modelo, execução local ou em nuvem e a taxa de tokens por segundo informada pelo
+llama.cpp depois de uma geração. Todo o texto do dashboard foi mantido em inglês.
+
+### Instalação reproduzível
+
+```bash
+./scripts/bootstrap_pi.sh
+sudo ./scripts/install_service.sh
+sudo systemctl restart pi-voice-ai-llm.service pi-voice-ai.service
+curl --fail http://127.0.0.1:8081/health
+.venv/bin/python scripts/benchmark_local_llm.py
+```
+
+O instalador fixa o llama.cpp em `v0.5.0`, revisão
+`d2e54583c7452353eb35d40431281f6ee984332f`, e valida o GGUF com SHA-256
+`aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223`.
+O arquivo fica em `models/`, e a árvore compilada em `vendor/`; ambos são ignorados
+pelo Git. O arquivo multimodal `mmproj` não é necessário para esta aplicação de
+texto e voz.
+
+### Validação da aula
+
+Antes de considerar a melhoria concluída, confirme os testes Python e Bash, os dois
+serviços ativos, o endpoint local, uma resposta direta do llama.cpp, uma troca pelo
+dashboard e uma conversa física. Registre primeiro texto, tempo total, tokens/s,
+RAM, temperatura e throttling. Compare depois com OpenAI usando a mesma pergunta.
+
 # Perguntas frequentes e troubleshooting do curso
+
+## Se eu selecionar llama.cpp e o modelo local estiver desligado?
+
+O dashboard mostra o provedor como indisponível e desativa a aplicação da escolha.
+Mesmo que uma chamada seja feita diretamente, a API responde `503` e conserva a
+seleção anterior. Verifique:
+
+```bash
+systemctl status pi-voice-ai-llm.service --no-pager
+curl --fail http://127.0.0.1:8081/health
+journalctl -u pi-voice-ai-llm.service --since "10 minutes ago" --no-pager
+```
+
+## A escolha do LLM voltou depois de um reboot?
+
+Confira `data/llm-selection.json` sem publicar outros arquivos de `data/`. Se ele
+não existir, `LLM_PROVIDER` define a seleção inicial. O serviço deve ter permissão
+de escrita no diretório do projeto. Um provedor ou modelo removido da lista é
+ignorado com segurança e o padrão configurado volta a ser usado.
+
+## Por que a resposta local pode ser mais lenta que a OpenAI?
+
+O Raspberry Pi compartilha quatro núcleos entre STT, LLM e TTS. O modelo local
+elimina rede e custo de API, mas gera tokens apenas com a CPU. Respostas curtas,
+contexto de 2.048 tokens, Q4_K_M e raciocínio desativado reduzem a espera. Compare
+qualidade e tokens/s antes de escolher um modelo menor.
 
 Esta seção deve ser apresentada como diagnóstico baseado em evidências. Em cada
 caso, comece pelo sintoma, confira o estado atual, altere somente o componente com

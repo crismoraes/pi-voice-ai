@@ -19,6 +19,55 @@ remoto, dashboard de consumo e validação completa após reboot.
 
 Repositório: <https://github.com/crismoraes/pi-voice-ai>
 
+## LLM selecionável: OpenAI ou llama.cpp local
+
+O dashboard agora fica integralmente em inglês e permite trocar o provedor e o
+modelo usados nos próximos turnos. As opções atuais são `OpenAI / gpt-6-luna` e
+`Local (llama.cpp) / qwen3.5-2b-q4_k_m`. A seleção é validada contra uma lista
+permitida e gravada em `data/llm-selection.json`, fora do Git, para sobreviver a
+reinícios. O histórico textual da sessão continua válido durante a troca.
+
+O modelo local é o Qwen3.5 2B em GGUF Q4_K_M. O `llama-server` fica restrito a
+`127.0.0.1:8081`; portanto, sua API não é publicada na rede local. O serviço web
+confirma `/health` antes de aceitar a opção local. OpenAI permanece como padrão e
+fallback manual. Turnos locais registram tokens e latência no mesmo banco, sem
+custo de API; a tarifa aparece como indisponível porque não há cobrança por token.
+
+```text
+Dashboard -> PUT /api/system/llm -> seletor persistente
+                                      |-> OpenAI Responses API
+                                      +-> llama.cpp -> Qwen3.5 2B Q4_K_M
+```
+
+O bootstrap instala `cmake`, compila a revisão fixada do llama.cpp, baixa o GGUF
+de aproximadamente 1,28 GB e confere seu SHA-256. Ele também instala e habilita
+`pi-voice-ai-llm.service`. Para repetir manualmente no Pi:
+
+```bash
+./scripts/install_llama_cpp.sh
+./scripts/download_local_llm.sh
+sudo ./scripts/install_service.sh
+sudo systemctl restart pi-voice-ai-llm.service pi-voice-ai.service
+curl --fail http://127.0.0.1:8081/health
+.venv/bin/python scripts/benchmark_local_llm.py
+```
+
+Configuração do seletor:
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `LLM_PROVIDER` | `openai` | Seleção inicial quando ainda não há estado salvo |
+| `OPENAI_MODELS` | `gpt-6-luna` | Lista permitida de modelos OpenAI |
+| `LOCAL_LLM_BASE_URL` | `http://127.0.0.1:8081/v1` | API local do llama.cpp |
+| `LOCAL_LLM_MODELS` | `qwen3.5-2b-q4_k_m` | Lista permitida de modelos locais |
+| `LOCAL_LLM_MAX_OUTPUT_TOKENS` | `180` | Limite de resposta para preservar latência |
+| `LOCAL_LLM_TIMEOUT_SECONDS` | `90` | Limite de uma inferência local |
+| `LLM_SELECTION_PATH` | `data/llm-selection.json` | Estado persistente ignorado pelo Git |
+
+Referências: [servidor HTTP oficial do llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md),
+[Qwen3.5-2B oficial](https://huggingface.co/Qwen/Qwen3.5-2B) e
+[conversão GGUF usada](https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/tree/main).
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de

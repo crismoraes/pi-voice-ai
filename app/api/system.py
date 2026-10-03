@@ -1,11 +1,19 @@
-"""Sanitized runtime technology information for the local dashboard."""
+"""Sanitized runtime technology information and LLM selection."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app import __version__
+from app.api.assistant import language_model
 from app.config import get_settings
+from app.llm.base import LanguageModelUnavailableError
 
 router = APIRouter(prefix="/api/system", tags=["system"])
+
+
+class LlmSelection(BaseModel):
+    provider: str
+    model: str
 
 
 def _model_label(directory_name: str, prefix: str) -> str:
@@ -18,12 +26,26 @@ async def system_info() -> dict[str, object]:
     settings = get_settings()
     stt_model = _model_label(settings.stt_model_dir.name, "sherpa-onnx-whisper-")
     tts_model = _model_label(settings.tts_model_dir.name, "vits-piper-")
+    availability = await language_model.status()
     return {
         "version": __version__,
         "llm": {
-            "provider": "OpenAI",
-            "model": settings.openai_model,
-            "processing": "cloud",
+            "provider": language_model.provider,
+            "model": language_model.model,
+            "processing": (
+                "cloud" if language_model.provider == "openai" else "local"
+            ),
+            "options": [
+                {
+                    "provider": provider,
+                    "models": list(models),
+                    "available": availability[provider],
+                }
+                for provider, models in language_model.options.items()
+            ],
+            "tokens_per_second": language_model.metric(
+                "llama.cpp", "last_tokens_per_second"
+            ),
         },
         "stt": {
             "engine": settings.stt_engine,
@@ -50,3 +72,15 @@ async def system_info() -> dict[str, object]:
             "tls": settings.tls_enabled,
         },
     }
+
+
+@router.put("/llm")
+async def select_llm(selection: LlmSelection) -> dict[str, str]:
+    """Switch future LLM requests after allowlist and readiness checks."""
+    try:
+        await language_model.select(selection.provider, selection.model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LanguageModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"provider": language_model.provider, "model": language_model.model}

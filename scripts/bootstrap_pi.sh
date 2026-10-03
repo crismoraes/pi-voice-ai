@@ -13,6 +13,8 @@ command -v git >/dev/null 2>&1 || missing_packages+=(git)
 command -v python3 >/dev/null 2>&1 || missing_packages+=(python3)
 command -v curl >/dev/null 2>&1 || missing_packages+=(curl)
 command -v bzip2 >/dev/null 2>&1 || missing_packages+=(bzip2)
+command -v cmake >/dev/null 2>&1 || missing_packages+=(cmake)
+command -v g++ >/dev/null 2>&1 || missing_packages+=(g++)
 command -v arecord >/dev/null 2>&1 || missing_packages+=(alsa-utils)
 command -v aplay >/dev/null 2>&1 || missing_packages+=(alsa-utils)
 if command -v python3 >/dev/null 2>&1; then
@@ -54,5 +56,7 @@ esac
 "$project_dir/scripts/download_stt_model.sh" "$stt_model_variant"
 "$project_dir/scripts/download_tts_model.sh"
 "$project_dir/scripts/download_vad_model.sh"
+"$project_dir/scripts/install_llama_cpp.sh"
+"$project_dir/scripts/download_local_llm.sh"
 
 printf 'Bootstrap complete: %s\n' "$project_dir"

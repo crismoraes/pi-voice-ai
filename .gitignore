@@ -30,6 +30,7 @@ htmlcov/
 build/
 dist/
 models/
+vendor/
 data/
 *.log
 .DS_Store

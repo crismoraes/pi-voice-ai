@@ -2,11 +2,13 @@ import asyncio
 from types import SimpleNamespace
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, MockTransport, Request, Response
 
 from app.api import assistant as assistant_api
 from app.llm.base import ConversationMessage, LanguageModel, LanguageModelUnavailableError
+from app.llm.llama_cpp import LlamaCppLanguageModel
 from app.llm.openai_responses import OpenAIResponsesLanguageModel
+from app.llm.selector import LanguageModelSelector
 from app.main import app
 
 
@@ -200,3 +202,81 @@ def test_assistant_endpoint_streams_deltas_and_metrics() -> None:
     assert 'event: delta\ndata: {"text":"Estou "}' in body
     assert 'event: delta\ndata: {"text":"bem."}' in body
     assert 'event: done\ndata: {"model":"fake-model"' in body
+
+
+def test_llama_cpp_adapter_streams_text_and_reports_usage() -> None:
+    def handler(request: Request) -> Response:
+        assert request.url.path == "/v1/chat/completions"
+        body = request.read().decode()
+        assert '"enable_thinking":false' in body
+        return Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            content=(
+                'data: {"model":"qwen3.5-2b-q4_k_m","choices":[{"delta":{"content":"Olá"}}]}\n\n'
+                'data: {"choices":[{"delta":{"content":"!"}}],"usage":{"prompt_tokens":12,"completion_tokens":3,"total_tokens":15},"timings":{"predicted_per_second":8.5}}\n\n'
+                "data: [DONE]\n\n"
+            ).encode(),
+        )
+
+    client = AsyncClient(
+        transport=MockTransport(handler), base_url="http://local.test/v1/"
+    )
+    model = LlamaCppLanguageModel(
+        base_url="http://local.test/v1",
+        model="qwen3.5-2b-q4_k_m",
+        instructions="Answer briefly.",
+        max_output_tokens=100,
+        timeout_seconds=10,
+        client=client,
+    )
+    reported = []
+
+    async def collect() -> str:
+        try:
+            return "".join(
+                [
+                    chunk
+                    async for chunk in model.stream_response(
+                        "Test", on_usage=reported.append
+                    )
+                ]
+            )
+        finally:
+            await client.aclose()
+
+    assert asyncio.run(collect()) == "Olá!"
+    assert reported[0].total_tokens == 15
+    assert model.last_tokens_per_second == 8.5
+
+
+def test_selector_persists_only_allowlisted_selection(tmp_path) -> None:
+    class ReadyModel(FakeLanguageModel):
+        async def is_ready(self) -> bool:
+            return True
+
+    selection_path = tmp_path / "selection.json"
+    selector = LanguageModelSelector(
+        providers={
+            "openai": {"cloud": ReadyModel()},
+            "llama.cpp": {"local": ReadyModel()},
+        },
+        default_provider="openai",
+        default_model="cloud",
+        selection_path=selection_path,
+    )
+    asyncio.run(selector.select("llama.cpp", "local"))
+    restored = LanguageModelSelector(
+        providers={
+            "openai": {"cloud": ReadyModel()},
+            "llama.cpp": {"local": ReadyModel()},
+        },
+        default_provider="openai",
+        default_model="cloud",
+        selection_path=selection_path,
+    )
+
+    assert restored.provider == "llama.cpp"
+    assert restored.model == "local"
+    with pytest.raises(ValueError, match="Unsupported"):
+        asyncio.run(selector.select("llama.cpp", "unknown"))

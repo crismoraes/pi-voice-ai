@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.llm.base import LanguageModelError, TokenUsage
+from app.llm.llama_cpp import LlamaCppLanguageModel
 from app.llm.openai_responses import OpenAIResponsesLanguageModel
+from app.llm.selector import LanguageModelSelector
 from app.usage.runtime import usage_store
 from app.usage.store import UsageTurn
 
@@ -32,16 +34,40 @@ def encode_event(event: str, payload: dict[str, object]) -> str:
 
 
 settings = get_settings()
-language_model = OpenAIResponsesLanguageModel(
-    api_key=(
-        settings.openai_api_key.get_secret_value()
-        if settings.openai_api_key is not None
-        else None
+openai_key = (
+    settings.openai_api_key.get_secret_value()
+    if settings.openai_api_key is not None
+    else None
+)
+openai_models = {
+    model: OpenAIResponsesLanguageModel(
+        api_key=openai_key,
+        model=model,
+        instructions=settings.llm_instructions,
+        max_output_tokens=settings.openai_max_output_tokens,
+        timeout_seconds=settings.openai_timeout_seconds,
+    )
+    for model in settings.openai_model_options
+}
+local_models = {
+    model: LlamaCppLanguageModel(
+        base_url=settings.local_llm_base_url,
+        model=model,
+        instructions=settings.llm_instructions,
+        max_output_tokens=settings.local_llm_max_output_tokens,
+        timeout_seconds=settings.local_llm_timeout_seconds,
+    )
+    for model in settings.local_llm_model_options
+}
+language_model = LanguageModelSelector(
+    providers={"openai": openai_models, "llama.cpp": local_models},
+    default_provider=settings.llm_provider,
+    default_model=(
+        settings.openai_model
+        if settings.llm_provider == "openai"
+        else settings.local_llm_model
     ),
-    model=settings.openai_model,
-    instructions=settings.llm_instructions,
-    max_output_tokens=settings.openai_max_output_tokens,
-    timeout_seconds=settings.openai_timeout_seconds,
+    selection_path=settings.llm_selection_path,
 )
 
 

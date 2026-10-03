@@ -19,6 +19,8 @@ from app.llm.base import (
 class OpenAIResponsesLanguageModel(LanguageModel):
     """Generate streaming text with the OpenAI Responses API."""
 
+    provider = "openai"
+
     def __init__(
         self,
         *,
@@ -47,6 +49,9 @@ class OpenAIResponsesLanguageModel(LanguageModel):
                 max_retries=1,
             )
         return self._client
+
+    async def is_ready(self) -> bool:
+        return bool(self._api_key)
 
     async def stream_response(
         self,

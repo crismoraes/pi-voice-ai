@@ -52,11 +52,34 @@ class Settings(BaseSettings):
     usb_enable_barge_in: bool = Field(default=False, alias="USB_ENABLE_BARGE_IN")
     openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-6-luna", alias="OPENAI_MODEL")
+    openai_models: str = Field(default="gpt-6-luna", alias="OPENAI_MODELS")
     openai_max_output_tokens: int = Field(
         default=300, ge=16, le=4096, alias="OPENAI_MAX_OUTPUT_TOKENS"
     )
     openai_timeout_seconds: float = Field(
         default=30, ge=1, le=120, alias="OPENAI_TIMEOUT_SECONDS"
+    )
+    llm_provider: Literal["openai", "llama.cpp"] = Field(
+        default="openai", alias="LLM_PROVIDER"
+    )
+    llm_selection_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "llm-selection.json",
+        alias="LLM_SELECTION_PATH",
+    )
+    local_llm_base_url: str = Field(
+        default="http://127.0.0.1:8081/v1", alias="LOCAL_LLM_BASE_URL"
+    )
+    local_llm_model: str = Field(
+        default="qwen3.5-2b-q4_k_m", alias="LOCAL_LLM_MODEL"
+    )
+    local_llm_models: str = Field(
+        default="qwen3.5-2b-q4_k_m", alias="LOCAL_LLM_MODELS"
+    )
+    local_llm_max_output_tokens: int = Field(
+        default=180, ge=16, le=2048, alias="LOCAL_LLM_MAX_OUTPUT_TOKENS"
+    )
+    local_llm_timeout_seconds: float = Field(
+        default=90, ge=1, le=300, alias="LOCAL_LLM_TIMEOUT_SECONDS"
     )
     usage_db_path: Path = Field(
         default=PROJECT_ROOT / "data" / "usage.db", alias="USAGE_DB_PATH"
@@ -167,6 +190,27 @@ class Settings(BaseSettings):
     def resolve_usage_db_path(self) -> "Settings":
         if not self.usage_db_path.is_absolute():
             self.usage_db_path = PROJECT_ROOT / self.usage_db_path
+        return self
+
+    @property
+    def openai_model_options(self) -> tuple[str, ...]:
+        return self._model_options(self.openai_models, self.openai_model)
+
+    @property
+    def local_llm_model_options(self) -> tuple[str, ...]:
+        return self._model_options(self.local_llm_models, self.local_llm_model)
+
+    @staticmethod
+    def _model_options(value: str, configured: str) -> tuple[str, ...]:
+        models = tuple(
+            dict.fromkeys(item.strip() for item in value.split(",") if item.strip())
+        )
+        return models if configured in models else (configured, *models)
+
+    @model_validator(mode="after")
+    def resolve_llm_selection_path(self) -> "Settings":
+        if not self.llm_selection_path.is_absolute():
+            self.llm_selection_path = PROJECT_ROOT / self.llm_selection_path
         return self
 
     @model_validator(mode="after")

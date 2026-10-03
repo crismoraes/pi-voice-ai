@@ -1,7 +1,7 @@
 [Unit]
 Description=PiVoice AI application
-After=network-online.target
-Wants=network-online.target
+After=network-online.target pi-voice-ai-llm.service
+Wants=network-online.target pi-voice-ai-llm.service
 
 [Service]
 Type=simple

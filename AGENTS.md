@@ -326,6 +326,19 @@ Version 1.0.1 adds bounded local STT normalization (target peak 0.8, maximum gai
 silence. Do not publish a `v1.0.1` release until Pi tests and a physical conversation
 confirm the adjustment.
 
+The user authorized post-1.0 local LLM support. Version `1.1.0.dev0` adds a
+persistent, allowlisted runtime selector between OpenAI and llama.cpp. The only
+current local option is `qwen3.5-2b-q4_k_m`; the dashboard must remain entirely in
+English and must verify local readiness before accepting a switch. The llama.cpp
+server binds only to `127.0.0.1:8081` in a separate systemd service. Its source
+revision and the model SHA-256 are fixed by scripts; `vendor/`, `models/` and the
+selection file under `data/` remain outside Git. OpenAI remains the default and
+manual fallback. Never expose the API key, private model paths or private network
+addresses through the dashboard. Update AGENTS.md, README.md, Curso_Step.md and
+CHANGELOG.md as implementation and Raspberry Pi observations change. Do not publish
+a `v1.1.0` release until remote tests, benchmarks and a physical voice conversation
+validate the local provider.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
