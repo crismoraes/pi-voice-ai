@@ -29,6 +29,8 @@
 
 - Inicialização do Uvicorn deixa de reimportar `app.main`, evitando callbacks e
   eventos duplicados ao alternar o estado do assistente.
+- Teste do endpoint de streaming agora isola explicitamente o estado On e não
+  depende do estado persistido usado pelo Raspberry Pi.
 
 ### Validated
 

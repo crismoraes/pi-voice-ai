@@ -368,6 +368,12 @@ registered callbacks twice. The runner now passes the existing `app` object to
 Uvicorn. Revalidate single events, On capture recreation and Off persistence after
 deploying this correction.
 
+The next Pi deployment correctly inherited the persisted Off state, which exposed
+a test that implicitly expected the assistant API to be On. The deployment gate
+stopped before restart, leaving the prior service active and paused. The streaming
+test now injects an isolated enabled control. Persistent runtime state must never
+make tests depend on the machine's current dashboard selection.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

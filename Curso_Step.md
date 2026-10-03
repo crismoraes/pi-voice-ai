@@ -1230,6 +1230,12 @@ objeto `app` já carregado para `uvicorn.run(app)` removeu a segunda importaçã
 Esse diagnóstico mostra por que logs duplicados devem ser investigados mesmo quando
 o resultado visível parece correto.
 
+A implantação seguinte parou no gate de testes porque o Pi conservou corretamente
+o estado **Off**, enquanto um teste antigo do endpoint presumiu implicitamente que
+o assistente estava ligado. O teste passou a fornecer um controle **On** isolado.
+Estados persistentes são parte da entrada de um teste e precisam ser declarados;
+caso contrário, a suíte pode passar em uma máquina limpa e falhar no dispositivo.
+
 ## A escolha do LLM voltou depois de um reboot?
 
 Confira `data/llm-selection.json` sem publicar outros arquivos de `data/`. Se ele

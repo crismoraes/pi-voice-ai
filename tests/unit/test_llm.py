@@ -181,7 +181,9 @@ def test_openai_adapter_sends_bounded_conversation_history() -> None:
 
 async def request_streaming_response() -> str:
     original_model = assistant_api.language_model
+    original_control = assistant_api.assistant_control
     assistant_api.language_model = FakeLanguageModel()
+    assistant_api.assistant_control = SimpleNamespace(enabled=True)
     try:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -194,6 +196,7 @@ async def request_streaming_response() -> str:
             return response.text
     finally:
         assistant_api.language_model = original_model
+        assistant_api.assistant_control = original_control
 
 
 def test_assistant_endpoint_streams_deltas_and_metrics() -> None:
