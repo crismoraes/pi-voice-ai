@@ -52,6 +52,12 @@ serviço recupera somente a interface de áudio, sem reiniciar o Raspberry Pi. E
 caso ocorreu em uma retomada por On/Off: depois do reset, a captura voltou a produzir
 384.044 bytes em dois segundos e o assistente foi deixado em **On**.
 
+Uma segunda ocorrência revelou que manter `arecord` aberto durante o `aplay` podia
+travar a captura da P10S após a primeira resposta. Quando `ENABLE_BARGE_IN=false`,
+o adaptador agora encerra e libera a captura assim que uma pergunta termina, toca a
+resposta e reabre o microfone ao concluir. Os eventos
+`USB_CAPTURE_PAUSED_FOR_TURN` e `USB_CAPTURE_RESUMED_AFTER_TURN` confirmam o ciclo.
+
 O dashboard agora fica integralmente em inglês e permite trocar o provedor e o
 modelo usados nos próximos turnos. As opções atuais são `OpenAI / gpt-6-luna` e
 `Local (llama.cpp) / qwen3.5-2b-q4_k_m`. A seleção é validada contra uma lista

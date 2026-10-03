@@ -390,6 +390,17 @@ restart restored capture (384,044-byte WAV over two seconds). The assistant was
 then switched back On and left enabled. Diagnose this sequence before changing VAD
 or STT settings when On appears correct but speech is absent.
 
+The next live attempt proved the failure was deterministic around duplex access:
+one turn completed through playback, then two questions produced no VAD events.
+After stopping capture, a native recording wrote only the 44-byte WAV header and
+failed with `pcm_read: Input/output error`. With USB barge-in disabled, ignoring
+capture frames was insufficient because `arecord` remained open while `aplay` used
+the same P10S. The adapter now terminates capture after accepting a speech segment,
+waits until ALSA releases it before STT/LLM/TTS can proceed, and restarts capture
+after the turn. Preserve concurrent capture only when barge-in is explicitly on.
+Validate repeated physical turns and the paired `USB_CAPTURE_PAUSED_FOR_TURN` /
+`USB_CAPTURE_RESUMED_AFTER_TURN` events after deployment.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

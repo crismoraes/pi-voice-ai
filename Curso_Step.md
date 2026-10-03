@@ -1484,6 +1484,25 @@ bytes em dois segundos. A chave foi então colocada em **On** novamente. Isso mo
 que o estado do dashboard e o processo `arecord` confirmam o controle lógico, mas
 um teste nativo ainda é necessário quando o endpoint USB fica travado.
 
+Minutos depois, a primeira conversa funcionou e a captura voltou a travar exatamente
+após `USB_PLAYBACK_COMPLETED`. O processo `arecord` ainda aparecia, mas duas novas
+perguntas não geraram eventos VAD; isolada novamente, a P10S produziu apenas o
+cabeçalho WAV de 44 bytes e `Input/output error`. A causa era o uso simultâneo da
+mesma interface por `arecord` e `aplay`: desativar barge-in apenas descartava frames,
+sem fechar a captura. O adaptador passou a encerrar `arecord` depois de detectar a
+pergunta, aguardar a liberação do processo antes de iniciar STT/LLM/TTS e reabrir a
+captura após a reprodução. Confira no journal:
+
+```text
+USB_CAPTURE_PAUSED_FOR_TURN
+USB_PLAYBACK_COMPLETED
+USB_CONVERSATION_READY
+USB_CAPTURE_RESUMED_AFTER_TURN
+```
+
+Essa sequência preserva o barge-in quando habilitado e usa acesso exclusivo no modo
+padrão, compatível com a limitação observada na P10S.
+
 ## Por que o barge-in USB começa desativado?
 
 O navegador dispõe de processamento acústico próprio. Na ligação USB direta, a voz

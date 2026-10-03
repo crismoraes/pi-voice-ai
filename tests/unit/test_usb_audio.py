@@ -81,6 +81,11 @@ class CountingVad(FakeVad):
         return []
 
 
+class SegmentVad(FakeVad):
+    def accept(self, samples: np.ndarray) -> list[np.ndarray]:
+        return [samples]
+
+
 class FakeConversationManager:
     def __init__(self) -> None:
         self.forgotten: list[str] = []
@@ -202,6 +207,37 @@ def test_usb_audio_discards_samples_before_vad_while_disabled() -> None:
         await adapter._accept_samples(np.ones(512, dtype=np.float32))
 
         assert vad.calls == 0
+
+    asyncio.run(run())
+
+
+def test_usb_audio_marks_capture_for_pause_when_turn_starts() -> None:
+    async def run() -> None:
+        async def factory(*_: object, **__: object) -> FakeProcess:
+            return FakeProcess()
+
+        adapter = UsbAudioConversation(
+            conversation_manager=FailingConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=SegmentVad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+            process_factory=factory,
+        )
+        adapter._vad = SegmentVad()
+
+        started = await adapter._accept_samples(np.ones(512, dtype=np.float32))
+
+        assert started
+        assert adapter._busy
+        assert not adapter._capture_released.is_set()
+        assert not adapter._turn_finished.is_set()
+        assert adapter._conversation_task is not None
+        await asyncio.sleep(0)
+        assert not adapter._conversation_task.done()
+        adapter._capture_released.set()
+        await adapter._conversation_task
+        assert adapter._turn_finished.is_set()
 
     asyncio.run(run())
 

@@ -33,6 +33,8 @@
   depende do estado persistido usado pelo Raspberry Pi.
 - Interface P10S travada após uma retomada em On foi recuperada com reset somente
   do dispositivo USB e restart do serviço, sem reboot do Raspberry Pi.
+- Captura USB agora fecha antes do processamento e da reprodução quando o barge-in
+  está desligado, evitando que `arecord` e `aplay` travem a P10S em acesso simultâneo.
 
 ### Validated
 
@@ -41,6 +43,8 @@
   a encerrá-la, com eventos únicos, zero reinícios e sem erros.
 - Após o reset da P10S, a captura nativa produziu 384.044 bytes em dois segundos;
   o serviço voltou ativo, sem reinícios, com um único `arecord` e estado On.
+- Trinta e quatro testes aprovados após adicionar a sincronização entre captura e
+  reprodução USB.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.

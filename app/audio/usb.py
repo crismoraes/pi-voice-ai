@@ -163,6 +163,11 @@ class UsbAudioConversation:
         self._busy = False
         self._stopping = False
         self._enabled = True
+        self._capture_paused_for_turn = False
+        self._capture_released = asyncio.Event()
+        self._capture_released.set()
+        self._turn_finished = asyncio.Event()
+        self._turn_finished.set()
 
     @property
     def running(self) -> bool:
@@ -305,8 +310,29 @@ class UsbAudioConversation:
                 process.terminate()
                 await process.wait()
             self._capture_process = None
+            self._capture_released.set()
             if self._stopping:
                 return
+
+            if self._capture_paused_for_turn:
+                self._capture_paused_for_turn = False
+                logger.info("USB_CAPTURE_PAUSED_FOR_TURN")
+                await self._turn_finished.wait()
+                if self._stopping:
+                    return
+                try:
+                    await self._configure_mixer()
+                    await self._start_capture_process()
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    logger.error(
+                        "USB_CAPTURE_RESTART_FAILED",
+                        extra={"error_type": type(exc).__name__},
+                    )
+                else:
+                    logger.info("USB_CAPTURE_RESUMED_AFTER_TURN")
+                    continue
 
             logger.warning(
                 "USB_CAPTURE_RETRY_SCHEDULED",
@@ -346,7 +372,10 @@ class UsbAudioConversation:
                         return
                 else:
                     zero_frames = 0
-                await self._accept_samples(samples)
+                turn_started = await self._accept_samples(samples)
+                if turn_started and not self._enable_barge_in:
+                    self._capture_paused_for_turn = True
+                    return
         except asyncio.IncompleteReadError:
             stderr = await self._read_stderr(process)
             log = logger.info if "Interrupted system call" in stderr else logger.error
@@ -357,14 +386,14 @@ class UsbAudioConversation:
         except asyncio.CancelledError:
             raise
 
-    async def _accept_samples(self, samples: np.ndarray) -> None:
+    async def _accept_samples(self, samples: np.ndarray) -> bool:
         if not self._enabled:
-            return
+            return False
         vad = self._vad
         if vad is None:
-            return
+            return False
         if self._busy and not self._enable_barge_in:
-            return
+            return False
         was_speech = vad.is_speech_detected
         segments = vad.accept(samples)
         if not was_speech and vad.is_speech_detected:
@@ -378,13 +407,18 @@ class UsbAudioConversation:
                 "USB_VAD_SPEECH_ENDED",
                 extra={"audio_seconds": round(len(segment) / self.sample_rate, 3)},
             )
+            if not self._enable_barge_in:
+                self._capture_released.clear()
+            self._turn_finished.clear()
             self._conversation_task = asyncio.create_task(self._run_turn(segment))
-            break
+            return True
+        return False
 
     async def _run_turn(self, samples: np.ndarray) -> None:
         current_task = asyncio.current_task()
         self._playback = AlsaPlayback(self._playback_device, self._process_factory)
         try:
+            await self._capture_released.wait()
             result = await self._conversation_manager.process(
                 self.session_id,
                 samples,
@@ -406,6 +440,7 @@ class UsbAudioConversation:
                 self._busy = False
                 if self._vad is not None:
                     self._vad.reset()
+                self._turn_finished.set()
                 logger.info("USB_CONVERSATION_READY")
 
     async def _play_error_message(self) -> None:
