@@ -118,26 +118,26 @@ erros recentes, 5,3 GiB de RAM disponível, temperatura de 46,6 °C e
 `throttled=0x0`. A validação física posterior confirmou perguntas consecutivas pelo
 microfone e respostas no alto-falante após serializar captura e reprodução da P10S.
 
-## Roadmap — seleção de STT, TTS e OpenAI Realtime
+## Seleção de STT/TTS e roadmap OpenAI Realtime
 
-A próxima melhoria será dividida em duas fases para manter clara a diferença entre
-um pipeline encadeado e um modelo nativo de áudio.
+Esta evolução foi dividida em duas fases para manter clara a diferença entre um
+pipeline encadeado e um modelo nativo de áudio.
 
 ### Fase 11 — STT e TTS selecionáveis
 
-O dashboard ganhará controles em inglês equivalentes aos do LLM:
+O dashboard recebeu controles em inglês equivalentes aos do LLM:
 
 | Componente | Provider inicial | Modelos instalados no Pi |
 | --- | --- | --- |
 | STT | `Local (sherpa-onnx)` | `Whisper Small INT8`, `Whisper Tiny INT8` |
 | TTS | `Local (sherpa-onnx)` | `Piper pt_BR Jeff Medium` |
 
-As escolhas serão allowlisted, persistidas fora do Git e aplicadas somente a novos
-turnos. O backend carregará e validará o novo modelo antes da troca, conservará o
-modelo anterior se o carregamento falhar e descarregará o anterior depois do swap
+As escolhas são allowlisted, persistidas fora do Git e aplicadas somente a novos
+turnos. O backend carrega e valida o novo modelo antes da troca, conserva o modelo
+anterior se o carregamento falhar e descarrega o anterior depois do swap
 para recuperar RAM. Nenhum caminho informado pelo navegador será aceito.
 
-APIs planejadas:
+APIs implementadas:
 
 ```text
 PUT /api/system/stt  {"provider":"sherpa-onnx","model":"whisper-small-int8"}
@@ -145,9 +145,16 @@ PUT /api/system/tts  {"provider":"sherpa-onnx","model":"pt_BR-jeff-medium"}
 GET /api/system/info
 ```
 
-Um turno inteiro manterá o snapshot de STT, LLM e TTS que estava ativo quando a
-fala começou. Dessa forma, clicar em **Apply STT**, **Apply LLM** ou **Apply TTS**
-durante uma resposta não mistura modelos ou vozes no mesmo turno.
+Um turno inteiro mantém a trava de seleção de STT, LLM e TTS. Dessa forma, clicar em
+**Apply STT**, **Apply LLM** ou **Apply TTS** durante uma resposta aguarda o término
+do turno e não mistura modelos ou vozes.
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `STT_SMALL_MODEL_DIR` | `models/sherpa-onnx-whisper-small` | Candidato Whisper Small |
+| `STT_TINY_MODEL_DIR` | `models/sherpa-onnx-whisper-tiny` | Candidato Whisper Tiny |
+| `STT_SELECTION_PATH` | `data/stt-selection.json` | Seleção STT persistente |
+| `TTS_SELECTION_PATH` | `data/tts-selection.json` | Seleção TTS persistente |
 
 ### Fase 12 — Voice pipeline selecionável
 

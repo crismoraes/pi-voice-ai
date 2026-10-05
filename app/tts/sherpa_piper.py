@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 from pathlib import Path
 from time import perf_counter
 
@@ -31,10 +32,18 @@ class SherpaPiperTextToSpeech(TextToSpeech):
         self._load_lock = asyncio.Lock()
         self._synthesis_lock = asyncio.Lock()
 
+    def _model_files(self) -> tuple[Path, Path, Path]:
+        return (
+            self._model_dir / "pt_BR-jeff-medium.onnx",
+            self._model_dir / "tokens.txt",
+            self._model_dir / "espeak-ng-data",
+        )
+
+    def is_available(self) -> bool:
+        return all(path.exists() for path in self._model_files())
+
     def _load(self) -> sherpa_onnx.OfflineTts:
-        model = self._model_dir / "pt_BR-jeff-medium.onnx"
-        tokens = self._model_dir / "tokens.txt"
-        data_dir = self._model_dir / "espeak-ng-data"
+        model, tokens, data_dir = self._model_files()
         missing = [path for path in (model, tokens, data_dir) if not path.exists()]
         if missing:
             raise TextToSpeechUnavailableError(
@@ -93,3 +102,9 @@ class SherpaPiperTextToSpeech(TextToSpeech):
     async def warm_up(self) -> None:
         """Load model weights before the first response."""
         await self._get_tts()
+
+    async def close(self) -> None:
+        async with self._synthesis_lock:
+            async with self._load_lock:
+                self._tts = None
+                await asyncio.to_thread(gc.collect)

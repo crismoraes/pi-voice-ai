@@ -33,3 +33,13 @@ class TextToSpeech(ABC):
     @abstractmethod
     async def synthesize(self, text: str) -> SynthesisResult:
         """Generate speech without blocking the event loop."""
+
+    async def warm_up(self) -> None:
+        """Prepare the selected voice before it receives text."""
+
+    async def close(self) -> None:
+        """Release model resources when it is replaced or the app stops."""
+
+    def is_available(self) -> bool:
+        """Return whether the configured voice files appear usable."""
+        return True

@@ -1195,7 +1195,7 @@ temperatura de 46,6 °C, swap sem uso e `throttled=0x0`. A validação física s
 confirmou perguntas consecutivas pelo microfone e respostas no alto-falante depois
 da correção que serializa a captura e a reprodução da P10S.
 
-## Planejamento da Fase 11 — seleção de STT e TTS
+## Fase 11 — seleção de STT e TTS
 
 ### Objetivo da aula
 
@@ -1220,8 +1220,8 @@ registrar uma opção allowlisted.
 
 ### Contrato planejado
 
-`GET /api/system/info` continuará sanitizado e acrescentará `provider`, `options` e
-`available` a STT e TTS. As escritas serão:
+`GET /api/system/info` continua sanitizado e acrescenta `provider`, `options` e
+`available` a STT e TTS. As escritas são:
 
 ```http
 PUT /api/system/stt
@@ -1237,18 +1237,23 @@ Content-Type: application/json
 {"provider":"sherpa-onnx","model":"pt_BR-jeff-medium"}
 ```
 
-Os arquivos `data/stt-selection.json` e `data/tts-selection.json` serão atômicos,
-ignorados pelo Git e gravados como `0600`. A API aceitará somente nomes conhecidos;
+Os arquivos `data/stt-selection.json` e `data/tts-selection.json` são atômicos,
+ignorados pelo Git e gravados como `0600`. A API aceita somente nomes conhecidos;
 caminhos de modelo nunca virão do navegador.
 
 ### Troca segura em runtime
 
-Um coordenador fornecerá ao `ConversationManager` um snapshot de STT, LLM e TTS no
-começo de cada turno. Uma alteração aguardará o turno que já está usando o modelo,
-carregará e aquecerá o candidato, persistirá a seleção e só então descartará o
-adaptador anterior. Se o warm-up falhar, a API responderá `503` e o modelo atual
-continuará ativo. Esse fluxo evita misturar duas vozes entre trechos do mesmo TTS e
-evita acumular modelos grandes na RAM do Raspberry Pi.
+A trava `pipeline_selection_lock` cobre o turno completo no `ConversationManager`.
+Uma alteração aguarda o turno que já está usando o modelo, carrega e aquece o
+candidato, persiste a seleção e só então descarta o adaptador anterior. Se o warm-up
+falhar, a API responde `503` e o modelo atual continua ativo. Esse fluxo evita
+misturar duas vozes entre trechos do mesmo TTS e evita acumular modelos grandes na
+RAM do Raspberry Pi.
+
+`SpeechToTextSelector` e `TextToSpeechSelector` implementam os contratos que já eram
+usados por WebRTC, USB e `ConversationManager`. Assim, os transportes não precisam
+conhecer o modelo escolhido. O dashboard usa **Apply STT** e **Apply TTS**, apresenta
+nomes amigáveis e desabilita candidatos que não estão instalados.
 
 ### Critérios de aceitação
 
@@ -1258,6 +1263,11 @@ evita acumular modelos grandes na RAM do Raspberry Pi.
 4. Fazer uma conversa física com cada STT e registrar RTF, qualidade, RAM e temperatura.
 5. Aplicar TTS durante uma conversa longa e comprovar que a voz muda apenas no turno seguinte.
 6. Confirmar que `/api/system/info` não revela caminhos nem credenciais.
+
+Na implementação inicial, 40 testes passaram no Windows. Eles cobrem persistência,
+allowlist, rollback, disponibilidade, endpoints sanitizados e a espera da troca até
+o fim do turno. A validação no ARM64 e as conversas físicas Small → Tiny → Small são
+o gate restante antes de concluir a fase.
 
 ## Planejamento da Fase 12 — OpenAI Realtime
 

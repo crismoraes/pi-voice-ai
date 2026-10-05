@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import logging
 from pathlib import Path
 from time import perf_counter
@@ -42,16 +43,23 @@ class SherpaWhisperSpeechToText(SpeechToText):
         self._recognizer: Any | None = None
         self._decode_lock = asyncio.Lock()
 
-    def _load_recognizer(self) -> Any:
-        if self._recognizer is not None:
-            return self._recognizer
-
+    def _model_files(self) -> tuple[Path, Path, Path]:
         token_files = sorted(self._model_dir.glob("*-tokens.txt"))
         tokens = token_files[0] if len(token_files) == 1 else self._model_dir / "tokens"
         prefix = tokens.name.removesuffix("-tokens.txt")
         precision_suffix = ".int8" if self._precision == "int8" else ""
         encoder = self._model_dir / f"{prefix}-encoder{precision_suffix}.onnx"
         decoder = self._model_dir / f"{prefix}-decoder{precision_suffix}.onnx"
+        return encoder, decoder, tokens
+
+    def is_available(self) -> bool:
+        return all(path.is_file() for path in self._model_files())
+
+    def _load_recognizer(self) -> Any:
+        if self._recognizer is not None:
+            return self._recognizer
+
+        encoder, decoder, tokens = self._model_files()
         missing = [path for path in (encoder, decoder, tokens) if not path.is_file()]
         if missing:
             names = ", ".join(path.name for path in missing)
@@ -127,3 +135,8 @@ class SherpaWhisperSpeechToText(SpeechToText):
     async def warm_up(self) -> None:
         """Load model weights before the first utterance."""
         await asyncio.to_thread(self._load_recognizer)
+
+    async def close(self) -> None:
+        async with self._decode_lock:
+            self._recognizer = None
+            await asyncio.to_thread(gc.collect)

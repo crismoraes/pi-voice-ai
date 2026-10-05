@@ -33,16 +33,28 @@
             <span id="assistant-toggle-label">Off</span>
           </label>
         </div>
-        <div class="llm-controls">
+        <div class="model-controls">
           <label>LLM provider<select id="llm-provider"></select></label>
           <label>Model<select id="llm-model"></select></label>
           <button id="apply-llm" type="button">Apply LLM</button>
           <span id="llm-switch-status" class="switch-status" role="status"></span>
         </div>
+        <div class="model-controls">
+          <label>STT provider<select id="stt-provider"></select></label>
+          <label>Model<select id="stt-model"></select></label>
+          <button id="apply-stt" type="button">Apply STT</button>
+          <span id="stt-switch-status" class="switch-status" role="status"></span>
+        </div>
+        <div class="model-controls">
+          <label>TTS provider<select id="tts-provider"></select></label>
+          <label>Model<select id="tts-model"></select></label>
+          <button id="apply-tts" type="button">Apply TTS</button>
+          <span id="tts-switch-status" class="switch-status" role="status"></span>
+        </div>
         <div class="technology-grid">
           <article><span id="tech-llm-mode">LLM</span><strong id="tech-llm">—</strong><small id="tech-llm-detail">—</small></article>
-          <article><span>STT · local</span><strong id="tech-stt">—</strong><small id="tech-stt-detail">—</small></article>
-          <article><span>TTS · local</span><strong id="tech-tts">—</strong><small id="tech-tts-detail">—</small></article>
+          <article><span id="tech-stt-mode">STT</span><strong id="tech-stt">—</strong><small id="tech-stt-detail">—</small></article>
+          <article><span id="tech-tts-mode">TTS</span><strong id="tech-tts">—</strong><small id="tech-tts-detail">—</small></article>
           <article><span>Audio and VAD</span><strong id="tech-audio">—</strong><small id="tech-audio-detail">—</small></article>
         </div>
         <p id="processing-note" class="technology-note">Audio, STT, and TTS stay on the Raspberry Pi. Text leaves the device only when OpenAI is selected.</p>

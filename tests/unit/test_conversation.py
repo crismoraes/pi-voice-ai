@@ -161,6 +161,56 @@ def test_conversation_queues_tts_in_sentence_chunks() -> None:
     assert events.count("tts_chunk") == 2
 
 
+def test_model_selection_waits_until_the_current_turn_finishes() -> None:
+    class BlockingTextToSpeech(TextToSpeech):
+        def __init__(self) -> None:
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def synthesize(self, text: str) -> SynthesisResult:
+            self.started.set()
+            await self.release.wait()
+            return SynthesisResult(
+                samples=np.ones(800, dtype=np.float32),
+                sample_rate=16_000,
+                processing_seconds=0.01,
+            )
+
+    async def exercise() -> None:
+        pipeline_lock = asyncio.Lock()
+        tts = BlockingTextToSpeech()
+        manager = ConversationManager(
+            speech_to_text=FakeSpeechToText(),
+            language_model=ContextAwareLanguageModel(),
+            text_to_speech=tts,
+            max_turns=2,
+            pipeline_lock=pipeline_lock,
+        )
+
+        async def emit(event: str, payload: dict[str, object]) -> None:
+            pass
+
+        turn = asyncio.create_task(
+            manager.process("locked-peer", np.zeros(16_000, dtype=np.float32), emit)
+        )
+        await tts.started.wait()
+        selection_entered = asyncio.Event()
+
+        async def select_model() -> None:
+            async with pipeline_lock:
+                selection_entered.set()
+
+        selection = asyncio.create_task(select_model())
+        await asyncio.sleep(0)
+        assert not selection_entered.is_set()
+        tts.release.set()
+        await turn
+        await selection
+        assert selection_entered.is_set()
+
+    asyncio.run(exercise())
+
+
 def test_missing_vad_model_is_reported(tmp_path: Path) -> None:
     with pytest.raises(VoiceActivityDetectionUnavailableError, match="VAD model"):
         SherpaSileroVoiceActivityDetector(

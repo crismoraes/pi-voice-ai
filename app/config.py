@@ -113,6 +113,18 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-small",
         alias="STT_MODEL_DIR",
     )
+    stt_small_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-small",
+        alias="STT_SMALL_MODEL_DIR",
+    )
+    stt_tiny_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "sherpa-onnx-whisper-tiny",
+        alias="STT_TINY_MODEL_DIR",
+    )
+    stt_selection_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "stt-selection.json",
+        alias="STT_SELECTION_PATH",
+    )
     stt_language: str = Field(default="pt", alias="STT_LANGUAGE")
     stt_num_threads: int = Field(default=3, ge=1, le=16, alias="STT_NUM_THREADS")
     stt_model_precision: Literal["int8", "fp32"] = Field(
@@ -154,6 +166,10 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "models" / "vits-piper-pt_BR-jeff-medium",
         alias="TTS_MODEL_DIR",
     )
+    tts_selection_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "tts-selection.json",
+        alias="TTS_SELECTION_PATH",
+    )
     tts_num_threads: int = Field(default=3, ge=1, le=8, alias="TTS_NUM_THREADS")
     tts_speed: float = Field(default=1.0, ge=0.5, le=2.0, alias="TTS_SPEED")
     tts_max_text_characters: int = Field(
@@ -185,6 +201,12 @@ class Settings(BaseSettings):
     def resolve_stt_model_dir(self) -> "Settings":
         if not self.stt_model_dir.is_absolute():
             self.stt_model_dir = PROJECT_ROOT / self.stt_model_dir
+        if not self.stt_small_model_dir.is_absolute():
+            self.stt_small_model_dir = PROJECT_ROOT / self.stt_small_model_dir
+        if not self.stt_tiny_model_dir.is_absolute():
+            self.stt_tiny_model_dir = PROJECT_ROOT / self.stt_tiny_model_dir
+        if not self.stt_selection_path.is_absolute():
+            self.stt_selection_path = PROJECT_ROOT / self.stt_selection_path
         if self.stt_min_audio_seconds >= self.stt_max_audio_seconds:
             raise ValueError(
                 "STT_MIN_AUDIO_SECONDS must be lower than STT_MAX_AUDIO_SECONDS"
@@ -224,6 +246,8 @@ class Settings(BaseSettings):
     def resolve_tts_model_dir(self) -> "Settings":
         if not self.tts_model_dir.is_absolute():
             self.tts_model_dir = PROJECT_ROOT / self.tts_model_dir
+        if not self.tts_selection_path.is_absolute():
+            self.tts_selection_path = PROJECT_ROOT / self.tts_selection_path
         return self
 
     @model_validator(mode="after")

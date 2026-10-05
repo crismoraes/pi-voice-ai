@@ -19,7 +19,7 @@ from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
-from app.runtime.current import assistant_control
+from app.runtime.current import assistant_control, pipeline_selection_lock
 from app.usage.runtime import usage_store
 from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
 from app.webrtc.manager import peer_manager, speech_to_text, text_to_speech
@@ -35,6 +35,7 @@ conversation_manager = ConversationManager(
     max_turns=settings.conversation_max_turns,
     tts_chunk_characters=settings.tts_chunk_characters,
     usage_store=usage_store,
+    pipeline_lock=pipeline_selection_lock,
 )
 vad_factory = lambda: SherpaSileroVoiceActivityDetector(
     model_path=settings.vad_model_path,
@@ -102,6 +103,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             await usb_audio.stop()
         await peer_manager.close_all()
         await language_model.close()
+        await asyncio.gather(speech_to_text.close(), text_to_speech.close())
         logger.info("APP_STOPPED", extra={"version": __version__})
 
 

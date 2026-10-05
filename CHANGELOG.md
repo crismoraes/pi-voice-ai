@@ -17,6 +17,10 @@
 - API `/api/system/info` sem credenciais ou caminhos privados.
 - Normalização local e limitada do áudio antes do Whisper, configurável por pico
   alvo e ganho máximo.
+- Seletores STT e TTS no dashboard, com Whisper Small/Tiny INT8 e Piper Jeff,
+  allowlist, disponibilidade, persistência atômica e rollback de carregamento.
+- APIs `PUT /api/system/stt` e `PUT /api/system/tts` e opções sanitizadas em
+  `/api/system/info`.
 
 ### Changed
 
@@ -24,6 +28,8 @@
 - `httpx` passa a ser dependência de runtime para o servidor local.
 - Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
   após falas reais curtas e sinal baixo no microfone USB.
+- Turnos completos agora seguram uma trava de seleção para impedir mudanças de STT,
+  LLM ou TTS no meio de uma resposta.
 
 ### Fixed
 
@@ -47,6 +53,7 @@
   reprodução USB.
 - Perguntas físicas consecutivas confirmaram captura e reprodução estáveis depois
   de remover o acesso simultâneo do `arecord` e `aplay` à P10S.
+- Quarenta testes aprovados no Windows para a implementação inicial da Fase 11.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.
@@ -56,8 +63,6 @@
 
 ### Planned
 
-- Fase 11: seletores persistentes e allowlisted de provider/model para STT e TTS,
-  começando por Whisper Small/Tiny INT8 e Piper pt_BR Jeff Medium já instalados.
 - Fase 12: seletor de Voice pipeline entre Chained e OpenAI Realtime, com WebRTC
   para navegador, WebSocket half-duplex para USB e métricas próprias de áudio/custo.
 

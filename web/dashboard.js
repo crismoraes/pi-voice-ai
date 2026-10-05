@@ -6,10 +6,21 @@ const modelSelect = document.querySelector("#llm-model");
 const applyButton = document.querySelector("#apply-llm");
 const assistantToggle = document.querySelector("#assistant-enabled");
 let llmOptions = [];
+const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [component, {
+  provider: document.querySelector(`#${component}-provider`),
+  model: document.querySelector(`#${component}-model`),
+  apply: document.querySelector(`#apply-${component}`),
+  options: [],
+}]));
 
 function text(id, value) { document.querySelector(`#${id}`).textContent = value; }
 function money(value) { return value == null ? "No cloud price" : usd.format(value); }
-function providerLabel(provider) { return provider === "openai" ? "OpenAI" : "Local (llama.cpp)"; }
+function providerLabel(provider) {
+  if (provider === "openai") return "OpenAI";
+  if (provider === "llama.cpp") return "Local (llama.cpp)";
+  if (provider === "sherpa-onnx") return "Local (sherpa-onnx)";
+  return provider;
+}
 
 function renderAssistantState(enabled) {
   assistantToggle.checked = enabled;
@@ -28,6 +39,31 @@ function populateModels(selectedModel) {
   text("llm-switch-status", option?.available ? "" : "Provider unavailable");
 }
 
+function populateVoiceModels(component, selectedModel) {
+  const controls = voiceControls[component];
+  const option = controls.options.find((item) => item.provider === controls.provider.value);
+  controls.model.innerHTML = (option?.models || []).map((model) =>
+    `<option value="${model.id}"${model.available ? "" : " disabled"}>${model.label}${model.available ? "" : " (not installed)"}</option>`
+  ).join("");
+  if (selectedModel && option?.models.some((model) => model.id === selectedModel && model.available)) {
+    controls.model.value = selectedModel;
+  }
+  const selected = option?.models.find((model) => model.id === controls.model.value);
+  controls.apply.disabled = !selected?.available;
+  text(`${component}-switch-status`, selected?.available ? "" : "Model unavailable");
+}
+
+function configureVoiceSelector(component, info) {
+  const controls = voiceControls[component];
+  controls.options = info.options;
+  controls.provider.innerHTML = controls.options.map((option) => {
+    const available = option.models.some((model) => model.available);
+    return `<option value="${option.provider}">${providerLabel(option.provider)}${available ? "" : " (unavailable)"}</option>`;
+  }).join("");
+  controls.provider.value = info.provider;
+  populateVoiceModels(component, info.model);
+}
+
 function renderTechnology(info) {
   renderAssistantState(info.assistant.enabled);
   text("app-version", `v${info.version}`);
@@ -38,17 +74,21 @@ function renderTechnology(info) {
   text("processing-note", info.llm.provider === "openai"
     ? "Audio, STT, and TTS stay on the Raspberry Pi. Only text is sent to OpenAI."
     : "The complete voice pipeline, including the LLM, is running locally on the Raspberry Pi.");
-  text("tech-stt", info.stt.model);
+  text("tech-stt", info.stt.model_label);
+  text("tech-stt-mode", `STT · ${info.stt.processing}`);
   const normalization = info.stt.normalization ? `normalization to ${info.stt.target_peak} · max gain ${info.stt.max_gain}×` : "no normalization";
-  text("tech-stt-detail", `${info.stt.engine} · ${info.stt.language} · ${info.stt.precision.toUpperCase()} · ${info.stt.threads} threads · ${normalization}`);
-  text("tech-tts", info.tts.model);
-  text("tech-tts-detail", `${info.tts.engine} · ${info.tts.threads} threads`);
+  text("tech-stt-detail", `${providerLabel(info.stt.provider)} · ${info.stt.language} · ${info.stt.threads} threads · ${normalization}`);
+  text("tech-tts", info.tts.model_label);
+  text("tech-tts-mode", `TTS · ${info.tts.processing}`);
+  text("tech-tts-detail", `${providerLabel(info.tts.provider)} · ${info.tts.threads} threads`);
   text("tech-audio", `${info.audio.mode.toUpperCase()} · ${info.audio.vad}`);
   text("tech-audio-detail", `threshold ${info.audio.vad_threshold} · ending silence ${info.audio.ending_silence_seconds.toFixed(1)} s · HTTPS ${info.audio.tls ? "on" : "off"}`);
   llmOptions = info.llm.options;
   providerSelect.innerHTML = llmOptions.map((option) => `<option value="${option.provider}">${providerLabel(option.provider)}${option.available ? "" : " (unavailable)"}</option>`).join("");
   providerSelect.value = info.llm.provider;
   populateModels(info.llm.model);
+  configureVoiceSelector("stt", info.stt);
+  configureVoiceSelector("tts", info.tts);
 }
 
 function renderChart(daily) {
@@ -108,6 +148,25 @@ async function applyLlm() {
   } catch (error) { text("llm-switch-status", error.message); applyButton.disabled = false; }
 }
 
+async function applyVoiceModel(component) {
+  const controls = voiceControls[component];
+  controls.apply.disabled = true;
+  text(`${component}-switch-status`, "Loading model…");
+  try {
+    const response = await fetch(`/api/system/${component}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: controls.provider.value, model: controls.model.value }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || `The ${component.toUpperCase()} model could not be changed.`);
+    text(`${component}-switch-status`, `Active: ${providerLabel(result.provider)} / ${result.model_label}`);
+    await loadDashboard();
+  } catch (error) {
+    text(`${component}-switch-status`, error.message);
+    controls.apply.disabled = false;
+  }
+}
+
 async function setAssistantState() {
   const requested = assistantToggle.checked;
   assistantToggle.disabled = true;
@@ -129,7 +188,11 @@ async function setAssistantState() {
 }
 
 providerSelect.addEventListener("change", () => populateModels());
+voiceControls.stt.provider.addEventListener("change", () => populateVoiceModels("stt"));
+voiceControls.tts.provider.addEventListener("change", () => populateVoiceModels("tts"));
 daysSelect.addEventListener("change", loadDashboard);
 applyButton.addEventListener("click", applyLlm);
+voiceControls.stt.apply.addEventListener("click", () => applyVoiceModel("stt"));
+voiceControls.tts.apply.addEventListener("click", () => applyVoiceModel("tts"));
 assistantToggle.addEventListener("change", setAssistantState);
 loadDashboard();

@@ -20,8 +20,12 @@ from av.audio.resampler import AudioResampler
 from app.config import get_settings
 from app.conversation.manager import ConversationManager
 from app.stt.base import SpeechToText, TranscriptionResult
+from app.stt.selector import RuntimeModelOption as SttModelOption
+from app.stt.selector import SpeechToTextSelector
 from app.stt.sherpa_whisper import SherpaWhisperSpeechToText
 from app.tts.base import SynthesisResult, TextToSpeech
+from app.tts.selector import RuntimeModelOption as TtsModelOption
+from app.tts.selector import TextToSpeechSelector
 from app.tts.sherpa_piper import SherpaPiperTextToSpeech
 from app.vad.base import VoiceActivityDetector
 
@@ -594,23 +598,71 @@ settings = get_settings()
 if settings.stt_engine not in {"sherpa", "sherpa-whisper"}:
     raise ValueError(f"Unsupported STT_ENGINE: {settings.stt_engine}")
 
-speech_to_text = SherpaWhisperSpeechToText(
-    model_dir=settings.stt_model_dir,
-    language=settings.stt_language,
-    num_threads=settings.stt_num_threads,
-    precision=settings.stt_model_precision,
-    normalize_audio=settings.stt_normalize_audio,
-    target_peak=settings.stt_target_peak,
-    max_gain=settings.stt_max_gain,
+stt_precision = settings.stt_model_precision
+stt_small_id = f"whisper-small-{stt_precision}"
+stt_tiny_id = f"whisper-tiny-{stt_precision}"
+stt_default_model = (
+    stt_tiny_id if "tiny" in settings.stt_model_dir.name.lower() else stt_small_id
+)
+
+
+def build_stt(model_dir):
+    return SherpaWhisperSpeechToText(
+        model_dir=model_dir,
+        language=settings.stt_language,
+        num_threads=settings.stt_num_threads,
+        precision=stt_precision,
+        normalize_audio=settings.stt_normalize_audio,
+        target_peak=settings.stt_target_peak,
+        max_gain=settings.stt_max_gain,
+    )
+
+
+small_model_dir = (
+    settings.stt_model_dir
+    if "small" in settings.stt_model_dir.name.lower()
+    else settings.stt_small_model_dir
+)
+tiny_model_dir = (
+    settings.stt_model_dir
+    if "tiny" in settings.stt_model_dir.name.lower()
+    else settings.stt_tiny_model_dir
+)
+speech_to_text = SpeechToTextSelector(
+    providers={
+        "sherpa-onnx": {
+            stt_small_id: SttModelOption(
+                build_stt(small_model_dir), f"Whisper Small {stt_precision.upper()}"
+            ),
+            stt_tiny_id: SttModelOption(
+                build_stt(tiny_model_dir), f"Whisper Tiny {stt_precision.upper()}"
+            ),
+        }
+    },
+    default_provider="sherpa-onnx",
+    default_model=stt_default_model,
+    selection_path=settings.stt_selection_path,
 )
 if settings.tts_engine not in {"piper", "sherpa-piper"}:
     raise ValueError(f"Unsupported TTS_ENGINE: {settings.tts_engine}")
 
-text_to_speech = SherpaPiperTextToSpeech(
-    model_dir=settings.tts_model_dir,
-    num_threads=settings.tts_num_threads,
-    speed=settings.tts_speed,
-    max_text_characters=settings.tts_max_text_characters,
+text_to_speech = TextToSpeechSelector(
+    providers={
+        "sherpa-onnx": {
+            "pt_BR-jeff-medium": TtsModelOption(
+                SherpaPiperTextToSpeech(
+                    model_dir=settings.tts_model_dir,
+                    num_threads=settings.tts_num_threads,
+                    speed=settings.tts_speed,
+                    max_text_characters=settings.tts_max_text_characters,
+                ),
+                "Piper pt_BR Jeff Medium",
+            )
+        }
+    },
+    default_provider="sherpa-onnx",
+    default_model="pt_BR-jeff-medium",
+    selection_path=settings.tts_selection_path,
 )
 peer_manager = PeerConnectionManager(
     speech_to_text=speech_to_text,

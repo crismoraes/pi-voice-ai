@@ -48,6 +48,7 @@ class ConversationManager:
         max_turns: int,
         tts_chunk_characters: int = 240,
         usage_store: UsageStore | None = None,
+        pipeline_lock: asyncio.Lock | None = None,
     ) -> None:
         self._speech_to_text = speech_to_text
         self._language_model = language_model
@@ -55,6 +56,7 @@ class ConversationManager:
         self._max_messages = max_turns * 2
         self._tts_chunk_characters = tts_chunk_characters
         self._usage_store = usage_store
+        self._pipeline_lock = pipeline_lock or asyncio.Lock()
         self._states: dict[str, ConversationState] = {}
 
     def forget(self, session_id: str) -> None:
@@ -68,7 +70,7 @@ class ConversationManager:
         play_audio: AudioHandler | None = None,
     ) -> ConversationResult | None:
         state = self._states.setdefault(session_id, ConversationState())
-        async with state.lock:
+        async with state.lock, self._pipeline_lock:
             await emit("transcribing", {})
             absolute_samples = np.abs(samples)
             audio_peak = float(np.max(absolute_samples)) if len(samples) else 0.0

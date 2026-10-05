@@ -50,8 +50,12 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
         "openai",
         "llama.cpp",
     }
-    assert payload["stt"]["model"].startswith("Whisper ")
-    assert payload["tts"]["model"]
+    assert payload["stt"]["model_label"].startswith("Whisper ")
+    assert payload["stt"]["provider"] == "sherpa-onnx"
+    assert len(payload["stt"]["options"][0]["models"]) == 2
+    assert payload["tts"]["model_label"]
+    assert payload["tts"]["provider"] == "sherpa-onnx"
+    assert payload["tts"]["options"][0]["models"]
     assert payload["audio"]["mode"] in {"usb", "webrtc"}
     assert "api_key" not in serialized
     assert "openai_api_key" not in serialized
@@ -71,9 +75,33 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert '<html lang="en">' in response.text
     assert "Active technology" in response.text
     assert "LLM provider" in response.text
+    assert "STT provider" in response.text
+    assert "TTS provider" in response.text
     assert "Voice assistant" in response.text
     assert 'id="assistant-enabled"' in response.text
     assert "Consumo" not in response.text
     assert 'id="tech-llm"' in response.text
     assert 'id="tech-stt"' in response.text
     assert 'id="tech-tts"' in response.text
+    assert 'id="apply-stt"' in response.text
+    assert 'id="apply-tts"' in response.text
+
+
+def test_system_rejects_unlisted_voice_models() -> None:
+    async def select_invalid_models():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            stt = await client.put(
+                "/api/system/stt",
+                json={"provider": "unknown", "model": "unknown"},
+            )
+            tts = await client.put(
+                "/api/system/tts",
+                json={"provider": "unknown", "model": "unknown"},
+            )
+            return stt, tts
+
+    stt, tts = asyncio.run(select_invalid_models())
+
+    assert stt.status_code == 422
+    assert tts.status_code == 422

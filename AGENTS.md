@@ -402,13 +402,15 @@ Validate repeated physical turns and the paired `USB_CAPTURE_PAUSED_FOR_TURN` /
 `USB_CAPTURE_RESUMED_AFTER_TURN` events after deployment.
 
 The user completed the repeated physical test and confirmed the serialized USB
-capture/playback fix works. The next roadmap item is runtime STT and TTS selection
-from the English dashboard. The Pi currently has Whisper Small INT8, Whisper Tiny
-INT8 and Piper pt_BR Jeff Medium installed. Implement allowlisted provider/model
-selectors with atomic mode-0600 persistence, readiness checks, rollback and release
-of the previous local model. A whole voice turn must pin one STT/LLM/TTS snapshot so
-an Apply action cannot mix models or TTS voices inside the same turn. Never accept
-model paths from the client.
+capture/playback fix works. Phase 11 now implements runtime STT and TTS selection
+from the English dashboard. The Pi candidates are Whisper Small INT8, Whisper Tiny
+INT8 and Piper pt_BR Jeff Medium. `SpeechToTextSelector` and
+`TextToSpeechSelector` use allowlisted provider/model registries, atomic mode-0600
+persistence, file availability checks, warm-up rollback and release of the previous
+local model. `pipeline_selection_lock` covers every complete `ConversationManager`
+turn and every Apply endpoint, so models and TTS voices cannot change inside a turn.
+Never accept model paths from the client. Initial Windows validation passed 40 tests;
+Pi tests, persistence and physical Small -> Tiny -> Small conversations remain.
 
 Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
 STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent

@@ -7,7 +7,9 @@ from app import __version__
 from app.api.assistant import language_model
 from app.config import get_settings
 from app.llm.base import LanguageModelUnavailableError
-from app.runtime.current import assistant_control
+from app.runtime.current import assistant_control, pipeline_selection_lock
+from app.runtime.model_selector import RuntimeModelUnavailableError
+from app.webrtc.manager import speech_to_text, text_to_speech
 
 router = APIRouter(prefix="/api/system", tags=["system"])
 
@@ -17,20 +19,37 @@ class LlmSelection(BaseModel):
     model: str
 
 
+class VoiceModelSelection(BaseModel):
+    provider: str
+    model: str
+
+
 class AssistantState(BaseModel):
     enabled: bool
 
 
-def _model_label(directory_name: str, prefix: str) -> str:
-    return directory_name.removeprefix(prefix).replace("-", " ").strip()
+async def _voice_options(selector) -> list[dict[str, object]]:
+    availability = await selector.status()
+    return [
+        {
+            "provider": provider,
+            "models": [
+                {
+                    "id": model,
+                    "label": selector.label(provider, model),
+                    "available": availability[provider][model],
+                }
+                for model in models
+            ],
+        }
+        for provider, models in selector.options.items()
+    ]
 
 
 @router.get("/info")
 async def system_info() -> dict[str, object]:
     """Return active model names and safe processing settings without paths."""
     settings = get_settings()
-    stt_model = _model_label(settings.stt_model_dir.name, "sherpa-onnx-whisper-")
-    tts_model = _model_label(settings.tts_model_dir.name, "vits-piper-")
     availability = await language_model.status()
     return {
         "version": __version__,
@@ -54,8 +73,11 @@ async def system_info() -> dict[str, object]:
             ),
         },
         "stt": {
+            "provider": speech_to_text.provider,
             "engine": settings.stt_engine,
-            "model": f"Whisper {stt_model.title()}",
+            "model": speech_to_text.model,
+            "model_label": speech_to_text.model_label,
+            "options": await _voice_options(speech_to_text),
             "language": settings.stt_language,
             "precision": settings.stt_model_precision,
             "threads": settings.stt_num_threads,
@@ -65,8 +87,11 @@ async def system_info() -> dict[str, object]:
             "max_gain": settings.stt_max_gain,
         },
         "tts": {
+            "provider": text_to_speech.provider,
             "engine": settings.tts_engine,
-            "model": tts_model,
+            "model": text_to_speech.model,
+            "model_label": text_to_speech.model_label,
+            "options": await _voice_options(text_to_speech),
             "threads": settings.tts_num_threads,
             "processing": "local",
         },
@@ -84,12 +109,47 @@ async def system_info() -> dict[str, object]:
 async def select_llm(selection: LlmSelection) -> dict[str, str]:
     """Switch future LLM requests after allowlist and readiness checks."""
     try:
-        await language_model.select(selection.provider, selection.model)
+        async with pipeline_selection_lock:
+            await language_model.select(selection.provider, selection.model)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except LanguageModelUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"provider": language_model.provider, "model": language_model.model}
+
+
+@router.put("/stt")
+async def select_stt(selection: VoiceModelSelection) -> dict[str, str]:
+    """Switch future turns to an allowlisted STT provider and model."""
+    try:
+        async with pipeline_selection_lock:
+            await speech_to_text.select(selection.provider, selection.model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "provider": speech_to_text.provider,
+        "model": speech_to_text.model,
+        "model_label": speech_to_text.model_label,
+    }
+
+
+@router.put("/tts")
+async def select_tts(selection: VoiceModelSelection) -> dict[str, str]:
+    """Switch future turns to an allowlisted TTS provider and model."""
+    try:
+        async with pipeline_selection_lock:
+            await text_to_speech.select(selection.provider, selection.model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "provider": text_to_speech.provider,
+        "model": text_to_speech.model,
+        "model_label": text_to_speech.model_label,
+    }
 
 
 @router.put("/assistant")

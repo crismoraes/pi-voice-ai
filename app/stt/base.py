@@ -30,6 +30,16 @@ class SpeechToText(ABC):
     async def transcribe(self, samples: np.ndarray) -> TranscriptionResult:
         """Transcribe a complete utterance without blocking the event loop."""
 
+    async def warm_up(self) -> None:
+        """Prepare the selected model before it receives audio."""
+
+    async def close(self) -> None:
+        """Release model resources when it is replaced or the app stops."""
+
+    def is_available(self) -> bool:
+        """Return whether the configured model files appear usable."""
+        return True
+
 
 class SpeechToTextUnavailableError(RuntimeError):
     """Raised when the configured local model cannot be loaded."""
