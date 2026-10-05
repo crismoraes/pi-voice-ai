@@ -5,9 +5,10 @@ import numpy as np
 import pytest
 
 from app.conversation.manager import ConversationManager
-from app.llm.base import ConversationMessage, LanguageModel
+from app.llm.base import ConversationMessage, LanguageModel, TokenUsage
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.tts.base import SynthesisResult, TextToSpeech
+from app.usage.store import UsageTurn
 from app.vad.base import VoiceActivityDetectionUnavailableError
 from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
 
@@ -209,6 +210,63 @@ def test_model_selection_waits_until_the_current_turn_finishes() -> None:
         assert selection_entered.is_set()
 
     asyncio.run(exercise())
+
+
+def test_conversation_records_the_models_used_for_the_turn() -> None:
+    class MeteredModel(ContextAwareLanguageModel):
+        provider = "openai"
+        model = "metered-model"
+
+        async def stream_response(self, text: str, *, history=(), on_usage=None):
+            if on_usage is not None:
+                on_usage(TokenUsage(self.model, 10, 2, 3, 0, 13))
+            yield "Resposta."
+
+    class SelectedStt(FakeSpeechToText):
+        provider = "sherpa-onnx"
+        model = "whisper-small-int8"
+
+    class SelectedTts(FakeTextToSpeech):
+        provider = "sherpa-onnx"
+        model = "pt_BR-jeff-medium"
+
+    class CapturingUsageStore:
+        def __init__(self) -> None:
+            self.turn: UsageTurn | None = None
+
+        def record(self, turn: UsageTurn) -> int:
+            self.turn = turn
+            return 1
+
+    async def exercise() -> UsageTurn | None:
+        store = CapturingUsageStore()
+        manager = ConversationManager(
+            speech_to_text=SelectedStt(),
+            language_model=MeteredModel(),
+            text_to_speech=SelectedTts(),
+            max_turns=2,
+            usage_store=store,  # type: ignore[arg-type]
+        )
+
+        async def emit(event: str, payload: dict[str, object]) -> None:
+            pass
+
+        await manager.process("usb", np.zeros(16_000, dtype=np.float32), emit)
+        return store.turn
+
+    turn = asyncio.run(exercise())
+
+    assert turn is not None
+    assert turn.pipeline == "chained"
+    assert (turn.stt_provider, turn.stt_model) == (
+        "sherpa-onnx",
+        "whisper-small-int8",
+    )
+    assert (turn.llm_provider, turn.usage.model) == ("openai", "metered-model")
+    assert (turn.tts_provider, turn.tts_model) == (
+        "sherpa-onnx",
+        "pt_BR-jeff-medium",
+    )
 
 
 def test_missing_vad_model_is_reported(tmp_path: Path) -> None:

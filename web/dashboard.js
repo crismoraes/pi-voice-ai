@@ -22,6 +22,23 @@ function providerLabel(provider) {
   return provider;
 }
 
+function componentLabel(provider, model) {
+  if (!model) return "—";
+  const models = {
+    "whisper-small-int8": "Whisper Small INT8",
+    "whisper-tiny-int8": "Whisper Tiny INT8",
+    "pt_BR-jeff-medium": "Piper Jeff Medium",
+  };
+  const providerName = provider ? `${providerLabel(provider)} · ` : "";
+  return `${providerName}${models[model] || model}`;
+}
+
+function pipelineLabel(pipeline) {
+  if (pipeline === "chained") return "Chained";
+  if (pipeline === "openai-realtime") return "OpenAI Realtime";
+  return pipeline || "—";
+}
+
 function renderAssistantState(enabled) {
   assistantToggle.checked = enabled;
   text("assistant-toggle-label", enabled ? "On" : "Off");
@@ -104,9 +121,11 @@ function renderChart(daily) {
 
 function renderTurns(turns) {
   const body = document.querySelector("#turn-list");
-  if (!turns.length) { body.innerHTML = '<tr><td colspan="9">No data yet.</td></tr>'; return; }
+  if (!turns.length) { body.innerHTML = '<tr><td colspan="12">No data yet.</td></tr>'; return; }
   body.innerHTML = turns.map((turn) => `<tr>
-    <td>${new Date(turn.created_at).toLocaleString("en-US")}</td><td>${turn.source}</td><td>${turn.model}</td>
+    <td>${new Date(turn.created_at).toLocaleString("en-US")}</td><td>${turn.source}</td><td>${pipelineLabel(turn.pipeline)}</td>
+    <td>${componentLabel(turn.stt_provider, turn.stt_model)}</td><td>${componentLabel(turn.llm_provider, turn.model)}</td>
+    <td>${componentLabel(turn.tts_provider, turn.tts_model)}</td>
     <td>${number.format(turn.input_tokens)}</td><td>${number.format(turn.cached_input_tokens)}</td>
     <td>${number.format(turn.output_tokens)}</td><td>${number.format(turn.total_tokens)}</td>
     <td>${money(turn.estimated_cost_usd)}</td><td>${turn.total_seconds == null ? "—" : `${turn.total_seconds.toFixed(2)} s`}</td>

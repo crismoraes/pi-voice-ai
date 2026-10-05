@@ -414,7 +414,19 @@ Live Small -> Tiny took 2.04 seconds; Tiny survived an application restart and
 loaded in 0.68 seconds; Tiny -> Small took 2.50 seconds. STT and TTS selection files
 were mode 0600, all installed options were available, and the service remained active
 with zero restarts. The final selection is Small/Jeff and the assistant remains Off.
-Physical comparison of Small and Tiny remains before Phase 11 acceptance.
+The later physical comparison was identified precisely from the journal: the turn
+started at 18:33:00 used Whisper Tiny INT8, while turns from 18:34:22 onward used
+Whisper Small INT8. The user confirmed the selector and voice flow were working and
+the final active STT remained Small. Phase 11 physical acceptance is complete.
+
+Numeric usage history now records the exact `pipeline`, LLM provider/model, STT
+provider/model and TTS provider/model captured under the full-turn selection lock.
+`CONVERSATION_STT_STARTED` and `CONVERSATION_TURN_COMPLETED` log the same sanitized
+model IDs. The dashboard's Recent turns table displays these fields. Existing rows
+retain their numeric history and show no STT/TTS model because that information was
+not previously stored. The SQLite migration also reserves numeric audio input and
+output token fields for Phase 12; it still stores no audio, transcript, prompt or
+response text.
 
 Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
 STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent

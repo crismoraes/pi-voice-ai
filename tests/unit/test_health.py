@@ -77,6 +77,9 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert "LLM provider" in response.text
     assert "STT provider" in response.text
     assert "TTS provider" in response.text
+    assert "<th>Pipeline</th>" in response.text
+    assert "<th>STT</th>" in response.text
+    assert "<th>TTS</th>" in response.text
     assert "Voice assistant" in response.text
     assert 'id="assistant-enabled"' in response.text
     assert "Consumo" not in response.text

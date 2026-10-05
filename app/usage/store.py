@@ -30,6 +30,14 @@ class UsageTurn:
     audio_seconds: float | None = None
     first_text_seconds: float | None = None
     total_seconds: float | None = None
+    pipeline: str = "chained"
+    llm_provider: str | None = None
+    stt_provider: str | None = None
+    stt_model: str | None = None
+    tts_provider: str | None = None
+    tts_model: str | None = None
+    audio_input_tokens: int = 0
+    audio_output_tokens: int = 0
 
 
 class UsageStore:
@@ -72,6 +80,7 @@ class UsageStore:
                 )
                 """
             )
+            self._migrate_turn_metadata(connection)
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_usage_created_at "
                 "ON usage_turns(created_at)"
@@ -94,8 +103,11 @@ class UsageStore:
                     reasoning_output_tokens, total_tokens, estimated_cost_usd,
                     audio_seconds, first_text_seconds, total_seconds,
                     pricing_model, pricing_date, input_price_per_million,
-                    cached_input_price_per_million, output_price_per_million
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    cached_input_price_per_million, output_price_per_million,
+                    pipeline, llm_provider, stt_provider, stt_model,
+                    tts_provider, tts_model, audio_input_tokens,
+                    audio_output_tokens
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     created_at, turn.source, session_hash, turn.usage.model,
@@ -107,6 +119,9 @@ class UsageStore:
                     self.pricing.effective_date, self.pricing.input_per_million,
                     self.pricing.cached_input_per_million,
                     self.pricing.output_per_million,
+                    turn.pipeline, turn.llm_provider, turn.stt_provider,
+                    turn.stt_model, turn.tts_provider, turn.tts_model,
+                    turn.audio_input_tokens, turn.audio_output_tokens,
                 ),
             )
             return int(cursor.lastrowid)
@@ -167,7 +182,10 @@ class UsageStore:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(
                 """
-                SELECT id, created_at, source, model, request_count, input_tokens,
+                SELECT id, created_at, source, pipeline, llm_provider, model,
+                       stt_provider, stt_model, tts_provider, tts_model,
+                       audio_input_tokens, audio_output_tokens,
+                       request_count, input_tokens,
                        cached_input_tokens, output_tokens, reasoning_output_tokens,
                        total_tokens, estimated_cost_usd, audio_seconds,
                        first_text_seconds, total_seconds
@@ -180,3 +198,25 @@ class UsageStore:
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.path, timeout=5)
+
+    @staticmethod
+    def _migrate_turn_metadata(connection: sqlite3.Connection) -> None:
+        """Add metadata columns without rewriting existing private usage history."""
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(usage_turns)")
+        }
+        additions = {
+            "pipeline": "TEXT NOT NULL DEFAULT 'chained'",
+            "llm_provider": "TEXT",
+            "stt_provider": "TEXT",
+            "stt_model": "TEXT",
+            "tts_provider": "TEXT",
+            "tts_model": "TEXT",
+            "audio_input_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "audio_output_tokens": "INTEGER NOT NULL DEFAULT 0",
+        }
+        for name, declaration in additions.items():
+            if name not in columns:
+                connection.execute(
+                    f"ALTER TABLE usage_turns ADD COLUMN {name} {declaration}"
+                )

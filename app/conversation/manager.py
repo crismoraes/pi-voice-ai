@@ -71,6 +71,13 @@ class ConversationManager:
     ) -> ConversationResult | None:
         state = self._states.setdefault(session_id, ConversationState())
         async with state.lock, self._pipeline_lock:
+            pipeline = "chained"
+            stt_provider = getattr(self._speech_to_text, "provider", None)
+            stt_model = getattr(self._speech_to_text, "model", None)
+            llm_provider = getattr(self._language_model, "provider", None)
+            llm_model = getattr(self._language_model, "model", "configured-model")
+            tts_provider = getattr(self._text_to_speech, "provider", None)
+            tts_model = getattr(self._text_to_speech, "model", None)
             await emit("transcribing", {})
             absolute_samples = np.abs(samples)
             audio_peak = float(np.max(absolute_samples)) if len(samples) else 0.0
@@ -90,6 +97,8 @@ class ConversationManager:
                     "audio_peak": round(audio_peak, 4),
                     "audio_rms": round(audio_rms, 4),
                     "clipped_percent": round(clipped_percent, 3),
+                    "stt_provider": stt_provider,
+                    "stt_model": stt_model,
                 },
             )
             transcription = await self._speech_to_text.transcribe(samples)
@@ -145,7 +154,7 @@ class ConversationManager:
             await emit(
                 "assistant_done",
                 {
-                    "model": getattr(self._language_model, "model", "configured-model"),
+                    "model": llm_model,
                     "first_text_seconds": round(first_text_seconds, 3),
                     "total_seconds": round(total_text_seconds, 3),
                 },
@@ -172,6 +181,12 @@ class ConversationManager:
                             audio_seconds=transcription.audio_seconds,
                             first_text_seconds=first_text_seconds,
                             total_seconds=total_text_seconds,
+                            pipeline=pipeline,
+                            llm_provider=llm_provider,
+                            stt_provider=stt_provider,
+                            stt_model=stt_model,
+                            tts_provider=tts_provider,
+                            tts_model=tts_model,
                         ),
                     )
                 except Exception as exc:
@@ -256,6 +271,13 @@ class ConversationManager:
                     "tts_chunks": len(syntheses),
                     "response_audio_seconds": round(synthesis.audio_seconds, 3),
                     "history_messages": len(state.history),
+                    "pipeline": pipeline,
+                    "stt_provider": stt_provider,
+                    "stt_model": stt_model,
+                    "llm_provider": llm_provider,
+                    "llm_model": llm_model,
+                    "tts_provider": tts_provider,
+                    "tts_model": tts_model,
                 },
             )
             return ConversationResult(

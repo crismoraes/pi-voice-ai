@@ -1270,7 +1270,23 @@ sanitizados e a espera da troca até o fim do turno. No teste remoto real, Small
 Tiny levou `2,04 s`; o Tiny sobreviveu ao restart e carregou em `0,68 s`; Tiny →
 Small levou `2,50 s`. `stt-selection.json` e `tts-selection.json` ficaram em modo
 `0600`, o dashboard publicou os três comboboxes e o serviço terminou ativo com zero
-reinícios. Falta somente comparar fisicamente uma pergunta no Small e no Tiny.
+reinícios. Na comparação física posterior, o journal mostrou que o turno iniciado
+às `18:33:00` usou Whisper Tiny INT8. A troca de volta ocorreu às `18:34:15`, e os
+turnos iniciados às `18:34:22`, `18:34:54` e `18:38:43` usaram Small. O usuário
+confirmou que o fluxo estava funcionando e o Small permaneceu ativo, concluindo a
+aceitação da Fase 11.
+
+Esse teste revelou uma lição de observabilidade: mostrar apenas a seleção atual no
+topo não prova qual modelo processou uma fala passada. O `ConversationManager` agora
+captura, dentro da trava do turno, `pipeline`, provider/model de STT, LLM e TTS. Os
+mesmos IDs sanitizados aparecem no journal e na tabela **Recent turns**. A migração
+SQLite conserva o histórico existente; linhas antigas mostram `—` para STT/TTS
+porque o sistema não inventa dados que nunca foram coletados.
+
+O schema recebeu ainda `audio_input_tokens` e `audio_output_tokens`, ambos zero no
+pipeline Chained. Na Fase 12, eles poderão receber o uso retornado pelo Realtime e
+participar do cálculo com uma tabela de preços datada, sem armazenar áudio,
+transcrição, pergunta ou resposta.
 
 ## Planejamento da Fase 12 — OpenAI Realtime
 

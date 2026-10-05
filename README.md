@@ -161,7 +161,10 @@ Na implantação ARM64, 40 testes passaram. A troca Small → Tiny respondeu em
 `0,68 s`. A volta Tiny → Small respondeu em `2,50 s`. Os dois modelos STT e a voz
 TTS apareceram disponíveis no dashboard, os arquivos de seleção ficaram em modo
 `0600` e o serviço permaneceu ativo com `NRestarts=0`. O estado final é Whisper
-Small INT8, Piper pt_BR Jeff Medium e assistente Off, aguardando o teste físico.
+Small INT8 e Piper pt_BR Jeff Medium. Na comparação física, o journal confirmou
+que o turno iniciado às `18:33:00` usou Tiny e os turnos iniciados a partir de
+`18:34:22` usaram Small. O usuário confirmou o funcionamento do fluxo e a Fase 11
+foi aceita com Small novamente ativo.
 
 ### Fase 12 — Voice pipeline selecionável
 
@@ -196,7 +199,10 @@ transcrição, pergunta e resposta não são armazenados nesse histórico.
 
 Abra `https://<host-do-pi>:8443/dashboard.html` ou use o link **Ver consumo e
 custos** na página principal. O painel mostra totais por período, gráfico diário e
-as últimas falas. As APIs de leitura são:
+as últimas falas. Em **Recent turns**, cada nova linha identifica o pipeline e os
+provedores/modelos de STT, LLM e TTS realmente usados naquele turno. Linhas criadas
+antes dessa melhoria mostram `—` em STT/TTS porque o dado não era armazenado e não
+é inferido retroativamente. As APIs de leitura são:
 
 ```text
 GET /api/usage/summary?days=30
@@ -212,6 +218,9 @@ ou conteúdo das conversas.
 O custo é uma estimativa local. Cada linha conserva o modelo, a data e as tarifas
 usadas no cálculo. Se o modelo retornado não corresponder ao modelo da tabela de
 preços, o turno continua com os tokens reais e fica sem estimativa monetária.
+O schema também possui contadores numéricos de tokens de áudio de entrada e saída,
+inicialmente zero no pipeline Chained, para integrar o custo do OpenAI Realtime na
+Fase 12 sem mudar a política de privacidade.
 
 | Variável | Padrão | Função |
 | --- | --- | --- |

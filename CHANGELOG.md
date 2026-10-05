@@ -21,6 +21,10 @@
   allowlist, disponibilidade, persistência atômica e rollback de carregamento.
 - APIs `PUT /api/system/stt` e `PUT /api/system/tts` e opções sanitizadas em
   `/api/system/info`.
+- Colunas de pipeline, STT, LLM e TTS realmente usados por conversa na tabela
+  **Recent turns**, com migração preservando o histórico existente.
+- Campos numéricos de tokens de áudio de entrada/saída preparados para as métricas
+  e custos do OpenAI Realtime, sem armazenar conteúdo da conversa.
 
 ### Changed
 
@@ -30,6 +34,8 @@
   após falas reais curtas e sinal baixo no microfone USB.
 - Turnos completos agora seguram uma trava de seleção para impedir mudanças de STT,
   LLM ou TTS no meio de uma resposta.
+- Logs de início do STT e conclusão do turno incluem IDs sanitizados dos modelos
+  para relacionar diagnósticos com o histórico numérico.
 
 ### Fixed
 
@@ -56,6 +62,8 @@
 - Quarenta testes aprovados no Windows para a implementação inicial da Fase 11.
 - Quarenta testes aprovados também no Pi; Small → Tiny → restart → Small confirmou
   troca e persistência, arquivos `0600`, dashboard atualizado e serviço sem reinícios.
+- O journal confirmou Tiny no turno das `18:33:00` e Small nos turnos a partir de
+  `18:34:22`; o usuário confirmou o fluxo e concluiu a aceitação física da Fase 11.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.
