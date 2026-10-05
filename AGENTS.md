@@ -472,6 +472,12 @@ text/audio price values. The default Mini rates dated 2026-10-05 are text
 tokens. A live Mini check returned audio with `marin` and numeric usage; the expanded
 suite passes 49 tests on Windows.
 
+The Raspberry Pi ARM64 suite also passes all 49 tests. Its live Mini check received
+audio with `marin` and reported 35 input, 41 output and 76 total tokens. The deployed
+API exposed both model aliases, accepted a Mini selection through the dashboard
+endpoint, then restored the full model. Final state remains Chained and Off; the
+service is active with `NRestarts=0` and no warning-priority journal entries.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

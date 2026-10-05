@@ -68,6 +68,9 @@
 
 - O Mini respondeu com áudio real na voz `marin` e informou 35 tokens de entrada,
   32 de saída e 67 no total; 49 testes passaram após a precificação por modelo.
+- No ARM64, os mesmos 49 testes passaram; o Mini entregou áudio e 76 tokens no
+  diagnóstico. A API expôs os dois modelos, aplicou Mini e restaurou o completo,
+  mantendo Chained, Off, `NRestarts=0` e journal sem alertas.
 - Quarenta e oito testes passaram no Windows e no Raspberry Pi ARM64. O teste real
   do WebSocket recebeu áudio de `gpt-realtime-2.1` com a voz `marin` e métricas de
   tokens nas duas plataformas.

@@ -1354,6 +1354,12 @@ entrada, cache e saída. A resolução por maior nome compatível também aceita
 datados sem confundir o Mini com o prefixo do modelo completo. O teste unitário lê o
 snapshot salvo no SQLite, além de comparar o custo calculado token a token.
 
+Na implantação ARM64, 49 testes passaram. O diagnóstico do Mini recebeu áudio real
+na voz `marin` e informou 35 tokens de entrada, 41 de saída e 76 no total. A API
+sanitizada apresentou os dois modelos, aceitou Mini pelo mesmo endpoint do combobox
+e voltou ao modelo completo. O estado final permaneceu Chained e Off, com serviço
+ativo, `NRestarts=0` e nenhum warning no journal.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
