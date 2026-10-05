@@ -46,6 +46,10 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
     assert isinstance(payload["assistant"]["enabled"], bool)
     assert payload["pipeline"]["id"] in {"chained", "openai-realtime"}
     assert payload["pipeline"]["realtime_model"] == "gpt-realtime-2.1"
+    assert payload["pipeline"]["realtime_models"] == [
+        "gpt-realtime-2.1",
+        "gpt-realtime-2.1-mini",
+    ]
     assert "marin" in payload["pipeline"]["realtime_voices"]
     assert payload["llm"]["model"]
     assert payload["llm"]["provider"] in {"openai", "llama.cpp"}

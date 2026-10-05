@@ -1348,6 +1348,12 @@ custo estimado. Um `response_id` é aceito uma única vez para impedir duplicaç
 Áudio, transcrição, prompt e resposta não são gravados. As tarifas ficam no `.env`
 com data de referência; isso preserva o valor usado mesmo quando a tabela muda.
 
+O combobox oferece `gpt-realtime-2.1` e `gpt-realtime-2.1-mini`. A tabela de preços
+é indexada por modelo, com seis tarifas para cada um: texto e áudio, separados em
+entrada, cache e saída. A resolução por maior nome compatível também aceita snapshots
+datados sem confundir o Mini com o prefixo do modelo completo. O teste unitário lê o
+snapshot salvo no SQLite, além de comparar o custo calculado token a token.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma

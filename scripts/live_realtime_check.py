@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 
@@ -10,11 +11,13 @@ from openai import AsyncOpenAI
 from app.config import get_settings
 
 
-async def check() -> None:
+async def check(model: str | None) -> None:
     settings = get_settings()
     if settings.openai_api_key is None:
         raise SystemExit("OPENAI_API_KEY is not configured")
-    model = settings.realtime_model_options[0]
+    model = model or settings.realtime_model
+    if model not in settings.realtime_model_options:
+        raise SystemExit(f"Model is not allowlisted: {model}")
     voice = settings.realtime_voice_options[0]
     client = AsyncOpenAI(api_key=settings.openai_api_key.get_secret_value())
     saw_audio = False
@@ -80,4 +83,6 @@ async def check() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(check())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", choices=get_settings().realtime_model_options)
+    asyncio.run(check(parser.parse_args().model))

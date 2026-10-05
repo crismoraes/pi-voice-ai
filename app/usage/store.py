@@ -63,7 +63,7 @@ class UsageStore:
         self,
         path: Path,
         pricing: UsagePricing,
-        realtime_pricing: RealtimeUsagePricing | None = None,
+        realtime_pricing: tuple[RealtimeUsagePricing, ...] = (),
     ) -> None:
         self.path = path
         self.pricing = pricing
@@ -117,29 +117,30 @@ class UsageStore:
         )
         estimated_cost = self.estimate_turn_cost(turn)
         realtime = turn.pipeline == "openai-realtime"
+        realtime_pricing = self._realtime_pricing_for(turn.usage.model)
         pricing_model = (
-            self.realtime_pricing.model
-            if realtime and self.realtime_pricing
+            realtime_pricing.model
+            if realtime and realtime_pricing
             else self.pricing.model
         )
         pricing_date = (
-            self.realtime_pricing.effective_date
-            if realtime and self.realtime_pricing
+            realtime_pricing.effective_date
+            if realtime and realtime_pricing
             else self.pricing.effective_date
         )
         input_price = (
-            self.realtime_pricing.text_input_per_million
-            if realtime and self.realtime_pricing
+            realtime_pricing.text_input_per_million
+            if realtime and realtime_pricing
             else self.pricing.input_per_million
         )
         cached_input_price = (
-            self.realtime_pricing.text_cached_input_per_million
-            if realtime and self.realtime_pricing
+            realtime_pricing.text_cached_input_per_million
+            if realtime and realtime_pricing
             else self.pricing.cached_input_per_million
         )
         output_price = (
-            self.realtime_pricing.text_output_per_million
-            if realtime and self.realtime_pricing
+            realtime_pricing.text_output_per_million
+            if realtime and realtime_pricing
             else self.pricing.output_per_million
         )
         text_input_tokens = (
@@ -186,16 +187,16 @@ class UsageStore:
                     turn.audio_output_tokens, text_input_tokens,
                     text_cached_input_tokens, text_output_tokens,
                     (
-                        self.realtime_pricing.audio_input_per_million
-                        if realtime and self.realtime_pricing else None
+                        realtime_pricing.audio_input_per_million
+                        if realtime and realtime_pricing else None
                     ),
                     (
-                        self.realtime_pricing.audio_cached_input_per_million
-                        if realtime and self.realtime_pricing else None
+                        realtime_pricing.audio_cached_input_per_million
+                        if realtime and realtime_pricing else None
                     ),
                     (
-                        self.realtime_pricing.audio_output_per_million
-                        if realtime and self.realtime_pricing else None
+                        realtime_pricing.audio_output_per_million
+                        if realtime and realtime_pricing else None
                     ),
                 ),
             )
@@ -217,11 +218,8 @@ class UsageStore:
     def estimate_turn_cost(self, turn: UsageTurn) -> float | None:
         if turn.pipeline != "openai-realtime":
             return self.estimate_cost(turn.usage)
-        pricing = self.realtime_pricing
-        if pricing is None or not (
-            turn.usage.model == pricing.model
-            or turn.usage.model.startswith(f"{pricing.model}-")
-        ):
+        pricing = self._realtime_pricing_for(turn.usage.model)
+        if pricing is None:
             return None
         uncached_text = max(
             turn.text_input_tokens - turn.text_cached_input_tokens, 0
@@ -238,6 +236,21 @@ class UsageStore:
             * pricing.audio_cached_input_per_million
             + turn.audio_output_tokens * pricing.audio_output_per_million
         ) / 1_000_000
+
+    def _realtime_pricing_for(self, model: str) -> RealtimeUsagePricing | None:
+        """Resolve aliases and dated snapshots, preferring the most specific model."""
+        exact = next(
+            (pricing for pricing in self.realtime_pricing if model == pricing.model),
+            None,
+        )
+        if exact is not None:
+            return exact
+        candidates = [
+            pricing
+            for pricing in self.realtime_pricing
+            if model.startswith(f"{pricing.model}-")
+        ]
+        return max(candidates, key=lambda pricing: len(pricing.model), default=None)
 
     def summary(self, days: int) -> dict[str, object]:
         window = f"-{days} days"

@@ -195,18 +195,28 @@ quando pipeline, modelo ou voz são alterados no dashboard.
 
 Tokens de texto e áudio, inclusive cache, primeiro áudio, duração e custo estimado
 são armazenados como números em `data/usage.db`. Áudio, transcrição, prompt e resposta
-continuam fora do histórico. Os preços padrão de `gpt-realtime-2.1`, datados na
-configuração, são texto `$4.00/$0.40/$24.00` e áudio
-`$32.00/$0.40/$64.00` por milhão de tokens de entrada/cache/saída.
+continuam fora do histórico. Cada turno resolve o modelo realmente retornado pela
+sessão e grava o respectivo snapshot de preços:
+
+| Modelo | Texto entrada/cache/saída | Áudio entrada/cache/saída |
+| --- | --- | --- |
+| `gpt-realtime-2.1` | `$4.00 / $0.40 / $24.00` | `$32.00 / $0.40 / $64.00` |
+| `gpt-realtime-2.1-mini` | `$0.60 / $0.06 / $2.40` | `$10.00 / $0.30 / $20.00` |
+
+Os valores são USD por milhão de tokens. A resolução testa primeiro o alias exato e
+depois snapshots datados, sempre preferindo o nome mais específico; assim, o sufixo
+`-mini` nunca recebe por engano o preço do modelo completo.
 
 | Variável | Padrão | Função |
 | --- | --- | --- |
 | `VOICE_PIPELINE` | `chained` | Pipeline inicial antes do estado persistido |
 | `PIPELINE_SELECTION_PATH` | `data/pipeline-selection.json` | Seleção persistente |
-| `REALTIME_MODEL(S)` | `gpt-realtime-2.1` | Modelo inicial e allowlist |
+| `REALTIME_MODEL` | `gpt-realtime-2.1` | Modelo inicial |
+| `REALTIME_MODELS` | completo e Mini | Allowlist exibida no combobox |
 | `REALTIME_VOICE(S)` | `marin` / lista oficial | Voz inicial e allowlist |
 | `REALTIME_TIMEOUT_SECONDS` | `45` | Limite de um turno USB |
-| `REALTIME_*_PRICE_PER_MILLION` | conforme tabela atual | Custos de texto/áudio |
+| `REALTIME_*_PRICE_PER_MILLION` | conforme tabela atual | Custos do modelo completo |
+| `REALTIME_MINI_*_PRICE_PER_MILLION` | conforme tabela atual | Custos do Mini |
 | `REALTIME_PRICING_DATE` | `2026-10-05` | Data do snapshot de preços |
 
 A implementação segue a orientação atual da OpenAI: WebRTC no cliente, WebSocket
@@ -220,7 +230,7 @@ no servidor e interface unificada para inicializar chamadas do navegador. Consul
 Para uma verificação curta do WebSocket, modelo, voz e áudio sem registrar conteúdo:
 
 ```bash
-.venv/bin/python scripts/live_realtime_check.py
+.venv/bin/python scripts/live_realtime_check.py --model gpt-realtime-2.1-mini
 ```
 
 Na primeira implantação, 48 testes passaram no Windows e no Pi ARM64. A verificação

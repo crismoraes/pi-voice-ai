@@ -463,6 +463,15 @@ the service remained active with `NRestarts=0` and no warning-priority journal
 entries. The deployed state was restored to Chained and Off pending physical voice
 acceptance.
 
+The Realtime model selector now includes `gpt-realtime-2.1-mini`. Usage pricing is
+resolved from a per-model table using an exact alias first and then the longest
+matching prefix for dated snapshots. This prevents the Mini alias from matching the
+full `gpt-realtime-2.1` tariff. Each row keeps its selected pricing model and six
+text/audio price values. The default Mini rates dated 2026-10-05 are text
+`0.60/0.06/2.40` and audio `10.00/0.30/20.00` USD per million input/cached/output
+tokens. A live Mini check returned audio with `marin` and numeric usage; the expanded
+suite passes 49 tests on Windows.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

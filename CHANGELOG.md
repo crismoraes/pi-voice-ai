@@ -4,6 +4,8 @@
 
 ### Added
 
+- `gpt-realtime-2.1-mini` no seletor Realtime, com tarifas próprias de texto,
+  áudio e cache e resolução correta de aliases e snapshots datados.
 - Seletor persistente **Voice pipeline** entre Chained e OpenAI Realtime, com
   modelo e voz Realtime em allowlists configuráveis.
 - WebRTC nativo do OpenAI Realtime no navegador pela interface unificada
@@ -64,6 +66,8 @@
 
 ### Validated
 
+- O Mini respondeu com áudio real na voz `marin` e informou 35 tokens de entrada,
+  32 de saída e 67 no total; 49 testes passaram após a precificação por modelo.
 - Quarenta e oito testes passaram no Windows e no Raspberry Pi ARM64. O teste real
   do WebSocket recebeu áudio de `gpt-realtime-2.1` com a voz `marin` e métricas de
   tokens nas duas plataformas.

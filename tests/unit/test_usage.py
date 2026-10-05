@@ -22,15 +22,27 @@ def make_store(path: Path) -> UsageStore:
             output_per_million=0.50,
             effective_date="2026-09-26",
         ),
-        RealtimeUsagePricing(
-            model="gpt-realtime-2.1",
-            text_input_per_million=4.00,
-            text_cached_input_per_million=0.40,
-            text_output_per_million=24.00,
-            audio_input_per_million=32.00,
-            audio_cached_input_per_million=0.40,
-            audio_output_per_million=64.00,
-            effective_date="2026-10-05",
+        (
+            RealtimeUsagePricing(
+                model="gpt-realtime-2.1",
+                text_input_per_million=4.00,
+                text_cached_input_per_million=0.40,
+                text_output_per_million=24.00,
+                audio_input_per_million=32.00,
+                audio_cached_input_per_million=0.40,
+                audio_output_per_million=64.00,
+                effective_date="2026-10-05",
+            ),
+            RealtimeUsagePricing(
+                model="gpt-realtime-2.1-mini",
+                text_input_per_million=0.60,
+                text_cached_input_per_million=0.06,
+                text_output_per_million=2.40,
+                audio_input_per_million=10.00,
+                audio_cached_input_per_million=0.30,
+                audio_output_per_million=20.00,
+                effective_date="2026-10-05",
+            ),
         ),
     )
     store.initialize()
@@ -118,6 +130,42 @@ def test_usage_store_prices_realtime_text_audio_and_cache_separately(
     assert recent["estimated_cost_usd"] == expected
     assert recent["audio_cached_input_tokens"] == 20
     assert recent["text_input_tokens"] == 50
+
+
+def test_usage_store_uses_mini_prices_for_alias_and_snapshot(tmp_path: Path) -> None:
+    store = make_store(tmp_path / "usage.db")
+    turn = UsageTurn(
+        source="usb",
+        session_id="mini-session",
+        usage=TokenUsage(
+            "gpt-realtime-2.1-mini-2026-10-01", 150, 30, 70, 0, 220
+        ),
+        pipeline="openai-realtime",
+        llm_provider="openai",
+        tts_provider="openai",
+        tts_model="marin",
+        text_input_tokens=50,
+        text_cached_input_tokens=10,
+        text_output_tokens=20,
+        audio_input_tokens=100,
+        audio_cached_input_tokens=20,
+        audio_output_tokens=50,
+    )
+
+    store.record(turn)
+    recent = store.recent(30, 1)[0]
+
+    expected = (
+        40 * 0.60 + 10 * 0.06 + 20 * 2.40
+        + 80 * 10.00 + 20 * 0.30 + 50 * 20.00
+    ) / 1_000_000
+    assert recent["estimated_cost_usd"] == expected
+    with sqlite3.connect(store.path) as connection:
+        snapshot = connection.execute(
+            "SELECT pricing_model, input_price_per_million, "
+            "audio_input_price_per_million FROM usage_turns"
+        ).fetchone()
+    assert snapshot == ("gpt-realtime-2.1-mini", 0.60, 10.00)
 
 
 def test_usage_store_migrates_existing_history_without_backfilling_models(

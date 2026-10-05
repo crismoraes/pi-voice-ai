@@ -82,7 +82,8 @@ class Settings(BaseSettings):
         default="gpt-realtime-2.1", alias="REALTIME_MODEL"
     )
     realtime_models: str = Field(
-        default="gpt-realtime-2.1", alias="REALTIME_MODELS"
+        default="gpt-realtime-2.1,gpt-realtime-2.1-mini",
+        alias="REALTIME_MODELS",
     )
     realtime_voice: str = Field(default="marin", alias="REALTIME_VOICE")
     realtime_voices: str = Field(
@@ -109,6 +110,28 @@ class Settings(BaseSettings):
     )
     realtime_audio_output_price_per_million: float = Field(
         default=64.00, ge=0, alias="REALTIME_AUDIO_OUTPUT_PRICE_PER_MILLION"
+    )
+    realtime_mini_text_input_price_per_million: float = Field(
+        default=0.60, ge=0, alias="REALTIME_MINI_TEXT_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_mini_text_cached_input_price_per_million: float = Field(
+        default=0.06,
+        ge=0,
+        alias="REALTIME_MINI_TEXT_CACHED_INPUT_PRICE_PER_MILLION",
+    )
+    realtime_mini_text_output_price_per_million: float = Field(
+        default=2.40, ge=0, alias="REALTIME_MINI_TEXT_OUTPUT_PRICE_PER_MILLION"
+    )
+    realtime_mini_audio_input_price_per_million: float = Field(
+        default=10.00, ge=0, alias="REALTIME_MINI_AUDIO_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_mini_audio_cached_input_price_per_million: float = Field(
+        default=0.30,
+        ge=0,
+        alias="REALTIME_MINI_AUDIO_CACHED_INPUT_PRICE_PER_MILLION",
+    )
+    realtime_mini_audio_output_price_per_million: float = Field(
+        default=20.00, ge=0, alias="REALTIME_MINI_AUDIO_OUTPUT_PRICE_PER_MILLION"
     )
     realtime_pricing_date: str = Field(
         default="2026-10-05", alias="REALTIME_PRICING_DATE"
