@@ -28,7 +28,7 @@ async def check(model: str | None) -> None:
                     "type": "realtime",
                     "instructions": settings.llm_instructions,
                     "output_modalities": ["audio"],
-                    "max_output_tokens": 32,
+                    "max_output_tokens": 96,
                     "audio": {
                         "input": {
                             "format": {"type": "audio/pcm", "rate": 24_000},
