@@ -156,6 +156,13 @@ do turno e não mistura modelos ou vozes.
 | `STT_SELECTION_PATH` | `data/stt-selection.json` | Seleção STT persistente |
 | `TTS_SELECTION_PATH` | `data/tts-selection.json` | Seleção TTS persistente |
 
+Na implantação ARM64, 40 testes passaram. A troca Small → Tiny respondeu em
+`2,04 s`; o Tiny permaneceu selecionado após reiniciar o serviço e carregou em
+`0,68 s`. A volta Tiny → Small respondeu em `2,50 s`. Os dois modelos STT e a voz
+TTS apareceram disponíveis no dashboard, os arquivos de seleção ficaram em modo
+`0600` e o serviço permaneceu ativo com `NRestarts=0`. O estado final é Whisper
+Small INT8, Piper pt_BR Jeff Medium e assistente Off, aguardando o teste físico.
+
 ### Fase 12 — Voice pipeline selecionável
 
 OpenAI Realtime será uma opção de **Voice pipeline**, e não um modelo isolado de

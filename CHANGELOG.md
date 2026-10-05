@@ -54,6 +54,8 @@
 - Perguntas físicas consecutivas confirmaram captura e reprodução estáveis depois
   de remover o acesso simultâneo do `arecord` e `aplay` à P10S.
 - Quarenta testes aprovados no Windows para a implementação inicial da Fase 11.
+- Quarenta testes aprovados também no Pi; Small → Tiny → restart → Small confirmou
+  troca e persistência, arquivos `0600`, dashboard atualizado e serviço sem reinícios.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.

@@ -1264,10 +1264,13 @@ nomes amigáveis e desabilita candidatos que não estão instalados.
 5. Aplicar TTS durante uma conversa longa e comprovar que a voz muda apenas no turno seguinte.
 6. Confirmar que `/api/system/info` não revela caminhos nem credenciais.
 
-Na implementação inicial, 40 testes passaram no Windows. Eles cobrem persistência,
-allowlist, rollback, disponibilidade, endpoints sanitizados e a espera da troca até
-o fim do turno. A validação no ARM64 e as conversas físicas Small → Tiny → Small são
-o gate restante antes de concluir a fase.
+Na implementação inicial, 40 testes passaram no Windows e no Raspberry Pi ARM64.
+Eles cobrem persistência, allowlist, rollback, disponibilidade, endpoints
+sanitizados e a espera da troca até o fim do turno. No teste remoto real, Small →
+Tiny levou `2,04 s`; o Tiny sobreviveu ao restart e carregou em `0,68 s`; Tiny →
+Small levou `2,50 s`. `stt-selection.json` e `tts-selection.json` ficaram em modo
+`0600`, o dashboard publicou os três comboboxes e o serviço terminou ativo com zero
+reinícios. Falta somente comparar fisicamente uma pergunta no Small e no Tiny.
 
 ## Planejamento da Fase 12 — OpenAI Realtime
 

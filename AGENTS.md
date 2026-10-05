@@ -409,8 +409,12 @@ INT8 and Piper pt_BR Jeff Medium. `SpeechToTextSelector` and
 persistence, file availability checks, warm-up rollback and release of the previous
 local model. `pipeline_selection_lock` covers every complete `ConversationManager`
 turn and every Apply endpoint, so models and TTS voices cannot change inside a turn.
-Never accept model paths from the client. Initial Windows validation passed 40 tests;
-Pi tests, persistence and physical Small -> Tiny -> Small conversations remain.
+Never accept model paths from the client. Forty tests passed on Windows and Pi.
+Live Small -> Tiny took 2.04 seconds; Tiny survived an application restart and
+loaded in 0.68 seconds; Tiny -> Small took 2.50 seconds. STT and TTS selection files
+were mode 0600, all installed options were available, and the service remained active
+with zero restarts. The final selection is Small/Jeff and the assistant remains Off.
+Physical comparison of Small and Tiny remains before Phase 11 acceptance.
 
 Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
 STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent
