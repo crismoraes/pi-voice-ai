@@ -454,6 +454,15 @@ usage is deduplicated and stored as separate text/audio input, cached input and 
 tokens, latency and dated cost snapshots. No audio, transcript, prompt or response
 text is stored.
 
+The initial Phase 12 deployment at commit `084f5b4` passed all 48 tests on Windows
+and Raspberry Pi ARM64. Live WebSocket checks on both hosts received audio from
+`gpt-realtime-2.1` with `marin` and numeric token usage. On the Pi, the API switched
+Realtime -> Chained, persisted the selection with mode `0600`, and rejected a new
+Realtime call with `409` while the assistant was Off. The dashboard returned 200;
+the service remained active with `NRestarts=0` and no warning-priority journal
+entries. The deployed state was restored to Chained and Off pending physical voice
+acceptance.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

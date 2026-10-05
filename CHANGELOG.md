@@ -64,6 +64,12 @@
 
 ### Validated
 
+- Quarenta e oito testes passaram no Windows e no Raspberry Pi ARM64. O teste real
+  do WebSocket recebeu áudio de `gpt-realtime-2.1` com a voz `marin` e métricas de
+  tokens nas duas plataformas.
+- No Pi, Realtime → Chained persistiu em arquivo `0600`, Off bloqueou uma nova
+  chamada com `409`, o dashboard respondeu `200` e o estado final preservou Chained
+  e Off. Serviço ativo, `NRestarts=0` e nenhum alerta após a implantação `084f5b4`.
 - Chave Off encerrou `arecord`, persistiu com modo `0600`, bloqueou o LLM com 409
   e manteve inalterados 24 turnos e 6.268 tokens; On recriou a captura e Off voltou
   a encerrá-la, com eventos únicos, zero reinícios e sem erros.

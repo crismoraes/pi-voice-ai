@@ -223,6 +223,13 @@ Para uma verificação curta do WebSocket, modelo, voz e áudio sem registrar co
 .venv/bin/python scripts/live_realtime_check.py
 ```
 
+Na primeira implantação, 48 testes passaram no Windows e no Pi ARM64. A verificação
+real recebeu áudio de `gpt-realtime-2.1`/`marin` e retornou 58 tokens no Pi. A troca
+Realtime → Chained persistiu em modo `0600`; com o assistente Off, uma nova chamada
+foi bloqueada com `409`. O dashboard respondeu `200`, o serviço ficou ativo com
+`NRestarts=0` e sem alertas. O estado final seguro preservou Chained e Off para que a
+aceitação física seja iniciada deliberadamente pelo dashboard.
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de

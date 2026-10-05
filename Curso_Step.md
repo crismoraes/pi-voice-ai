@@ -1366,6 +1366,14 @@ interface unificada, reamostragem e streaming USB, deduplicação das métricas,
 do SQLite e cálculo separado de texto/áudio. A aceitação física deve exercitar no
 dashboard os dois caminhos: navegador WebRTC e microfone/alto-falante USB.
 
+Na implantação inicial, os 48 testes passaram no Windows e no Raspberry Pi ARM64.
+O diagnóstico real do WebSocket recebeu áudio de `gpt-realtime-2.1` com a voz
+`marin`; no Pi, a resposta curta informou 35 tokens de entrada e 23 de saída. A API
+alternou Realtime → Chained, persistiu o arquivo em modo `0600` e bloqueou uma nova
+sessão com `409` enquanto Off. O dashboard respondeu `200`, o serviço permaneceu
+ativo, com `NRestarts=0` e sem entradas de warning no journal. Chained e Off foram
+restaurados antes da etapa física para evitar consumo involuntário.
+
 # Perguntas frequentes e troubleshooting do curso
 
 ## Se OpenAI Realtime aparecer indisponível no dashboard
