@@ -22,6 +22,18 @@ class UsagePricing:
 
 
 @dataclass(frozen=True, slots=True)
+class RealtimeUsagePricing:
+    model: str
+    text_input_per_million: float
+    text_cached_input_per_million: float
+    text_output_per_million: float
+    audio_input_per_million: float
+    audio_cached_input_per_million: float
+    audio_output_per_million: float
+    effective_date: str
+
+
+@dataclass(frozen=True, slots=True)
 class UsageTurn:
     source: str
     session_id: str | None
@@ -37,15 +49,25 @@ class UsageTurn:
     tts_provider: str | None = None
     tts_model: str | None = None
     audio_input_tokens: int = 0
+    audio_cached_input_tokens: int = 0
     audio_output_tokens: int = 0
+    text_input_tokens: int = 0
+    text_cached_input_tokens: int = 0
+    text_output_tokens: int = 0
 
 
 class UsageStore:
     """Persist numeric usage only; speech and response text are never stored."""
 
-    def __init__(self, path: Path, pricing: UsagePricing) -> None:
+    def __init__(
+        self,
+        path: Path,
+        pricing: UsagePricing,
+        realtime_pricing: RealtimeUsagePricing | None = None,
+    ) -> None:
         self.path = path
         self.pricing = pricing
+        self.realtime_pricing = realtime_pricing
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -93,7 +115,44 @@ class UsageStore:
             if turn.session_id
             else None
         )
-        estimated_cost = self.estimate_cost(turn.usage)
+        estimated_cost = self.estimate_turn_cost(turn)
+        realtime = turn.pipeline == "openai-realtime"
+        pricing_model = (
+            self.realtime_pricing.model
+            if realtime and self.realtime_pricing
+            else self.pricing.model
+        )
+        pricing_date = (
+            self.realtime_pricing.effective_date
+            if realtime and self.realtime_pricing
+            else self.pricing.effective_date
+        )
+        input_price = (
+            self.realtime_pricing.text_input_per_million
+            if realtime and self.realtime_pricing
+            else self.pricing.input_per_million
+        )
+        cached_input_price = (
+            self.realtime_pricing.text_cached_input_per_million
+            if realtime and self.realtime_pricing
+            else self.pricing.cached_input_per_million
+        )
+        output_price = (
+            self.realtime_pricing.text_output_per_million
+            if realtime and self.realtime_pricing
+            else self.pricing.output_per_million
+        )
+        text_input_tokens = (
+            turn.text_input_tokens if realtime else turn.usage.input_tokens
+        )
+        text_cached_input_tokens = (
+            turn.text_cached_input_tokens
+            if realtime
+            else turn.usage.cached_input_tokens
+        )
+        text_output_tokens = (
+            turn.text_output_tokens if realtime else turn.usage.output_tokens
+        )
         with self._connect() as connection:
             cursor = connection.execute(
                 """
@@ -106,8 +165,12 @@ class UsageStore:
                     cached_input_price_per_million, output_price_per_million,
                     pipeline, llm_provider, stt_provider, stt_model,
                     tts_provider, tts_model, audio_input_tokens,
-                    audio_output_tokens
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    audio_cached_input_tokens, audio_output_tokens,
+                    text_input_tokens, text_cached_input_tokens,
+                    text_output_tokens, audio_input_price_per_million,
+                    audio_cached_input_price_per_million,
+                    audio_output_price_per_million
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     created_at, turn.source, session_hash, turn.usage.model,
@@ -115,13 +178,25 @@ class UsageStore:
                     turn.usage.cached_input_tokens, turn.usage.output_tokens,
                     turn.usage.reasoning_output_tokens, turn.usage.total_tokens,
                     estimated_cost, turn.audio_seconds, turn.first_text_seconds,
-                    turn.total_seconds, self.pricing.model,
-                    self.pricing.effective_date, self.pricing.input_per_million,
-                    self.pricing.cached_input_per_million,
-                    self.pricing.output_per_million,
+                    turn.total_seconds, pricing_model, pricing_date, input_price,
+                    cached_input_price, output_price,
                     turn.pipeline, turn.llm_provider, turn.stt_provider,
                     turn.stt_model, turn.tts_provider, turn.tts_model,
-                    turn.audio_input_tokens, turn.audio_output_tokens,
+                    turn.audio_input_tokens, turn.audio_cached_input_tokens,
+                    turn.audio_output_tokens, text_input_tokens,
+                    text_cached_input_tokens, text_output_tokens,
+                    (
+                        self.realtime_pricing.audio_input_per_million
+                        if realtime and self.realtime_pricing else None
+                    ),
+                    (
+                        self.realtime_pricing.audio_cached_input_per_million
+                        if realtime and self.realtime_pricing else None
+                    ),
+                    (
+                        self.realtime_pricing.audio_output_per_million
+                        if realtime and self.realtime_pricing else None
+                    ),
                 ),
             )
             return int(cursor.lastrowid)
@@ -139,6 +214,31 @@ class UsageStore:
             + usage.output_tokens * self.pricing.output_per_million
         ) / 1_000_000
 
+    def estimate_turn_cost(self, turn: UsageTurn) -> float | None:
+        if turn.pipeline != "openai-realtime":
+            return self.estimate_cost(turn.usage)
+        pricing = self.realtime_pricing
+        if pricing is None or not (
+            turn.usage.model == pricing.model
+            or turn.usage.model.startswith(f"{pricing.model}-")
+        ):
+            return None
+        uncached_text = max(
+            turn.text_input_tokens - turn.text_cached_input_tokens, 0
+        )
+        uncached_audio = max(
+            turn.audio_input_tokens - turn.audio_cached_input_tokens, 0
+        )
+        return (
+            uncached_text * pricing.text_input_per_million
+            + turn.text_cached_input_tokens * pricing.text_cached_input_per_million
+            + turn.text_output_tokens * pricing.text_output_per_million
+            + uncached_audio * pricing.audio_input_per_million
+            + turn.audio_cached_input_tokens
+            * pricing.audio_cached_input_per_million
+            + turn.audio_output_tokens * pricing.audio_output_per_million
+        ) / 1_000_000
+
     def summary(self, days: int) -> dict[str, object]:
         window = f"-{days} days"
         with self._connect() as connection:
@@ -151,6 +251,10 @@ class UsageStore:
                        COALESCE(SUM(output_tokens), 0) AS output_tokens,
                        COALESCE(SUM(reasoning_output_tokens), 0) AS reasoning_output_tokens,
                        COALESCE(SUM(total_tokens), 0) AS total_tokens,
+                       COALESCE(SUM(text_input_tokens), 0) AS text_input_tokens,
+                       COALESCE(SUM(text_output_tokens), 0) AS text_output_tokens,
+                       COALESCE(SUM(audio_input_tokens), 0) AS audio_input_tokens,
+                       COALESCE(SUM(audio_output_tokens), 0) AS audio_output_tokens,
                        COALESCE(SUM(estimated_cost_usd), 0) AS estimated_cost_usd
                 FROM usage_turns WHERE datetime(created_at) >= datetime('now', ?)
                 """,
@@ -184,7 +288,9 @@ class UsageStore:
                 """
                 SELECT id, created_at, source, pipeline, llm_provider, model,
                        stt_provider, stt_model, tts_provider, tts_model,
-                       audio_input_tokens, audio_output_tokens,
+                       audio_input_tokens, audio_cached_input_tokens,
+                       audio_output_tokens, text_input_tokens,
+                       text_cached_input_tokens, text_output_tokens,
                        request_count, input_tokens,
                        cached_input_tokens, output_tokens, reasoning_output_tokens,
                        total_tokens, estimated_cost_usd, audio_seconds,
@@ -213,7 +319,14 @@ class UsageStore:
             "tts_provider": "TEXT",
             "tts_model": "TEXT",
             "audio_input_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "audio_cached_input_tokens": "INTEGER NOT NULL DEFAULT 0",
             "audio_output_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "text_input_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "text_cached_input_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "text_output_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "audio_input_price_per_million": "REAL",
+            "audio_cached_input_price_per_million": "REAL",
+            "audio_output_price_per_million": "REAL",
         }
         for name, declaration in additions.items():
             if name not in columns:

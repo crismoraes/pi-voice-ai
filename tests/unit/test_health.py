@@ -44,6 +44,9 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
 
     assert response.status_code == 200
     assert isinstance(payload["assistant"]["enabled"], bool)
+    assert payload["pipeline"]["id"] in {"chained", "openai-realtime"}
+    assert payload["pipeline"]["realtime_model"] == "gpt-realtime-2.1"
+    assert "marin" in payload["pipeline"]["realtime_voices"]
     assert payload["llm"]["model"]
     assert payload["llm"]["provider"] in {"openai", "llama.cpp"}
     assert {item["provider"] for item in payload["llm"]["options"]} == {
@@ -79,7 +82,9 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert "TTS provider" in response.text
     assert "<th>Pipeline</th>" in response.text
     assert "<th>STT</th>" in response.text
-    assert "<th>TTS</th>" in response.text
+    assert "<th>TTS/Voice</th>" in response.text
+    assert "Voice pipeline" in response.text
+    assert 'id="apply-pipeline"' in response.text
     assert "Voice assistant" in response.text
     assert 'id="assistant-enabled"' in response.text
     assert "Consumo" not in response.text

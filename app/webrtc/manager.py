@@ -18,7 +18,6 @@ from av import AudioFrame
 from av.audio.resampler import AudioResampler
 
 from app.config import get_settings
-from app.conversation.manager import ConversationManager
 from app.stt.base import SpeechToText, TranscriptionResult
 from app.stt.selector import RuntimeModelOption as SttModelOption
 from app.stt.selector import SpeechToTextSelector
@@ -176,14 +175,14 @@ class PeerConnectionManager:
         self._text_to_speech = text_to_speech
         self._min_samples = int(min_audio_seconds * self.sample_rate)
         self._max_samples = int(max_audio_seconds * self.sample_rate)
-        self._conversation_manager: ConversationManager | None = None
+        self._conversation_manager: object | None = None
         self._vad_factory: Callable[[], VoiceActivityDetector] | None = None
         self._barge_in_enabled = False
         self._assistant_enabled = True
 
     def configure_conversations(
         self,
-        conversation_manager: ConversationManager,
+        conversation_manager,
         vad_factory: Callable[[], VoiceActivityDetector],
         *,
         enable_barge_in: bool = False,

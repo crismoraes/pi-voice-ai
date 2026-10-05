@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app import __version__
 from app.api.assistant import language_model, router as assistant_router
 from app.api.health import router as health_router
+from app.api.realtime import router as realtime_router
 from app.api.signaling import router as signaling_router
 from app.api.system import router as system_router
 from app.api.usage import router as usage_router
@@ -19,7 +20,13 @@ from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.logging_config import configure_logging
-from app.runtime.current import assistant_control, pipeline_selection_lock
+from app.realtime.router import VoicePipelineRouter
+from app.realtime.usb import OpenAIRealtimeUsbPipeline
+from app.runtime.current import (
+    assistant_control,
+    pipeline_selection_lock,
+    voice_pipeline,
+)
 from app.usage.runtime import usage_store
 from app.vad.sherpa_silero import SherpaSileroVoiceActivityDetector
 from app.webrtc.manager import peer_manager, speech_to_text, text_to_speech
@@ -37,6 +44,24 @@ conversation_manager = ConversationManager(
     usage_store=usage_store,
     pipeline_lock=pipeline_selection_lock,
 )
+realtime_usb = OpenAIRealtimeUsbPipeline(
+    api_key=(
+        settings.openai_api_key.get_secret_value()
+        if settings.openai_api_key is not None
+        else ""
+    ),
+    model_getter=lambda: voice_pipeline.realtime_model,
+    voice_getter=lambda: voice_pipeline.realtime_voice,
+    instructions=settings.llm_instructions,
+    max_output_tokens=settings.openai_max_output_tokens,
+    timeout_seconds=settings.realtime_timeout_seconds,
+)
+voice_pipeline_router = VoicePipelineRouter(
+    control=voice_pipeline,
+    chained=conversation_manager,
+    realtime=realtime_usb,
+    selection_lock=pipeline_selection_lock,
+)
 vad_factory = lambda: SherpaSileroVoiceActivityDetector(
     model_path=settings.vad_model_path,
     threshold=settings.vad_threshold,
@@ -46,13 +71,13 @@ vad_factory = lambda: SherpaSileroVoiceActivityDetector(
     num_threads=settings.vad_num_threads,
 )
 peer_manager.configure_conversations(
-    conversation_manager,
+    voice_pipeline_router,
     vad_factory,
     enable_barge_in=settings.enable_barge_in,
 )
 usb_audio = (
     UsbAudioConversation(
-        conversation_manager=conversation_manager,
+        conversation_manager=voice_pipeline_router,
         text_to_speech=text_to_speech,
         vad_factory=vad_factory,
         capture_device=settings.usb_capture_device,
@@ -70,8 +95,10 @@ usb_audio = (
     else None
 )
 assistant_control.register(peer_manager.set_enabled)
+voice_pipeline.register(realtime_usb.select_pipeline)
 if usb_audio is not None:
     assistant_control.register(usb_audio.set_enabled)
+assistant_control.register(realtime_usb.set_enabled)
 
 
 @asynccontextmanager
@@ -102,6 +129,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if usb_audio is not None:
             await usb_audio.stop()
         await peer_manager.close_all()
+        await realtime_usb.shutdown()
         await language_model.close()
         await asyncio.gather(speech_to_text.close(), text_to_speech.close())
         logger.info("APP_STOPPED", extra={"version": __version__})
@@ -117,6 +145,7 @@ app.include_router(signaling_router)
 app.include_router(assistant_router)
 app.include_router(usage_router)
 app.include_router(system_router)
+app.include_router(realtime_router)
 app.mount(
     "/",
     StaticFiles(directory=str(PROJECT_ROOT / "web"), html=True),

@@ -437,15 +437,22 @@ sudo was unavailable, the application user's old process was deliberately killed
 once and systemd recovered it; this accounts for `NRestarts=1`. The new instance
 has no error-priority journal entries.
 
-Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
-STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent
-STT or TTS model. Chained remains the default and its selections remain persisted
-while Realtime is active. Follow the current GA OpenAI documentation at
-implementation time: browser transport uses WebRTC with a server-created ephemeral
-credential; Raspberry Pi USB transport uses a server-side WebSocket and starts in
-half-duplex because the P10S is unreliable under simultaneous capture/playback.
-The global assistant Off state must terminate or prevent Realtime sessions. Track
-Realtime audio/text usage and cost separately without storing audio or transcripts.
+Phase 12 implements OpenAI Realtime as a separate `Voice pipeline` choice above the
+chained STT -> LLM -> TTS selectors. Chained remains the default and its selections
+remain persisted while Realtime is active. The browser creates a direct WebRTC peer;
+the backend combines its SDP and session configuration through the current unified
+`/v1/realtime/calls` interface, so `OPENAI_API_KEY` never reaches JavaScript. Raspberry
+Pi USB uses a persistent server-side SDK WebSocket and remains half-duplex because
+the P10S is unreliable under simultaneous capture/playback.
+
+`VoicePipelineControl` allowlists and atomically persists the pipeline, Realtime model
+and voice with mode `0600`. The full-turn selection lock prevents configuration from
+changing during a USB turn. Global Off closes the server WebSocket and prevents new
+browser or USB sessions; the browser polls sanitized runtime state and closes its
+direct session when Off, pipeline, model or voice changes. Realtime `response.done`
+usage is deduplicated and stored as separate text/audio input, cached input and output
+tokens, latency and dated cost snapshots. No audio, transcript, prompt or response
+text is stored.
 
 ## Project Goal
 

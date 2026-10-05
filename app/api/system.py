@@ -7,8 +7,9 @@ from app import __version__
 from app.api.assistant import language_model
 from app.config import get_settings
 from app.llm.base import LanguageModelUnavailableError
-from app.runtime.current import assistant_control, pipeline_selection_lock
+from app.runtime.current import assistant_control, pipeline_selection_lock, voice_pipeline
 from app.runtime.model_selector import RuntimeModelUnavailableError
+from app.runtime.voice_pipeline import VoicePipelineUnavailableError
 from app.webrtc.manager import speech_to_text, text_to_speech
 
 router = APIRouter(prefix="/api/system", tags=["system"])
@@ -26,6 +27,20 @@ class VoiceModelSelection(BaseModel):
 
 class AssistantState(BaseModel):
     enabled: bool
+
+
+class PipelineSelection(BaseModel):
+    pipeline: str
+    model: str
+    voice: str
+
+
+def _require_chained_pipeline() -> None:
+    if voice_pipeline.pipeline != "chained":
+        raise HTTPException(
+            status_code=409,
+            detail="Chained model selectors are disabled while Realtime is active",
+        )
 
 
 async def _voice_options(selector) -> list[dict[str, object]]:
@@ -54,6 +69,26 @@ async def system_info() -> dict[str, object]:
     return {
         "version": __version__,
         "assistant": {"enabled": assistant_control.enabled},
+        "pipeline": {
+            "id": voice_pipeline.pipeline,
+            "label": (
+                "OpenAI Realtime"
+                if voice_pipeline.pipeline == "openai-realtime"
+                else "Chained"
+            ),
+            "options": [
+                {"id": "chained", "label": "Chained", "available": True},
+                {
+                    "id": "openai-realtime",
+                    "label": "OpenAI Realtime",
+                    "available": voice_pipeline.realtime_available,
+                },
+            ],
+            "realtime_model": voice_pipeline.realtime_model,
+            "realtime_models": list(voice_pipeline.realtime_models),
+            "realtime_voice": voice_pipeline.realtime_voice,
+            "realtime_voices": list(voice_pipeline.realtime_voices),
+        },
         "llm": {
             "provider": language_model.provider,
             "model": language_model.model,
@@ -108,6 +143,7 @@ async def system_info() -> dict[str, object]:
 @router.put("/llm")
 async def select_llm(selection: LlmSelection) -> dict[str, str]:
     """Switch future LLM requests after allowlist and readiness checks."""
+    _require_chained_pipeline()
     try:
         async with pipeline_selection_lock:
             await language_model.select(selection.provider, selection.model)
@@ -121,6 +157,7 @@ async def select_llm(selection: LlmSelection) -> dict[str, str]:
 @router.put("/stt")
 async def select_stt(selection: VoiceModelSelection) -> dict[str, str]:
     """Switch future turns to an allowlisted STT provider and model."""
+    _require_chained_pipeline()
     try:
         async with pipeline_selection_lock:
             await speech_to_text.select(selection.provider, selection.model)
@@ -138,6 +175,7 @@ async def select_stt(selection: VoiceModelSelection) -> dict[str, str]:
 @router.put("/tts")
 async def select_tts(selection: VoiceModelSelection) -> dict[str, str]:
     """Switch future turns to an allowlisted TTS provider and model."""
+    _require_chained_pipeline()
     try:
         async with pipeline_selection_lock:
             await text_to_speech.select(selection.provider, selection.model)
@@ -149,6 +187,25 @@ async def select_tts(selection: VoiceModelSelection) -> dict[str, str]:
         "provider": text_to_speech.provider,
         "model": text_to_speech.model,
         "model_label": text_to_speech.model_label,
+    }
+
+
+@router.put("/pipeline")
+async def select_pipeline(selection: PipelineSelection) -> dict[str, str]:
+    """Switch future voice sessions after allowlist and availability checks."""
+    try:
+        async with pipeline_selection_lock:
+            await voice_pipeline.select(
+                selection.pipeline, selection.model, selection.voice
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except VoicePipelineUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "pipeline": voice_pipeline.pipeline,
+        "model": voice_pipeline.realtime_model,
+        "voice": voice_pipeline.realtime_voice,
     }
 
 

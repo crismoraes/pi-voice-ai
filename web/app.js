@@ -18,6 +18,14 @@ let peerId = null;
 let capturing = false;
 let eventSource = null;
 let receivingAutomaticResponse = false;
+let pipelineMode = "chained";
+let realtimeEvents = null;
+let realtimeSessionId = null;
+let realtimeModel = null;
+let realtimeVoice = null;
+let realtimeResponseStartedAt = null;
+let realtimeFirstAudioAt = null;
+let runtimePoller = null;
 
 function setStatus(message, state = "") {
   statusText.textContent = message;
@@ -37,6 +45,109 @@ function waitForIceGatheringComplete(connection) {
     };
     connection.addEventListener("icegatheringstatechange", handleStateChange);
   });
+}
+
+function numeric(value) {
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
+async function reportRealtimeUsage(response) {
+  const usage = response.usage;
+  if (!usage || !response.id || !realtimeModel) return;
+  const inputDetails = usage.input_token_details || {};
+  const outputDetails = usage.output_token_details || {};
+  const cachedDetails = inputDetails.cached_tokens_details || {};
+  const inputTokens = numeric(usage.input_tokens);
+  const outputTokens = numeric(usage.output_tokens);
+  const audioInput = numeric(inputDetails.audio_tokens);
+  const audioOutput = numeric(outputDetails.audio_tokens);
+  const cachedInput = numeric(inputDetails.cached_tokens);
+  const cachedAudio = numeric(cachedDetails.audio_tokens);
+  const payload = {
+    response_id: response.id,
+    session_id: realtimeSessionId,
+    model: response.model || realtimeModel,
+    input_tokens: inputTokens,
+    cached_input_tokens: cachedInput,
+    output_tokens: outputTokens,
+    total_tokens: numeric(usage.total_tokens) || inputTokens + outputTokens,
+    text_input_tokens: numeric(inputDetails.text_tokens) || Math.max(inputTokens - audioInput, 0),
+    text_cached_input_tokens: numeric(cachedDetails.text_tokens) || Math.max(cachedInput - cachedAudio, 0),
+    text_output_tokens: numeric(outputDetails.text_tokens) || Math.max(outputTokens - audioOutput, 0),
+    audio_input_tokens: audioInput,
+    audio_cached_input_tokens: cachedAudio,
+    audio_output_tokens: audioOutput,
+    first_audio_seconds: realtimeFirstAudioAt == null || realtimeResponseStartedAt == null ? null : (realtimeFirstAudioAt - realtimeResponseStartedAt) / 1000,
+    total_seconds: realtimeResponseStartedAt == null ? null : (performance.now() - realtimeResponseStartedAt) / 1000,
+  };
+  const result = await fetch("/api/realtime/usage", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  });
+  if (!result.ok) throw new Error(await responseError(result));
+  assistantMetricsText.textContent = `${payload.model} · audio ${numberForUi(payload.audio_input_tokens)} in / ${numberForUi(payload.audio_output_tokens)} out · ${payload.total_tokens} tokens`;
+}
+
+function numberForUi(value) {
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+function handleRealtimeEvent(message) {
+  let event;
+  try { event = JSON.parse(message.data); } catch { return; }
+  if (event.type === "session.created") {
+    realtimeSessionId = event.session?.id || null;
+    setStatus("OpenAI Realtime conectado — pode falar", "connected");
+  } else if (event.type === "input_audio_buffer.speech_started") {
+    transcriptText.textContent = "Fala detectada pelo OpenAI Realtime…";
+    metricsText.textContent = "Áudio processado diretamente pelo modelo Realtime";
+    assistantText.textContent = "Aguardando resposta…";
+    assistantMetricsText.textContent = "";
+    setStatus("Ouvindo…", "recording");
+  } else if (event.type === "input_audio_buffer.speech_stopped") {
+    setStatus("Gerando resposta nativa de áudio…", "connecting");
+  } else if (event.type === "conversation.item.input_audio_transcription.completed") {
+    transcriptText.textContent = event.transcript || "Fala recebida.";
+  } else if (event.type === "response.created") {
+    realtimeResponseStartedAt = performance.now();
+    realtimeFirstAudioAt = null;
+    assistantText.textContent = "";
+  } else if (event.type === "response.output_audio.delta" && realtimeFirstAudioAt == null) {
+    realtimeFirstAudioAt = performance.now();
+  } else if (["response.output_audio_transcript.delta", "response.output_text.delta"].includes(event.type)) {
+    assistantText.textContent += event.delta || "";
+    setStatus("Reproduzindo resposta Realtime…", "connected");
+  } else if (event.type === "response.done") {
+    if (!assistantText.textContent) assistantText.textContent = "Resposta de áudio concluída.";
+    void reportRealtimeUsage(event.response).catch((error) => { errorText.textContent = error.message; });
+    setStatus("OpenAI Realtime — pode falar novamente", "connected");
+  } else if (event.type === "error") {
+    errorText.textContent = event.error?.message || "OpenAI Realtime returned an error.";
+    setStatus("OpenAI Realtime conectado", "connected");
+  }
+}
+
+function monitorRuntimeState() {
+  clearInterval(runtimePoller);
+  runtimePoller = window.setInterval(async () => {
+    try {
+      const response = await fetch("/api/system/info", { cache: "no-store" });
+      if (!response.ok) return;
+      const info = await response.json();
+      const configurationChanged =
+        info.pipeline.realtime_model !== realtimeModel ||
+        info.pipeline.realtime_voice !== realtimeVoice;
+      if (!info.assistant.enabled || info.pipeline.id !== "openai-realtime" || configurationChanged) {
+        errorText.textContent = !info.assistant.enabled
+          ? "O assistente foi desligado no dashboard."
+          : configurationChanged
+            ? "O modelo ou a voz Realtime foi alterado no dashboard. Reconecte para aplicar."
+            : "O pipeline ativo foi alterado no dashboard.";
+        await closeSession();
+      }
+    } catch {
+      // A transient dashboard request must not interrupt an active media session.
+    }
+  }, 2000);
 }
 
 async function responseError(response) {
@@ -241,12 +352,18 @@ async function closeSession({ notifyServer = true } = {}) {
   const closingPeerId = peerId;
   peerId = null;
   capturing = false;
+  clearInterval(runtimePoller);
+  runtimePoller = null;
   if (eventSource) {
     eventSource.close();
     eventSource = null;
   }
 
   if (peerConnection) {
+    if (realtimeEvents?.readyState === "open") {
+      realtimeEvents.send(JSON.stringify({ type: "response.cancel" }));
+      realtimeEvents.send(JSON.stringify({ type: "output_audio_buffer.clear" }));
+    }
     peerConnection.close();
     peerConnection = null;
   }
@@ -255,6 +372,10 @@ async function closeSession({ notifyServer = true } = {}) {
     localStream = null;
   }
   remoteAudio.srcObject = null;
+  realtimeEvents = null;
+  realtimeSessionId = null;
+  realtimeResponseStartedAt = null;
+  realtimeFirstAudioAt = null;
 
   if (notifyServer && closingPeerId) {
     try {
@@ -268,6 +389,8 @@ async function closeSession({ notifyServer = true } = {}) {
   recordButton.disabled = true;
   recordButton.textContent = "Começar a falar";
   stopButton.disabled = true;
+  automaticCheckbox.disabled = false;
+  loopbackCheckbox.disabled = false;
   setStatus("Desconectado");
 }
 
@@ -332,6 +455,13 @@ async function startSession() {
   setStatus("Solicitando microfone…", "connecting");
 
   try {
+    const infoResponse = await fetch("/api/system/info", { cache: "no-store" });
+    if (!infoResponse.ok) throw new Error("Não foi possível consultar o pipeline ativo.");
+    const systemInfo = await infoResponse.json();
+    if (!systemInfo.assistant.enabled) throw new Error("O assistente está Off no dashboard.");
+    pipelineMode = systemInfo.pipeline.id;
+    realtimeModel = systemInfo.pipeline.realtime_model;
+    realtimeVoice = systemInfo.pipeline.realtime_voice;
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -356,12 +486,29 @@ async function startSession() {
       }
     });
 
+    if (pipelineMode === "openai-realtime") {
+      realtimeEvents = peerConnection.createDataChannel("oai-events");
+      realtimeEvents.addEventListener("message", handleRealtimeEvent);
+      realtimeEvents.addEventListener("open", () => {
+        setStatus("OpenAI Realtime conectado — pode falar", "connected");
+      });
+      realtimeEvents.addEventListener("close", () => {
+        if (peerConnection) void closeSession({ notifyServer: false });
+      });
+      automaticCheckbox.checked = true;
+      automaticCheckbox.disabled = true;
+      loopbackCheckbox.checked = false;
+      loopbackCheckbox.disabled = true;
+    }
+
     peerConnection.addEventListener("connectionstatechange", () => {
       const state = peerConnection?.connectionState;
       if (state === "connected") {
-        recordButton.disabled = automaticCheckbox.checked;
+        recordButton.disabled = pipelineMode === "openai-realtime" || automaticCheckbox.checked;
         setStatus(
-          automaticCheckbox.checked
+          pipelineMode === "openai-realtime"
+            ? "OpenAI Realtime conectado — pode falar"
+            : automaticCheckbox.checked
             ? "Conectado — iniciando conversa automática"
             : "Conectado — pronto para gravar",
           "connected",
@@ -380,21 +527,27 @@ async function startSession() {
     await peerConnection.setLocalDescription(offer);
     await waitForIceGatheringComplete(peerConnection);
 
-    const response = await fetch("/api/webrtc/offer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(peerConnection.localDescription),
-    });
+    const response = await fetch(
+      pipelineMode === "openai-realtime" ? "/api/realtime/calls" : "/api/webrtc/offer",
+      pipelineMode === "openai-realtime"
+        ? { method: "POST", headers: { "Content-Type": "application/sdp" }, body: peerConnection.localDescription.sdp }
+        : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(peerConnection.localDescription) },
+    );
     if (!response.ok) {
       throw new Error(`O servidor recusou a negociação (${response.status})`);
     }
 
-    const answer = await response.json();
+    const answer = pipelineMode === "openai-realtime"
+      ? { sdp: await response.text(), type: "answer", peer_id: null }
+      : await response.json();
     peerId = answer.peer_id;
-    await peerConnection.setRemoteDescription({
-      sdp: answer.sdp,
-      type: answer.type,
-    });
+    await peerConnection.setRemoteDescription({ sdp: answer.sdp, type: answer.type });
+    if (pipelineMode === "openai-realtime") {
+      transcriptText.textContent = "O áudio será processado diretamente pelo OpenAI Realtime.";
+      assistantText.textContent = "A resposta de voz aparecerá aqui quando você falar.";
+      monitorRuntimeState();
+      return;
+    }
     await configureLoopback();
     openConversationEvents();
     setStatus("Ativando conversa…", "connecting");

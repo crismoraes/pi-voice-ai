@@ -1283,10 +1283,10 @@ mesmos IDs sanitizados aparecem no journal e na tabela **Recent turns**. A migra
 SQLite conserva o histórico existente; linhas antigas mostram `—` para STT/TTS
 porque o sistema não inventa dados que nunca foram coletados.
 
-O schema recebeu ainda `audio_input_tokens` e `audio_output_tokens`, ambos zero no
-pipeline Chained. Na Fase 12, eles poderão receber o uso retornado pelo Realtime e
-participar do cálculo com uma tabela de preços datada, sem armazenar áudio,
-transcrição, pergunta ou resposta.
+O schema recebeu `audio_input_tokens`, `audio_cached_input_tokens` e
+`audio_output_tokens`, todos zero no pipeline Chained. No Realtime, eles recebem o
+uso retornado pela sessão e participam do cálculo com uma tabela de preços datada,
+sem armazenar áudio, transcrição, pergunta ou resposta.
 
 Essa evolução passou em 42 testes no Windows e no Raspberry Pi. A implantação
 migrou o `usage.db` existente para as oito colunas novas e a API preservou as linhas
@@ -1296,7 +1296,7 @@ Off persistido pelo usuário. Como o sudo interativo não estava disponível, o
 processo antigo foi encerrado uma vez para o `Restart=on-failure` do systemd iniciar
 o código novo; por isso essa execução registra `NRestarts=1`.
 
-## Planejamento da Fase 12 — OpenAI Realtime
+## Fase 12 — OpenAI Realtime
 
 OpenAI Realtime executa speech-to-speech, mantém estado de conversa e coordena
 turnos, interrupções e ferramentas dentro de uma sessão. Por isso, tratá-lo como
@@ -1309,40 +1309,108 @@ Voice pipeline
   - OpenAI Realtime (audio -> realtime session -> audio)
 ```
 
-Quando **Chained** estiver ativo, os três seletores continuam disponíveis. Quando
-**OpenAI Realtime** estiver ativo, eles permanecem salvos, mas desabilitados, e o
+Quando **Chained** está ativo, os três seletores continuam disponíveis. Quando
+**OpenAI Realtime** está ativo, eles permanecem salvos, mas desabilitados, e o
 dashboard mostra `Realtime model` e `Voice`. Voltar para Chained restaura exatamente
-as escolhas anteriores.
+as escolhas anteriores. A seleção allowlisted é persistida atomicamente em
+`data/pipeline-selection.json` com permissão `0600`.
 
-Para o navegador, o backend criará uma credencial efêmera e o frontend conectará
-por WebRTC. Para o microfone e alto-falante USB, o Raspberry Pi manterá uma conexão
-WebSocket no servidor. Como a P10S apresentou falha em full-duplex, o primeiro modo
-USB será half-duplex: captura, envio, resposta e reprodução em sequência. A chave
-`OPENAI_API_KEY` fica somente no Pi.
+### Navegador: WebRTC com interface unificada
 
-Métricas Realtime serão guardadas separadamente: tokens de áudio de entrada e saída,
-tokens de texto, duração da sessão, primeiro áudio e custo estimado. O botão global
-On/Off deverá encerrar a sessão ativa e impedir uma nova conexão, preservando a
-garantia de zero consumo enquanto estiver Off.
+O navegador cria o `RTCPeerConnection`, a faixa do microfone e o canal de dados.
+Ele envia sua oferta SDP para `POST /api/realtime/calls`. O Pi adiciona a configuração
+da sessão e chama `/v1/realtime/calls` com `OPENAI_API_KEY`, devolvendo apenas o SDP
+de resposta. A chave nunca chega ao JavaScript. Esta é a interface unificada indicada
+na documentação atual e evita criar e distribuir um segredo efêmero separadamente.
+
+O canal `oai-events` acompanha detecção de fala, interrupções, texto auxiliar, áudio
+e `response.done`. A reprodução usa a faixa remota do próprio WebRTC. A página
+consulta o estado sanitizado do Pi e fecha a sessão se o usuário desligar o assistente
+ou alterar pipeline, modelo ou voz.
+
+### Raspberry Pi USB: WebSocket half-duplex
+
+Para a P10S, o adaptador mantém uma conexão WebSocket do SDK OpenAI no servidor. O
+turno capturado em 16 kHz é reamostrado para PCM16 em 24 kHz, enviado e confirmado
+manualmente; cada `response.output_audio.delta` é reproduzido assim que chega. O
+microfone continua fechado durante processamento e reprodução. Essa sequência evita
+o acesso simultâneo que já travou a interface USB em testes anteriores.
+
+O modelo e a voz são lidos no início de cada turno. Se mudarem, a conexão anterior é
+fechada e a próxima fala abre uma nova sessão com a configuração atual. Desligar o
+assistente ou voltar a Chained fecha a conexão persistente imediatamente.
+
+### Histórico numérico e custo
+
+Cada `response.done` informa tokens de texto e áudio de entrada, cache e saída. O
+backend grava essas contagens, primeiro áudio, duração, modelo, voz, transporte e
+custo estimado. Um `response_id` é aceito uma única vez para impedir duplicação.
+Áudio, transcrição, prompt e resposta não são gravados. As tarifas ficam no `.env`
+com data de referência; isso preserva o valor usado mesmo quando a tabela muda.
 
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
-servidor, e orienta novas integrações a usar a interface GA. O modelo será uma
+servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
 allowlist configurável, sem dependência permanente desse alias:
 
-- [Getting started with the Realtime API](https://developers.openai.com/api/docs/guides/realtime)
-- [Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
-- [Text to speech](https://developers.openai.com/api/docs/guides/text-to-speech)
+- [WebRTC](https://developers.openai.com/api/docs/guides/voice-webrtc)
+- [WebSocket](https://developers.openai.com/api/docs/guides/voice-websockets)
+- [Conversas Realtime](https://developers.openai.com/api/docs/guides/realtime-conversations)
+- [VAD](https://developers.openai.com/api/docs/guides/realtime-vad)
+- [Preços](https://developers.openai.com/api/docs/pricing)
 
-### Ordem de implementação
+### Validação automatizada
 
-1. Entregar e validar os seletores STT/TTS locais da Fase 11.
-2. Introduzir `VoicePipeline` mantendo Chained como padrão.
-3. Implementar Realtime no navegador com credenciais efêmeras.
-4. Implementar Realtime USB por WebSocket e validar half-duplex na P10S.
-5. Adicionar métricas de áudio/custo e testes de fallback para o pipeline Chained.
+Os testes cobrem persistência e allowlist, bloqueio quando Off, troca SDP pela
+interface unificada, reamostragem e streaming USB, deduplicação das métricas, migração
+do SQLite e cálculo separado de texto/áudio. A aceitação física deve exercitar no
+dashboard os dois caminhos: navegador WebRTC e microfone/alto-falante USB.
 
 # Perguntas frequentes e troubleshooting do curso
+
+## Se OpenAI Realtime aparecer indisponível no dashboard
+
+Confirme que `OPENAI_API_KEY` existe no `.env` e reinicie o serviço, pois a
+disponibilidade é calculada na inicialização. Depois confira somente os campos
+sanitizados:
+
+```bash
+curl --fail http://127.0.0.1:8000/api/system/info
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager
+```
+
+Não imprima o `.env` nem a chave nos logs. Uma seleção direta pela API retorna `503`
+se a credencial não estiver configurada.
+
+## Se o navegador conectar ao Realtime, mas não tocar áudio
+
+Abra a página por HTTPS, permita o microfone e confirme que **Voice assistant** está
+On e **Voice pipeline** está em OpenAI Realtime. Alterar modelo ou voz fecha a sessão
+aberta; clique novamente em conectar para usar a nova configuração. O journal deve
+mostrar `REALTIME_BROWSER_CALL_CREATED` sem `REALTIME_CALL_REJECTED`.
+
+## Se o Realtime USB parar depois de uma resposta
+
+O modo USB continua half-duplex. Durante a resposta, `arecord` deve ficar fechado e
+`aplay` usa a P10S; a captura volta depois. Confira os eventos e o dispositivo sem
+reiniciar todo o Raspberry Pi:
+
+```bash
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager
+pgrep -af 'arecord|aplay'
+arecord -l
+aplay -l
+```
+
+Se a P10S retornar `Input/output error`, use o procedimento de `usbreset` documentado
+nesta seção e reinicie apenas `pi-voice-ai.service`.
+
+## Como confirmar os tokens e o custo do Realtime
+
+Abra `/dashboard.html`. Uma linha Realtime mostra o pipeline, `gpt-realtime-2.1`, a
+voz OpenAI, tokens totais e as colunas de áudio de entrada e saída. O custo combina
+as seis tarifas configuradas para texto e áudio. O banco guarda apenas números e IDs
+técnicos; ele não contém a gravação nem o conteúdo falado.
 
 ## Se eu selecionar llama.cpp e o modelo local estiver desligado?
 

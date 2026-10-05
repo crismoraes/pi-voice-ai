@@ -8,15 +8,14 @@
   </head>
   <body>
     <main class="panel">
-      <p class="eyebrow">PiVoice AI · Fase 8</p>
+      <p class="eyebrow">PiVoice AI · Fase 12</p>
       <h1>Conversa de voz</h1>
       <a class="dashboard-link" href="/dashboard.html">Ver consumo e custos</a>
       <p class="description">
-        O navegador envia o microfone por WebRTC. O Raspberry Pi converte a fala
-        em texto localmente. Somente a transcrição é enviada à OpenAI para gerar
-        uma resposta textual. O Raspberry Pi detecta o fim da fala, mantém o
-        contexto da conversa, transforma a resposta em voz local e a devolve pelo
-        WebRTC. Para interromper uma resposta, basta começar a falar novamente.
+        O navegador usa o pipeline selecionado no dashboard. Chained executa VAD,
+        STT e TTS localmente no Raspberry Pi; OpenAI Realtime processa áudio nativo
+        por WebRTC para reduzir a latência. Para interromper uma resposta, basta
+        começar a falar novamente.
       </p>
 
       <div class="status-row" aria-live="polite">

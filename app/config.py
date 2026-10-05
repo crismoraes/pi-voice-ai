@@ -71,6 +71,48 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "data" / "assistant-state.json",
         alias="ASSISTANT_STATE_PATH",
     )
+    voice_pipeline: Literal["chained", "openai-realtime"] = Field(
+        default="chained", alias="VOICE_PIPELINE"
+    )
+    pipeline_selection_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "pipeline-selection.json",
+        alias="PIPELINE_SELECTION_PATH",
+    )
+    realtime_model: str = Field(
+        default="gpt-realtime-2.1", alias="REALTIME_MODEL"
+    )
+    realtime_models: str = Field(
+        default="gpt-realtime-2.1", alias="REALTIME_MODELS"
+    )
+    realtime_voice: str = Field(default="marin", alias="REALTIME_VOICE")
+    realtime_voices: str = Field(
+        default="marin,cedar,coral,alloy,ash,ballad,echo,sage,shimmer,verse",
+        alias="REALTIME_VOICES",
+    )
+    realtime_timeout_seconds: float = Field(
+        default=45, ge=5, le=180, alias="REALTIME_TIMEOUT_SECONDS"
+    )
+    realtime_text_input_price_per_million: float = Field(
+        default=4.00, ge=0, alias="REALTIME_TEXT_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_text_cached_input_price_per_million: float = Field(
+        default=0.40, ge=0, alias="REALTIME_TEXT_CACHED_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_text_output_price_per_million: float = Field(
+        default=24.00, ge=0, alias="REALTIME_TEXT_OUTPUT_PRICE_PER_MILLION"
+    )
+    realtime_audio_input_price_per_million: float = Field(
+        default=32.00, ge=0, alias="REALTIME_AUDIO_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_audio_cached_input_price_per_million: float = Field(
+        default=0.40, ge=0, alias="REALTIME_AUDIO_CACHED_INPUT_PRICE_PER_MILLION"
+    )
+    realtime_audio_output_price_per_million: float = Field(
+        default=64.00, ge=0, alias="REALTIME_AUDIO_OUTPUT_PRICE_PER_MILLION"
+    )
+    realtime_pricing_date: str = Field(
+        default="2026-10-05", alias="REALTIME_PRICING_DATE"
+    )
     local_llm_base_url: str = Field(
         default="http://127.0.0.1:8081/v1", alias="LOCAL_LLM_BASE_URL"
     )
@@ -227,6 +269,14 @@ class Settings(BaseSettings):
     def local_llm_model_options(self) -> tuple[str, ...]:
         return self._model_options(self.local_llm_models, self.local_llm_model)
 
+    @property
+    def realtime_model_options(self) -> tuple[str, ...]:
+        return self._model_options(self.realtime_models, self.realtime_model)
+
+    @property
+    def realtime_voice_options(self) -> tuple[str, ...]:
+        return self._model_options(self.realtime_voices, self.realtime_voice)
+
     @staticmethod
     def _model_options(value: str, configured: str) -> tuple[str, ...]:
         models = tuple(
@@ -240,6 +290,8 @@ class Settings(BaseSettings):
             self.llm_selection_path = PROJECT_ROOT / self.llm_selection_path
         if not self.assistant_state_path.is_absolute():
             self.assistant_state_path = PROJECT_ROOT / self.assistant_state_path
+        if not self.pipeline_selection_path.is_absolute():
+            self.pipeline_selection_path = PROJECT_ROOT / self.pipeline_selection_path
         return self
 
     @model_validator(mode="after")

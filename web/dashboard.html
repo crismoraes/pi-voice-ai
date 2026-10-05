@@ -33,19 +33,26 @@
             <span id="assistant-toggle-label">Off</span>
           </label>
         </div>
-        <div class="model-controls">
+        <div class="model-controls pipeline-controls">
+          <label>Voice pipeline<select id="voice-pipeline"></select></label>
+          <label>Realtime model<select id="realtime-model"></select></label>
+          <label>Realtime voice<select id="realtime-voice"></select></label>
+          <button id="apply-pipeline" type="button">Apply pipeline</button>
+          <span id="pipeline-switch-status" class="switch-status" role="status"></span>
+        </div>
+        <div class="model-controls chained-control">
           <label>LLM provider<select id="llm-provider"></select></label>
           <label>Model<select id="llm-model"></select></label>
           <button id="apply-llm" type="button">Apply LLM</button>
           <span id="llm-switch-status" class="switch-status" role="status"></span>
         </div>
-        <div class="model-controls">
+        <div class="model-controls chained-control">
           <label>STT provider<select id="stt-provider"></select></label>
           <label>Model<select id="stt-model"></select></label>
           <button id="apply-stt" type="button">Apply STT</button>
           <span id="stt-switch-status" class="switch-status" role="status"></span>
         </div>
-        <div class="model-controls">
+        <div class="model-controls chained-control">
           <label>TTS provider<select id="tts-provider"></select></label>
           <label>Model<select id="tts-model"></select></label>
           <button id="apply-tts" type="button">Apply TTS</button>
@@ -66,6 +73,8 @@
         <article><span>Input</span><strong id="input-tokens">—</strong></article>
         <article><span>Output</span><strong id="output-tokens">—</strong></article>
         <article><span>Cached</span><strong id="cached-tokens">—</strong></article>
+        <article><span>Audio input</span><strong id="audio-input-tokens">—</strong></article>
+        <article><span>Audio output</span><strong id="audio-output-tokens">—</strong></article>
         <article><span>Estimated cost</span><strong id="cost">—</strong></article>
       </section>
 
@@ -76,8 +85,8 @@
       <section class="dashboard-section">
         <h2>Recent turns</h2>
         <div class="table-wrap"><table>
-          <thead><tr><th>Date</th><th>Source</th><th>Pipeline</th><th>STT</th><th>LLM</th><th>TTS</th><th>Input</th><th>Cached</th><th>Output</th><th>Total</th><th>Cost</th><th>LLM time</th></tr></thead>
-          <tbody id="turn-list"><tr><td colspan="12">No data yet.</td></tr></tbody>
+          <thead><tr><th>Date</th><th>Source</th><th>Pipeline</th><th>STT</th><th>LLM</th><th>TTS/Voice</th><th>Input</th><th>Cached</th><th>Output</th><th>Audio in</th><th>Audio out</th><th>Total</th><th>Cost</th><th>Model time</th></tr></thead>
+          <tbody id="turn-list"><tr><td colspan="14">No data yet.</td></tr></tbody>
         </table></div>
       </section>
       <p class="privacy-note">Only numeric metrics are stored locally. Audio, transcripts, prompts, and responses are excluded from this history.</p>

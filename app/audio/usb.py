@@ -10,7 +10,6 @@ from time import perf_counter
 
 import numpy as np
 
-from app.conversation.manager import ConversationManager
 from app.tts.base import SynthesisResult, TextToSpeech
 from app.vad.base import VoiceActivityDetector
 
@@ -126,7 +125,7 @@ class UsbAudioConversation:
     def __init__(
         self,
         *,
-        conversation_manager: ConversationManager,
+        conversation_manager,
         text_to_speech: TextToSpeech,
         vad_factory: Callable[[], VoiceActivityDetector],
         capture_device: str,

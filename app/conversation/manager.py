@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from time import perf_counter
 
@@ -19,6 +20,11 @@ from app.usage.store import UsageStore, UsageTurn
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
 AudioHandler = Callable[[SynthesisResult], Awaitable[None]]
+
+
+@asynccontextmanager
+async def _without_pipeline_lock():
+    yield
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,9 +74,14 @@ class ConversationManager:
         samples: np.ndarray,
         emit: EventHandler,
         play_audio: AudioHandler | None = None,
+        *,
+        acquire_pipeline_lock: bool = True,
     ) -> ConversationResult | None:
         state = self._states.setdefault(session_id, ConversationState())
-        async with state.lock, self._pipeline_lock:
+        pipeline_context = (
+            self._pipeline_lock if acquire_pipeline_lock else _without_pipeline_lock()
+        )
+        async with state.lock, pipeline_context:
             pipeline = "chained"
             stt_provider = getattr(self._speech_to_text, "provider", None)
             stt_model = getattr(self._speech_to_text, "model", None)

@@ -4,7 +4,12 @@ import sqlite3
 from pathlib import Path
 
 from app.llm.base import TokenUsage
-from app.usage.store import UsagePricing, UsageStore, UsageTurn
+from app.usage.store import (
+    RealtimeUsagePricing,
+    UsagePricing,
+    UsageStore,
+    UsageTurn,
+)
 
 
 def make_store(path: Path) -> UsageStore:
@@ -16,6 +21,16 @@ def make_store(path: Path) -> UsageStore:
             cached_input_per_million=0.01,
             output_per_million=0.50,
             effective_date="2026-09-26",
+        ),
+        RealtimeUsagePricing(
+            model="gpt-realtime-2.1",
+            text_input_per_million=4.00,
+            text_cached_input_per_million=0.40,
+            text_output_per_million=24.00,
+            audio_input_per_million=32.00,
+            audio_cached_input_per_million=0.40,
+            audio_output_per_million=64.00,
+            effective_date="2026-10-05",
         ),
     )
     store.initialize()
@@ -70,6 +85,39 @@ def test_usage_store_does_not_price_an_unconfigured_model(tmp_path: Path) -> Non
     store = make_store(tmp_path / "usage.db")
     usage = TokenUsage("another-model", 10, 0, 5, 0, 15)
     assert store.estimate_cost(usage) is None
+
+
+def test_usage_store_prices_realtime_text_audio_and_cache_separately(
+    tmp_path: Path,
+) -> None:
+    store = make_store(tmp_path / "usage.db")
+    usage = TokenUsage("gpt-realtime-2.1", 150, 30, 70, 0, 220)
+    turn = UsageTurn(
+        source="webrtc",
+        session_id="session",
+        usage=usage,
+        pipeline="openai-realtime",
+        llm_provider="openai",
+        tts_provider="openai",
+        tts_model="marin",
+        text_input_tokens=50,
+        text_cached_input_tokens=10,
+        text_output_tokens=20,
+        audio_input_tokens=100,
+        audio_cached_input_tokens=20,
+        audio_output_tokens=50,
+    )
+
+    store.record(turn)
+    recent = store.recent(30, 1)[0]
+
+    expected = (
+        40 * 4.00 + 10 * 0.40 + 20 * 24.00
+        + 80 * 32.00 + 20 * 0.40 + 50 * 64.00
+    ) / 1_000_000
+    assert recent["estimated_cost_usd"] == expected
+    assert recent["audio_cached_input_tokens"] == 20
+    assert recent["text_input_tokens"] == 50
 
 
 def test_usage_store_migrates_existing_history_without_backfilling_models(

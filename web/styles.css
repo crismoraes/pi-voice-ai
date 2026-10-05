@@ -238,6 +238,7 @@ th { color: #8c959f; font-weight: 600; }
 .model-controls { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.4fr) auto; gap: 12px; align-items: end; margin-top: 20px; }
 .model-controls label { display: grid; gap: 7px; color: #b1bac4; font-size: .8rem; }
 .model-controls button { min-height: 42px; }
+.pipeline-controls { grid-template-columns: repeat(3, minmax(150px, 1fr)) auto; }
 .switch-status { grid-column: 1 / -1; min-height: 20px; color: #b1bac4; font-size: .82rem; }
 
 @media (max-width: 720px) {
@@ -247,6 +248,7 @@ th { color: #8c959f; font-weight: 600; }
   .chart-row span { display: none; }
   .technology-grid { grid-template-columns: repeat(2, 1fr); }
   .model-controls { grid-template-columns: 1fr 1fr; }
+  .pipeline-controls { grid-template-columns: 1fr 1fr; }
   .model-controls button { grid-column: 1 / -1; }
 }
 

@@ -168,8 +168,8 @@ foi aceita com Small novamente ativo.
 
 ### Fase 12 — Voice pipeline selecionável
 
-OpenAI Realtime será uma opção de **Voice pipeline**, e não um modelo isolado de
-STT ou TTS. O dashboard oferecerá inicialmente:
+OpenAI Realtime é uma opção de **Voice pipeline**, e não um modelo isolado de
+STT ou TTS. O dashboard oferece:
 
 ```text
 Chained          -> VAD -> STT -> LLM -> TTS
@@ -177,18 +177,51 @@ OpenAI Realtime  -> áudio bidirecional em uma sessão de voz
 ```
 
 No modo Realtime, os seletores encadeados continuam salvos, mas ficam inativos; a
-interface mostra o modelo Realtime e a voz da sessão. Para USB, o Pi usará WebSocket
-no servidor e manterá a P10S em half-duplex. Para navegador, a conexão preferida é
-WebRTC com credencial efêmera criada pelo backend. A chave OpenAI nunca será enviada
-ao dashboard. Tokens de áudio/texto, duração e custo estimado terão métricas próprias.
+interface mostra o modelo e a voz da sessão. Voltar para Chained restaura as escolhas
+anteriores. O estado fica em `data/pipeline-selection.json`, com permissão `0600` no
+Linux e fora do Git.
 
-A documentação oficial atual apresenta `gpt-realtime-2.1` como exemplo, recomenda
-WebRTC no navegador ou WebSocket no servidor e descreve o Realtime como uma sessão
-speech-to-speech com turnos, interrupções e ferramentas. O modelo continuará em uma
-allowlist configurável para não fixar no código um alias que possa mudar. Consulte
-[Getting started with the Realtime API](https://developers.openai.com/api/docs/guides/realtime),
-[Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
-e [Text to speech](https://developers.openai.com/api/docs/guides/text-to-speech).
+No navegador, o frontend cria o peer WebRTC e envia somente a oferta SDP ao backend.
+O backend combina o SDP e a configuração da sessão em uma chamada à interface
+unificada `/v1/realtime/calls`, devolve o SDP de resposta e nunca expõe
+`OPENAI_API_KEY`. O canal de dados recebe eventos, permite interrupção e envia ao Pi
+apenas as métricas numéricas da resposta. Em USB, o Pi mantém uma conexão WebSocket
+com o Realtime e usa a P10S em half-duplex: captura, envio, resposta e reprodução em
+sequência. A conversa permanece na sessão enquanto modelo e voz não mudarem.
+
+O botão global On/Off impede novas sessões, encerra a conexão WebSocket do Pi e faz
+o navegador fechar uma sessão direta ativa. O navegador também encerra sua sessão
+quando pipeline, modelo ou voz são alterados no dashboard.
+
+Tokens de texto e áudio, inclusive cache, primeiro áudio, duração e custo estimado
+são armazenados como números em `data/usage.db`. Áudio, transcrição, prompt e resposta
+continuam fora do histórico. Os preços padrão de `gpt-realtime-2.1`, datados na
+configuração, são texto `$4.00/$0.40/$24.00` e áudio
+`$32.00/$0.40/$64.00` por milhão de tokens de entrada/cache/saída.
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `VOICE_PIPELINE` | `chained` | Pipeline inicial antes do estado persistido |
+| `PIPELINE_SELECTION_PATH` | `data/pipeline-selection.json` | Seleção persistente |
+| `REALTIME_MODEL(S)` | `gpt-realtime-2.1` | Modelo inicial e allowlist |
+| `REALTIME_VOICE(S)` | `marin` / lista oficial | Voz inicial e allowlist |
+| `REALTIME_TIMEOUT_SECONDS` | `45` | Limite de um turno USB |
+| `REALTIME_*_PRICE_PER_MILLION` | conforme tabela atual | Custos de texto/áudio |
+| `REALTIME_PRICING_DATE` | `2026-10-05` | Data do snapshot de preços |
+
+A implementação segue a orientação atual da OpenAI: WebRTC no cliente, WebSocket
+no servidor e interface unificada para inicializar chamadas do navegador. Consulte
+[WebRTC](https://developers.openai.com/api/docs/guides/voice-webrtc),
+[WebSocket](https://developers.openai.com/api/docs/guides/voice-websockets),
+[conversas Realtime](https://developers.openai.com/api/docs/guides/realtime-conversations),
+[VAD](https://developers.openai.com/api/docs/guides/realtime-vad) e
+[preços](https://developers.openai.com/api/docs/pricing).
+
+Para uma verificação curta do WebSocket, modelo, voz e áudio sem registrar conteúdo:
+
+```bash
+.venv/bin/python scripts/live_realtime_check.py
+```
 
 ## Fase 10 — dashboard local de tokens e custos
 
@@ -218,9 +251,9 @@ ou conteúdo das conversas.
 O custo é uma estimativa local. Cada linha conserva o modelo, a data e as tarifas
 usadas no cálculo. Se o modelo retornado não corresponder ao modelo da tabela de
 preços, o turno continua com os tokens reais e fica sem estimativa monetária.
-O schema também possui contadores numéricos de tokens de áudio de entrada e saída,
-inicialmente zero no pipeline Chained, para integrar o custo do OpenAI Realtime na
-Fase 12 sem mudar a política de privacidade.
+O schema também possui contadores numéricos de tokens de áudio de entrada, cache e
+saída. Eles permanecem zero no pipeline Chained e recebem o uso informado pelo
+OpenAI Realtime sem mudar a política de privacidade.
 
 A melhoria passou em 42 testes no Windows e no Pi. Na implantação, o banco existente
 recebeu as oito colunas novas sem perder as linhas anteriores; a API apresentou o

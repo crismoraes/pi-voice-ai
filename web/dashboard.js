@@ -5,6 +5,10 @@ const providerSelect = document.querySelector("#llm-provider");
 const modelSelect = document.querySelector("#llm-model");
 const applyButton = document.querySelector("#apply-llm");
 const assistantToggle = document.querySelector("#assistant-enabled");
+const pipelineSelect = document.querySelector("#voice-pipeline");
+const realtimeModelSelect = document.querySelector("#realtime-model");
+const realtimeVoiceSelect = document.querySelector("#realtime-voice");
+const applyPipelineButton = document.querySelector("#apply-pipeline");
 let llmOptions = [];
 const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [component, {
   provider: document.querySelector(`#${component}-provider`),
@@ -88,9 +92,12 @@ function renderTechnology(info) {
   text("tech-llm-mode", `LLM · ${info.llm.processing}`);
   const speed = info.llm.tokens_per_second == null ? "" : ` · ${info.llm.tokens_per_second.toFixed(1)} tokens/s`;
   text("tech-llm-detail", `${providerLabel(info.llm.provider)} · ${info.llm.processing} processing${speed}`);
-  text("processing-note", info.llm.provider === "openai"
-    ? "Audio, STT, and TTS stay on the Raspberry Pi. Only text is sent to OpenAI."
-    : "The complete voice pipeline, including the LLM, is running locally on the Raspberry Pi.");
+  const realtime = info.pipeline.id === "openai-realtime";
+  text("processing-note", realtime
+    ? `Audio is processed by OpenAI Realtime using ${info.pipeline.realtime_model} and the ${info.pipeline.realtime_voice} voice.`
+    : info.llm.provider === "openai"
+      ? "Audio, STT, and TTS stay on the Raspberry Pi. Only text is sent to OpenAI."
+      : "The complete voice pipeline, including the LLM, is running locally on the Raspberry Pi.");
   text("tech-stt", info.stt.model_label);
   text("tech-stt-mode", `STT · ${info.stt.processing}`);
   const normalization = info.stt.normalization ? `normalization to ${info.stt.target_peak} · max gain ${info.stt.max_gain}×` : "no normalization";
@@ -106,6 +113,17 @@ function renderTechnology(info) {
   populateModels(info.llm.model);
   configureVoiceSelector("stt", info.stt);
   configureVoiceSelector("tts", info.tts);
+  pipelineSelect.innerHTML = info.pipeline.options.map((option) =>
+    `<option value="${option.id}"${option.available ? "" : " disabled"}>${option.label}${option.available ? "" : " (unavailable)"}</option>`
+  ).join("");
+  pipelineSelect.value = info.pipeline.id;
+  realtimeModelSelect.innerHTML = info.pipeline.realtime_models.map((model) => `<option value="${model}">${model}</option>`).join("");
+  realtimeModelSelect.value = info.pipeline.realtime_model;
+  realtimeVoiceSelect.innerHTML = info.pipeline.realtime_voices.map((voice) => `<option value="${voice}">${voice}</option>`).join("");
+  realtimeVoiceSelect.value = info.pipeline.realtime_voice;
+  document.querySelectorAll(".chained-control select, .chained-control button").forEach((control) => { control.disabled = realtime; });
+  realtimeModelSelect.disabled = !realtime;
+  realtimeVoiceSelect.disabled = !realtime;
 }
 
 function renderChart(daily) {
@@ -121,13 +139,14 @@ function renderChart(daily) {
 
 function renderTurns(turns) {
   const body = document.querySelector("#turn-list");
-  if (!turns.length) { body.innerHTML = '<tr><td colspan="12">No data yet.</td></tr>'; return; }
+  if (!turns.length) { body.innerHTML = '<tr><td colspan="14">No data yet.</td></tr>'; return; }
   body.innerHTML = turns.map((turn) => `<tr>
     <td>${new Date(turn.created_at).toLocaleString("en-US")}</td><td>${turn.source}</td><td>${pipelineLabel(turn.pipeline)}</td>
     <td>${componentLabel(turn.stt_provider, turn.stt_model)}</td><td>${componentLabel(turn.llm_provider, turn.model)}</td>
     <td>${componentLabel(turn.tts_provider, turn.tts_model)}</td>
     <td>${number.format(turn.input_tokens)}</td><td>${number.format(turn.cached_input_tokens)}</td>
-    <td>${number.format(turn.output_tokens)}</td><td>${number.format(turn.total_tokens)}</td>
+    <td>${number.format(turn.output_tokens)}</td><td>${number.format(turn.audio_input_tokens)}</td>
+    <td>${number.format(turn.audio_output_tokens)}</td><td>${number.format(turn.total_tokens)}</td>
     <td>${money(turn.estimated_cost_usd)}</td><td>${turn.total_seconds == null ? "—" : `${turn.total_seconds.toFixed(2)} s`}</td>
   </tr>`).join("");
 }
@@ -147,9 +166,29 @@ async function loadDashboard() {
     text("turns", number.format(totals.turns)); text("tokens", number.format(totals.total_tokens));
     text("input-tokens", number.format(totals.input_tokens)); text("output-tokens", number.format(totals.output_tokens));
     text("cached-tokens", number.format(totals.cached_input_tokens)); text("cost", money(totals.estimated_cost_usd));
-    text("pricing-note", `USD estimate for ${summary.pricing.model} · pricing dated ${new Date(`${summary.pricing.effective_date}T12:00:00`).toLocaleDateString("en-US")}`);
+    text("audio-input-tokens", number.format(totals.audio_input_tokens)); text("audio-output-tokens", number.format(totals.audio_output_tokens));
+    text("pricing-note", "USD estimates use the dated price snapshot stored with each turn.");
     renderTechnology(system); renderChart(summary.daily); renderTurns(recent.turns);
   } catch (error) { text("dashboard-error", error.message); }
+}
+
+async function applyPipeline() {
+  applyPipelineButton.disabled = true;
+  text("pipeline-switch-status", "Applying…");
+  try {
+    const response = await fetch("/api/system/pipeline", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pipeline: pipelineSelect.value, model: realtimeModelSelect.value, voice: realtimeVoiceSelect.value }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "The voice pipeline could not be changed.");
+    text("pipeline-switch-status", `Active: ${pipelineLabel(result.pipeline)}`);
+    await loadDashboard();
+  } catch (error) {
+    text("pipeline-switch-status", error.message);
+  } finally {
+    applyPipelineButton.disabled = false;
+  }
 }
 
 async function applyLlm() {
@@ -214,4 +253,10 @@ applyButton.addEventListener("click", applyLlm);
 voiceControls.stt.apply.addEventListener("click", () => applyVoiceModel("stt"));
 voiceControls.tts.apply.addEventListener("click", () => applyVoiceModel("tts"));
 assistantToggle.addEventListener("change", setAssistantState);
+pipelineSelect.addEventListener("change", () => {
+  const realtime = pipelineSelect.value === "openai-realtime";
+  realtimeModelSelect.disabled = !realtime;
+  realtimeVoiceSelect.disabled = !realtime;
+});
+applyPipelineButton.addEventListener("click", applyPipeline);
 loadDashboard();

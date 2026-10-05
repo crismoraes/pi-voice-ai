@@ -4,6 +4,16 @@
 
 ### Added
 
+- Seletor persistente **Voice pipeline** entre Chained e OpenAI Realtime, com
+  modelo e voz Realtime em allowlists configuráveis.
+- WebRTC nativo do OpenAI Realtime no navegador pela interface unificada
+  `/v1/realtime/calls`; a chave OpenAI permanece no backend.
+- WebSocket Realtime persistente para áudio USB no Raspberry Pi, com captura e
+  reprodução half-duplex compatíveis com a interface P10S.
+- Contabilização separada de tokens de texto, áudio e cache do Realtime, com
+  estimativa de custo e identificação do pipeline em **Recent turns**.
+- APIs `PUT /api/system/pipeline`, `POST /api/realtime/calls` e
+  `POST /api/realtime/usage`.
 - Chave persistente **Voice assistant On/Off** no dashboard para interromper a
   captura USB, pausar WebRTC e impedir novos consumos de LLM durante desenvolvimento.
 - API `PUT /api/system/assistant` e estado local atômico com permissão `0600`.
@@ -28,7 +38,11 @@
 
 ### Changed
 
-- Versão de desenvolvimento elevada para `1.1.0.dev0`.
+- Versão de desenvolvimento elevada para `1.2.0.dev0`.
+- O SDK OpenAI é instalado com o extra `realtime` para suportar o transporte
+  WebSocket no servidor.
+- A página principal escolhe automaticamente o transporte Chained ou Realtime e
+  encerra a sessão direta quando Off, pipeline, modelo ou voz mudam no dashboard.
 - `httpx` passa a ser dependência de runtime para o servidor local.
 - Limiar padrão do Silero VAD ajustado para `0.4` e silêncio final para `1.2 s`
   após falas reais curtas e sinal baixo no microfone USB.
@@ -73,11 +87,6 @@
 - Troca OpenAI/llama.cpp nos dois sentidos e persistência local após reinício.
 - Tokens locais armazenados sem custo de nuvem; ambos os serviços ativos com zero
   reinícios, sem erros, 5,3 GiB disponíveis, 46,6 °C e sem throttling.
-
-### Planned
-
-- Fase 12: seletor de Voice pipeline entre Chained e OpenAI Realtime, com WebRTC
-  para navegador, WebSocket half-duplex para USB e métricas próprias de áudio/custo.
 
 ## [1.0.0] - 2026-09-26
 
