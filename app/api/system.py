@@ -88,6 +88,7 @@ async def system_info() -> dict[str, object]:
             "realtime_models": list(voice_pipeline.realtime_models),
             "realtime_voice": voice_pipeline.realtime_voice,
             "realtime_voices": list(voice_pipeline.realtime_voices),
+            "max_output_tokens": settings.realtime_max_output_tokens,
         },
         "llm": {
             "provider": language_model.provider,

@@ -93,6 +93,9 @@ class Settings(BaseSettings):
     realtime_timeout_seconds: float = Field(
         default=45, ge=5, le=180, alias="REALTIME_TIMEOUT_SECONDS"
     )
+    realtime_max_output_tokens: int = Field(
+        default=2048, ge=64, le=32768, alias="REALTIME_MAX_OUTPUT_TOKENS"
+    )
     realtime_text_input_price_per_million: float = Field(
         default=4.00, ge=0, alias="REALTIME_TEXT_INPUT_PRICE_PER_MILLION"
     )

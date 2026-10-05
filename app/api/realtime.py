@@ -71,7 +71,7 @@ async def create_realtime_call(
         "model": voice_pipeline.realtime_model,
         "instructions": settings.llm_instructions,
         "output_modalities": ["audio"],
-        "max_output_tokens": settings.openai_max_output_tokens,
+        "max_output_tokens": settings.realtime_max_output_tokens,
         "audio": {
             "input": {
                 "turn_detection": {

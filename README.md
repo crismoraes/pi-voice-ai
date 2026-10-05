@@ -215,6 +215,7 @@ depois snapshots datados, sempre preferindo o nome mais específico; assim, o su
 | `REALTIME_MODELS` | completo e Mini | Allowlist exibida no combobox |
 | `REALTIME_VOICE(S)` | `marin` / lista oficial | Voz inicial e allowlist |
 | `REALTIME_TIMEOUT_SECONDS` | `45` | Limite de um turno USB |
+| `REALTIME_MAX_OUTPUT_TOKENS` | `2048` | Teto independente para respostas faladas |
 | `REALTIME_*_PRICE_PER_MILLION` | conforme tabela atual | Custos do modelo completo |
 | `REALTIME_MINI_*_PRICE_PER_MILLION` | conforme tabela atual | Custos do Mini |
 | `REALTIME_PRICING_DATE` | `2026-10-05` | Data do snapshot de preços |
@@ -239,6 +240,13 @@ Realtime → Chained persistiu em modo `0600`; com o assistente Off, uma nova ch
 foi bloqueada com `409`. O dashboard respondeu `200`, o serviço ficou ativo com
 `NRestarts=0` e sem alertas. O estado final seguro preservou Chained e Off para que a
 aceitação física seja iniciada deliberadamente pelo dashboard.
+
+Se a voz parar no meio de uma frase, consulte `output_tokens` em **Recent turns** e
+`REALTIME_USB_RESPONSE_INCOMPLETE` no journal. Na primeira prova física, sete turnos
+terminaram com exatamente 300 tokens e cerca de 10 segundos de áudio. O Realtime
+estava herdando `OPENAI_MAX_OUTPUT_TOKENS=300`, criado para respostas textuais. A
+configuração foi separada e elevada para 2.048. Esse valor é um teto, não uma reserva:
+respostas curtas continuam cobrando apenas os tokens realmente usados.
 
 ## Fase 10 — dashboard local de tokens e custos
 

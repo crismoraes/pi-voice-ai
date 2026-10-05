@@ -1360,6 +1360,20 @@ sanitizada apresentou os dois modelos, aceitou Mini pelo mesmo endpoint do combo
 e voltou ao modelo completo. O estado final permaneceu Chained e Off, com serviço
 ativo, `NRestarts=0` e nenhum warning no journal.
 
+### Correção de respostas cortadas
+
+Na prova física, a voz parava no meio de frases longas. O histórico mostrou vários
+turnos com `output_tokens=300` e áudio entre 9,7 e 10,5 segundos, tanto no Mini quanto
+no modelo completo. Isso comprovou que não era falha da P10S nem da rede: o Realtime
+estava reutilizando `OPENAI_MAX_OUTPUT_TOKENS=300` da Responses API.
+
+`REALTIME_MAX_OUTPUT_TOKENS` agora é uma configuração separada, com padrão 2.048,
+usada nas sessões WebRTC e WebSocket. O backend USB registra `response.status` e
+`status_details.reason`; uma resposta incompleta gera
+`REALTIME_USB_RESPONSE_INCOMPLETE`. O navegador também mostra uma mensagem específica
+quando o motivo é `max_output_tokens`. O teto maior permite respostas longas, mas a
+cobrança continua baseada apenas nos tokens efetivamente gerados.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
@@ -1424,6 +1438,19 @@ aplay -l
 
 Se a P10S retornar `Input/output error`, use o procedimento de `usbreset` documentado
 nesta seção e reinicie apenas `pi-voice-ai.service`.
+
+## Se a voz Realtime parar no meio de uma frase
+
+Confira se a linha do turno terminou exatamente no teto configurado e procure o
+motivo incompleto:
+
+```bash
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager \
+  | grep REALTIME_USB_RESPONSE_INCOMPLETE
+```
+
+O padrão atual é `REALTIME_MAX_OUTPUT_TOKENS=2048`. Mantenha respostas normalmente
+concisas e aumente esse valor somente quando o caso de uso exigir falas ainda maiores.
 
 ## Como confirmar os tokens e o custo do Realtime
 

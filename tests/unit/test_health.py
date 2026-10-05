@@ -50,6 +50,7 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
         "gpt-realtime-2.1",
         "gpt-realtime-2.1-mini",
     ]
+    assert payload["pipeline"]["max_output_tokens"] == 2048
     assert "marin" in payload["pipeline"]["realtime_voices"]
     assert payload["llm"]["model"]
     assert payload["llm"]["provider"] in {"openai", "llama.cpp"}

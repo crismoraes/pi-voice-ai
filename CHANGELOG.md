@@ -40,6 +40,8 @@
 
 ### Changed
 
+- Realtime passa a usar `REALTIME_MAX_OUTPUT_TOKENS=2048`, separado do limite de
+  300 tokens da Responses API, para não cortar áudio por volta de dez segundos.
 - Versão de desenvolvimento elevada para `1.2.0.dev0`.
 - O SDK OpenAI é instalado com o extra `realtime` para suportar o transporte
   WebSocket no servidor.
@@ -55,6 +57,9 @@
 
 ### Fixed
 
+- Respostas Realtime interrompidas no meio da fala ao atingir exatamente 300 tokens.
+  USB agora registra status/motivo incompleto no journal e o navegador informa o
+  encerramento incompleto na interface.
 - Inicialização do Uvicorn deixa de reimportar `app.main`, evitando callbacks e
   eventos duplicados ao alternar o estado do assistente.
 - Teste do endpoint de streaming agora isola explicitamente o estado On e não

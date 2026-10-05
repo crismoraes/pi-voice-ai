@@ -108,16 +108,35 @@ class OpenAIRealtimeUsbPipeline:
                             )
                         elif event_type == "response.done":
                             response = payload.get("response", {})
+                            response_status = response.get("status", "unknown")
+                            status_details = response.get("status_details") or {}
+                            incomplete_reason = status_details.get("reason")
                             await self._record_usage(
                                 response,
                                 first_audio_seconds,
                                 perf_counter() - started_at,
                             )
+                            if response_status != "completed":
+                                logger.warning(
+                                    "REALTIME_USB_RESPONSE_INCOMPLETE",
+                                    extra={
+                                        "model": self._connection_model,
+                                        "response_status": response_status,
+                                        "incomplete_reason": incomplete_reason,
+                                        "output_tokens": (
+                                            (response.get("usage") or {}).get(
+                                                "output_tokens"
+                                            )
+                                        ),
+                                    },
+                                )
                             logger.info(
                                 "REALTIME_USB_TURN_COMPLETED",
                                 extra={
                                     "model": self._connection_model,
                                     "voice": self._connection_voice,
+                                    "response_status": response_status,
+                                    "incomplete_reason": incomplete_reason,
                                     "first_audio_seconds": round(
                                         first_audio_seconds or 0, 3
                                     ),

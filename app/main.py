@@ -53,7 +53,7 @@ realtime_usb = OpenAIRealtimeUsbPipeline(
     model_getter=lambda: voice_pipeline.realtime_model,
     voice_getter=lambda: voice_pipeline.realtime_voice,
     instructions=settings.llm_instructions,
-    max_output_tokens=settings.openai_max_output_tokens,
+    max_output_tokens=settings.realtime_max_output_tokens,
     timeout_seconds=settings.realtime_timeout_seconds,
 )
 voice_pipeline_router = VoicePipelineRouter(

@@ -48,6 +48,7 @@ def test_browser_realtime_call_uses_unified_interface(monkeypatch) -> None:
     assert observed["url"] == "https://api.openai.com/v1/realtime/calls"
     session = json.loads(observed["files"]["session"][1])
     assert session["model"] == "gpt-realtime-2.1"
+    assert session["max_output_tokens"] == 2048
     assert session["audio"]["output"]["voice"] == "marin"
     assert session["audio"]["input"]["turn_detection"]["type"] == "semantic_vad"
     assert "OpenAI-Safety-Identifier" in observed["headers"]
@@ -100,6 +101,7 @@ def test_usb_realtime_resamples_streams_audio_and_records_numeric_usage(
     response = {
         "id": "resp_test",
         "model": "gpt-realtime-2.1",
+        "status": "completed",
         "usage": {
             "input_tokens": 12,
             "output_tokens": 8,

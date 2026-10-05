@@ -119,7 +119,15 @@ function handleRealtimeEvent(message) {
   } else if (event.type === "response.done") {
     if (!assistantText.textContent) assistantText.textContent = "Resposta de áudio concluída.";
     void reportRealtimeUsage(event.response).catch((error) => { errorText.textContent = error.message; });
-    setStatus("OpenAI Realtime — pode falar novamente", "connected");
+    if (event.response?.status && event.response.status !== "completed") {
+      const reason = event.response.status_details?.reason;
+      errorText.textContent = reason === "max_output_tokens"
+        ? "A resposta atingiu o limite de saída configurado."
+        : `A resposta terminou incompleta (${reason || event.response.status}).`;
+      setStatus("Resposta Realtime incompleta", "connecting");
+    } else {
+      setStatus("OpenAI Realtime — pode falar novamente", "connected");
+    }
   } else if (event.type === "error") {
     errorText.textContent = event.error?.message || "OpenAI Realtime returned an error.";
     setStatus("OpenAI Realtime conectado", "connected");

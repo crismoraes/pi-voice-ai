@@ -478,6 +478,14 @@ API exposed both model aliases, accepted a Mini selection through the dashboard
 endpoint, then restored the full model. Final state remains Chained and Off; the
 service is active with `NRestarts=0` and no warning-priority journal entries.
 
+Physical Realtime testing exposed deterministic mid-sentence cutoffs: seven recent
+turns reached exactly 300 output tokens, with roughly 9.7 to 10.5 seconds of audio,
+across Mini and full models. Realtime had reused the Responses API setting
+`OPENAI_MAX_OUTPUT_TOKENS=300`. Realtime now has an independent
+`REALTIME_MAX_OUTPUT_TOKENS` default of 2048 for both WebRTC and USB WebSocket
+sessions. USB logs sanitized response status and incomplete reason through
+`REALTIME_USB_RESPONSE_INCOMPLETE`; the browser surfaces incomplete responses too.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.
