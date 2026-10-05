@@ -1191,8 +1191,119 @@ O registro de consumo confirmou 48 tokens de entrada, 8 de saída, 56 no total e
 nenhum custo de nuvem. `pi-voice-ai.service` e `pi-voice-ai-llm.service` permaneceram
 ativos, com zero reinícios e nenhum erro recente. O `llama-server` estava ligado
 somente a `127.0.0.1:8081`. Durante a verificação havia 5,3 GiB de RAM disponível,
-temperatura de 46,6 °C, swap sem uso e `throttled=0x0`. Falta a conversa física do
-aluno para avaliar STT, qualidade da resposta e TTS juntos antes do marco 1.1.0.
+temperatura de 46,6 °C, swap sem uso e `throttled=0x0`. A validação física seguinte
+confirmou perguntas consecutivas pelo microfone e respostas no alto-falante depois
+da correção que serializa a captura e a reprodução da P10S.
+
+## Planejamento da Fase 11 — seleção de STT e TTS
+
+### Objetivo da aula
+
+Permitir que o aluno compare qualidade, latência e consumo de memória sem editar o
+`.env` ou reiniciar o serviço. O dashboard continuará em inglês e terá três linhas
+independentes: LLM provider/model, STT provider/model e TTS provider/model.
+
+O Pi já possui os seguintes candidatos:
+
+```text
+STT / Local (sherpa-onnx)
+  - Whisper Small INT8  -> qualidade atual em português
+  - Whisper Tiny INT8   -> menor latência e menor uso de memória
+
+TTS / Local (sherpa-onnx)
+  - Piper pt_BR Jeff Medium
+```
+
+Mesmo havendo somente uma voz TTS agora, o combobox nasce com o mesmo contrato dos
+demais. Assim, adicionar outra voz Piper ou um provedor de nuvem exigirá apenas
+registrar uma opção allowlisted.
+
+### Contrato planejado
+
+`GET /api/system/info` continuará sanitizado e acrescentará `provider`, `options` e
+`available` a STT e TTS. As escritas serão:
+
+```http
+PUT /api/system/stt
+Content-Type: application/json
+
+{"provider":"sherpa-onnx","model":"whisper-tiny-int8"}
+```
+
+```http
+PUT /api/system/tts
+Content-Type: application/json
+
+{"provider":"sherpa-onnx","model":"pt_BR-jeff-medium"}
+```
+
+Os arquivos `data/stt-selection.json` e `data/tts-selection.json` serão atômicos,
+ignorados pelo Git e gravados como `0600`. A API aceitará somente nomes conhecidos;
+caminhos de modelo nunca virão do navegador.
+
+### Troca segura em runtime
+
+Um coordenador fornecerá ao `ConversationManager` um snapshot de STT, LLM e TTS no
+começo de cada turno. Uma alteração aguardará o turno que já está usando o modelo,
+carregará e aquecerá o candidato, persistirá a seleção e só então descartará o
+adaptador anterior. Se o warm-up falhar, a API responderá `503` e o modelo atual
+continuará ativo. Esse fluxo evita misturar duas vozes entre trechos do mesmo TTS e
+evita acumular modelos grandes na RAM do Raspberry Pi.
+
+### Critérios de aceitação
+
+1. Trocar Small para Tiny e voltar para Small pelo dashboard.
+2. Confirmar persistência após restart do serviço.
+3. Simular modelo ausente e comprovar rollback sem interromper o assistente.
+4. Fazer uma conversa física com cada STT e registrar RTF, qualidade, RAM e temperatura.
+5. Aplicar TTS durante uma conversa longa e comprovar que a voz muda apenas no turno seguinte.
+6. Confirmar que `/api/system/info` não revela caminhos nem credenciais.
+
+## Planejamento da Fase 12 — OpenAI Realtime
+
+OpenAI Realtime executa speech-to-speech, mantém estado de conversa e coordena
+turnos, interrupções e ferramentas dentro de uma sessão. Por isso, tratá-lo como
+apenas mais um modelo no combobox STT ou TTS produziria uma arquitetura incorreta.
+A interface ganhará um nível acima:
+
+```text
+Voice pipeline
+  - Chained (VAD -> STT -> LLM -> TTS)
+  - OpenAI Realtime (audio -> realtime session -> audio)
+```
+
+Quando **Chained** estiver ativo, os três seletores continuam disponíveis. Quando
+**OpenAI Realtime** estiver ativo, eles permanecem salvos, mas desabilitados, e o
+dashboard mostra `Realtime model` e `Voice`. Voltar para Chained restaura exatamente
+as escolhas anteriores.
+
+Para o navegador, o backend criará uma credencial efêmera e o frontend conectará
+por WebRTC. Para o microfone e alto-falante USB, o Raspberry Pi manterá uma conexão
+WebSocket no servidor. Como a P10S apresentou falha em full-duplex, o primeiro modo
+USB será half-duplex: captura, envio, resposta e reprodução em sequência. A chave
+`OPENAI_API_KEY` fica somente no Pi.
+
+Métricas Realtime serão guardadas separadamente: tokens de áudio de entrada e saída,
+tokens de texto, duração da sessão, primeiro áudio e custo estimado. O botão global
+On/Off deverá encerrar a sessão ativa e impedir uma nova conexão, preservando a
+garantia de zero consumo enquanto estiver Off.
+
+A documentação oficial consultada em 5 de outubro de 2026 usa
+`gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
+servidor, e orienta novas integrações a usar a interface GA. O modelo será uma
+allowlist configurável, sem dependência permanente desse alias:
+
+- [Getting started with the Realtime API](https://developers.openai.com/api/docs/guides/realtime)
+- [Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
+- [Text to speech](https://developers.openai.com/api/docs/guides/text-to-speech)
+
+### Ordem de implementação
+
+1. Entregar e validar os seletores STT/TTS locais da Fase 11.
+2. Introduzir `VoicePipeline` mantendo Chained como padrão.
+3. Implementar Realtime no navegador com credenciais efêmeras.
+4. Implementar Realtime USB por WebSocket e validar half-duplex na P10S.
+5. Adicionar métricas de áudio/custo e testes de fallback para o pipeline Chained.
 
 # Perguntas frequentes e troubleshooting do curso
 

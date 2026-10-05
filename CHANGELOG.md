@@ -45,12 +45,21 @@
   o serviço voltou ativo, sem reinícios, com um único `arecord` e estado On.
 - Trinta e quatro testes aprovados após adicionar a sincronização entre captura e
   reprodução USB.
+- Perguntas físicas consecutivas confirmaram captura e reprodução estáveis depois
+  de remover o acesso simultâneo do `arecord` e `aplay` à P10S.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.
 - Troca OpenAI/llama.cpp nos dois sentidos e persistência local após reinício.
 - Tokens locais armazenados sem custo de nuvem; ambos os serviços ativos com zero
   reinícios, sem erros, 5,3 GiB disponíveis, 46,6 °C e sem throttling.
+
+### Planned
+
+- Fase 11: seletores persistentes e allowlisted de provider/model para STT e TTS,
+  começando por Whisper Small/Tiny INT8 e Piper pt_BR Jeff Medium já instalados.
+- Fase 12: seletor de Voice pipeline entre Chained e OpenAI Realtime, com WebRTC
+  para navegador, WebSocket half-duplex para USB e métricas próprias de áudio/custo.
 
 ## [1.0.0] - 2026-09-26
 

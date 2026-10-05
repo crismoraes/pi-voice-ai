@@ -401,6 +401,25 @@ after the turn. Preserve concurrent capture only when barge-in is explicitly on.
 Validate repeated physical turns and the paired `USB_CAPTURE_PAUSED_FOR_TURN` /
 `USB_CAPTURE_RESUMED_AFTER_TURN` events after deployment.
 
+The user completed the repeated physical test and confirmed the serialized USB
+capture/playback fix works. The next roadmap item is runtime STT and TTS selection
+from the English dashboard. The Pi currently has Whisper Small INT8, Whisper Tiny
+INT8 and Piper pt_BR Jeff Medium installed. Implement allowlisted provider/model
+selectors with atomic mode-0600 persistence, readiness checks, rollback and release
+of the previous local model. A whole voice turn must pin one STT/LLM/TTS snapshot so
+an Apply action cannot mix models or TTS voices inside the same turn. Never accept
+model paths from the client.
+
+Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
+STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent
+STT or TTS model. Chained remains the default and its selections remain persisted
+while Realtime is active. Follow the current GA OpenAI documentation at
+implementation time: browser transport uses WebRTC with a server-created ephemeral
+credential; Raspberry Pi USB transport uses a server-side WebSocket and starts in
+half-duplex because the P10S is unreliable under simultaneous capture/playback.
+The global assistant Off state must terminate or prevent Realtime sessions. Track
+Realtime audio/text usage and cost separately without storing audio or transcripts.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

@@ -115,8 +115,63 @@ OpenAI → llama.cpp → OpenAI → llama.cpp funcionou e a opção local perman
 após reiniciar a aplicação. O turno local guardou 48 tokens de entrada, 8 de saída
 e custo de nuvem nulo. Ambos os serviços ficaram ativos, com `NRestarts=0`, sem
 erros recentes, 5,3 GiB de RAM disponível, temperatura de 46,6 °C e
-`throttled=0x0`. A aceitação física pelo microfone e alto-falante ainda é necessária
-antes de publicar `v1.1.0`.
+`throttled=0x0`. A validação física posterior confirmou perguntas consecutivas pelo
+microfone e respostas no alto-falante após serializar captura e reprodução da P10S.
+
+## Roadmap — seleção de STT, TTS e OpenAI Realtime
+
+A próxima melhoria será dividida em duas fases para manter clara a diferença entre
+um pipeline encadeado e um modelo nativo de áudio.
+
+### Fase 11 — STT e TTS selecionáveis
+
+O dashboard ganhará controles em inglês equivalentes aos do LLM:
+
+| Componente | Provider inicial | Modelos instalados no Pi |
+| --- | --- | --- |
+| STT | `Local (sherpa-onnx)` | `Whisper Small INT8`, `Whisper Tiny INT8` |
+| TTS | `Local (sherpa-onnx)` | `Piper pt_BR Jeff Medium` |
+
+As escolhas serão allowlisted, persistidas fora do Git e aplicadas somente a novos
+turnos. O backend carregará e validará o novo modelo antes da troca, conservará o
+modelo anterior se o carregamento falhar e descarregará o anterior depois do swap
+para recuperar RAM. Nenhum caminho informado pelo navegador será aceito.
+
+APIs planejadas:
+
+```text
+PUT /api/system/stt  {"provider":"sherpa-onnx","model":"whisper-small-int8"}
+PUT /api/system/tts  {"provider":"sherpa-onnx","model":"pt_BR-jeff-medium"}
+GET /api/system/info
+```
+
+Um turno inteiro manterá o snapshot de STT, LLM e TTS que estava ativo quando a
+fala começou. Dessa forma, clicar em **Apply STT**, **Apply LLM** ou **Apply TTS**
+durante uma resposta não mistura modelos ou vozes no mesmo turno.
+
+### Fase 12 — Voice pipeline selecionável
+
+OpenAI Realtime será uma opção de **Voice pipeline**, e não um modelo isolado de
+STT ou TTS. O dashboard oferecerá inicialmente:
+
+```text
+Chained          -> VAD -> STT -> LLM -> TTS
+OpenAI Realtime  -> áudio bidirecional em uma sessão de voz
+```
+
+No modo Realtime, os seletores encadeados continuam salvos, mas ficam inativos; a
+interface mostra o modelo Realtime e a voz da sessão. Para USB, o Pi usará WebSocket
+no servidor e manterá a P10S em half-duplex. Para navegador, a conexão preferida é
+WebRTC com credencial efêmera criada pelo backend. A chave OpenAI nunca será enviada
+ao dashboard. Tokens de áudio/texto, duração e custo estimado terão métricas próprias.
+
+A documentação oficial atual apresenta `gpt-realtime-2.1` como exemplo, recomenda
+WebRTC no navegador ou WebSocket no servidor e descreve o Realtime como uma sessão
+speech-to-speech com turnos, interrupções e ferramentas. O modelo continuará em uma
+allowlist configurável para não fixar no código um alias que possa mudar. Consulte
+[Getting started with the Realtime API](https://developers.openai.com/api/docs/guides/realtime),
+[Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
+e [Text to speech](https://developers.openai.com/api/docs/guides/text-to-speech).
 
 ## Fase 10 — dashboard local de tokens e custos
 
