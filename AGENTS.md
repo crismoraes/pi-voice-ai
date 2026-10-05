@@ -428,6 +428,15 @@ not previously stored. The SQLite migration also reserves numeric audio input an
 output token fields for Phase 12; it still stores no audio, transcript, prompt or
 response text.
 
+The history enhancement passed 42 tests on Windows and Raspberry Pi ARM64. The
+existing database migrated in place to all eight metadata/audio-token columns, and
+the read API returned the new contract while preserving old rows with null STT/TTS
+metadata. The deployed service is healthy at commit `6319ccb`, with Small, Qwen
+local and Jeff selected. It retained the user's saved Off state. Because interactive
+sudo was unavailable, the application user's old process was deliberately killed
+once and systemd recovered it; this accounts for `NRestarts=1`. The new instance
+has no error-priority journal entries.
+
 Plan OpenAI Realtime as a separate `Voice pipeline` choice above the chained
 STT -> LLM -> TTS selectors. It is a speech-to-speech session, not an independent
 STT or TTS model. Chained remains the default and its selections remain persisted

@@ -64,6 +64,9 @@
   troca e persistência, arquivos `0600`, dashboard atualizado e serviço sem reinícios.
 - O journal confirmou Tiny no turno das `18:33:00` e Small nos turnos a partir de
   `18:34:22`; o usuário confirmou o fluxo e concluiu a aceitação física da Fase 11.
+- Quarenta e dois testes passaram no Windows e no Pi; o banco existente migrou sem
+  perda, a API expôs o novo contrato e o serviço implantado ficou saudável e sem
+  erros após iniciar o commit `6319ccb`.
 - Trinta e três testes aprovados no Windows e no Raspberry Pi ARM64.
 - Qwen local com primeiro texto em 1,221 s e 6,01 tokens/s no benchmark; endpoint
   da aplicação com primeiro texto em 1,495 s e resposta curta em 2,626 s.

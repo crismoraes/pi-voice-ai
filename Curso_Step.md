@@ -1288,6 +1288,14 @@ pipeline Chained. Na Fase 12, eles poderão receber o uso retornado pelo Realtim
 participar do cálculo com uma tabela de preços datada, sem armazenar áudio,
 transcrição, pergunta ou resposta.
 
+Essa evolução passou em 42 testes no Windows e no Raspberry Pi. A implantação
+migrou o `usage.db` existente para as oito colunas novas e a API preservou as linhas
+antigas com STT/TTS nulos. O serviço voltou saudável no commit `6319ccb`, sem erros
+na nova instância, com Small, Qwen local e Jeff selecionados e o assistente no estado
+Off persistido pelo usuário. Como o sudo interativo não estava disponível, o
+processo antigo foi encerrado uma vez para o `Restart=on-failure` do systemd iniciar
+o código novo; por isso essa execução registra `NRestarts=1`.
+
 ## Planejamento da Fase 12 — OpenAI Realtime
 
 OpenAI Realtime executa speech-to-speech, mantém estado de conversa e coordena

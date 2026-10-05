@@ -222,6 +222,11 @@ O schema também possui contadores numéricos de tokens de áudio de entrada e s
 inicialmente zero no pipeline Chained, para integrar o custo do OpenAI Realtime na
 Fase 12 sem mudar a política de privacidade.
 
+A melhoria passou em 42 testes no Windows e no Pi. Na implantação, o banco existente
+recebeu as oito colunas novas sem perder as linhas anteriores; a API apresentou o
+novo contrato e o serviço voltou saudável no commit `6319ccb`, mantendo Whisper
+Small, Qwen local, Piper Jeff e o estado Off já salvo pelo usuário.
+
 | Variável | Padrão | Função |
 | --- | --- | --- |
 | `USAGE_DB_PATH` | `data/usage.db` | Banco SQLite local |
