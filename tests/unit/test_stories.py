@@ -136,3 +136,17 @@ def test_semantic_index_uses_same_local_vector_space_for_query_and_story(tmp_pat
     assert result["semantic"] == "available"
     found = library.search("farol", language="en")
     assert found and found[0].method == "semantic_multilingual_e5"
+
+
+def test_index_chunks_long_paragraphs_within_embedding_limit(tmp_path: Path):
+    section = {
+        "section_order": 1,
+        "text": " ".join(f"word{number}" for number in range(527)),
+        "source_locator": "paragraph:1",
+    }
+
+    chunks = StoryLibrary._chunk_sections([section])
+
+    assert len(chunks) == 4
+    assert all(len(text.split()) <= 180 for _, text, _ in chunks)
+    assert chunks[0][1].split()[-30:] == chunks[1][1].split()[:30]

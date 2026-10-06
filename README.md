@@ -1358,6 +1358,8 @@ Phase 14 adds a private, offline first library for English, Portuguese, and Span
 
 The catalog keeps raw source files, normalized text, split stories, rights evidence, age review, reports, and SQLite FTS5 indexes under `data/story_library/`. This directory is ignored by Git. Search and narration return only records whose rights and editorial review are both `approved`. Web endpoints are read only; approval remains an administrator action through the local CLI because this project does not yet have authenticated dashboard users.
 
+Semantic indexing uses overlapping 180-word windows so multilingual E5 inputs stay within its 512-token context. These search chunks never replace or modify the canonical text used by exact reading.
+
 ```bash
 # Safe starter catalog: three original CC0 samples, no network
 stories bootstrap --offline

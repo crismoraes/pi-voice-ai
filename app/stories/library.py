@@ -499,24 +499,22 @@ class StoryLibrary:
         return {"indexed_stories": indexed, "fts5": fts, "semantic": "available" if semantic else "unavailable", "search_mode": "hybrid" if semantic else ("fts5" if fts else "like")}
 
     @staticmethod
-    def _chunk_sections(sections, target_words: int = 400, overlap_words: int = 50):
+    def _chunk_sections(sections, target_words: int = 180, overlap_words: int = 30):
         chunks = []
         for section in sections:
-            paragraphs = [part.strip() for part in re.split(r"\n\s*\n", section["text"]) if part.strip()]
-            current: list[str] = []
-            count = 0
-            for paragraph in paragraphs:
-                words = paragraph.split()
-                if current and count + len(words) > target_words:
-                    text = "\n\n".join(current)
-                    chunks.append((section["section_order"], text, section["source_locator"]))
-                    tail = text.split()[-overlap_words:]
-                    current = [" ".join(tail)] if tail else []
-                    count = len(tail)
-                current.append(paragraph)
-                count += len(words)
-            if current:
-                chunks.append((section["section_order"], "\n\n".join(current), section["source_locator"]))
+            # E5 accepts at most 512 tokens. Word windows keep even unusually
+            # long source paragraphs below that limit while overlap retains
+            # context. Exact reading still uses the untouched section text.
+            words = section["text"].split()
+            start = 0
+            while start < len(words):
+                window = words[start : start + target_words]
+                if not window:
+                    break
+                chunks.append((section["section_order"], " ".join(window), section["source_locator"]))
+                if start + target_words >= len(words):
+                    break
+                start += target_words - overlap_words
         return chunks
 
     def list_stories(self, *, language: str | None = None, approved_only: bool = True, age: int | None = None, limit: int = 100) -> list[dict[str, object]]:
