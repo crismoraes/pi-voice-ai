@@ -90,6 +90,8 @@
 
 ### Validated
 
+- Avatar SVG validado no HTTPS implantado em captura de navegador de 1.100 × 1.400;
+  os mesmos 53 testes passaram no Windows e no Raspberry Pi ARM64.
 - Cinquenta e três testes passaram no Windows e no Pi ARM64. O botão implantado
   interrompeu uma resposta com 1,949 segundo pendente e a captura USB voltou
   imediatamente, sem warnings ou reinícios do serviço.

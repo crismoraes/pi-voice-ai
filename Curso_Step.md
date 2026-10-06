@@ -1350,6 +1350,11 @@ Remote MediaStream -> AnalyserNode -> GainNode(0) -> audio destination
 O cálculo ocorre no dispositivo que abriu a página. Nenhuma amostra adicional vai
 ao Pi ou ao provedor, e o avatar não altera o histórico, custo ou privacidade.
 
+Os 53 testes passaram no Windows e no Pi ARM64. Uma captura do HTTPS implantado em
+1.100 × 1.400 pixels confirmou o SVG, o estado de espera, o cartão responsivo e os
+controles ao redor. O movimento da boca deve ser aceito com uma conversa WebRTC
+audível, pois uma captura estática não demonstra a análise do áudio.
+
 Quando **Chained** está ativo, os três seletores continuam disponíveis. Quando
 **OpenAI Realtime** está ativo, eles permanecem salvos, mas desabilitados, e o
 dashboard mostra `Realtime model` e `Voice`. Voltar para Chained restaura exatamente

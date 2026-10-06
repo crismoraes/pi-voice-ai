@@ -553,6 +553,10 @@ analysis active without duplicating playback. Decorative SVG/CSS animation inclu
 blink, float, orbit, listening and level effects, and honors
 `prefers-reduced-motion`. Analysis remains client-side and sends or stores no extra
 audio. Always release the AudioContext and animation frame in `closeSession()`.
+Commit `23d9e01` is deployed and all 53 tests pass on Windows and Raspberry Pi
+ARM64. A real 1100 x 1400 headless browser capture confirmed the SVG, idle state,
+responsive card and surrounding controls render correctly over deployed HTTPS.
+Physical WebRTC acceptance still needs to confirm mouth motion against audible speech.
 
 ## Project Goal
 
