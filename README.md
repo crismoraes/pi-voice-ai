@@ -282,6 +282,8 @@ assistente geral em português, contador de histórias, professor de inglês,
 assistente técnico e guia educativo infantil. Escolher um template não muda o
 assistente imediatamente. Revise ou personalize o texto e pressione **Save and
 apply**. Ao editar manualmente, o seletor volta a **Custom / current prompt**.
+O commit `a7f1886` passou nos 59 testes em Windows e Pi ARM64; o seletor e os
+templates foram confirmados no HTML servido, com o serviço ativo.
 
 O estado fica em `data/prompt-state.json`, fora do Git, escrito atomicamente e com
 permissão `0600` no Linux. `/api/system/info` expõe apenas revisão, limite e indicação

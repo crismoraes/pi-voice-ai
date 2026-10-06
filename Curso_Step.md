@@ -1506,6 +1506,9 @@ e não uma configuração rígida. Ele inclui assistente geral, histórias, prof
 inglês, suporte técnico e aprendizagem infantil. A seleção apenas copia o texto para
 o editor. O aluno pode comparar, adaptar e revisar antes de clicar em **Save and
 apply**; isso evita mudar uma conversa por um clique acidental no combobox.
+O commit `a7f1886` passou nos 59 testes no Windows e no Pi ARM64. A página implantada
+serviu o combobox e as opções de histórias e professor de inglês, e o serviço
+permaneceu ativo.
 
 ### Consistência entre provedores
 

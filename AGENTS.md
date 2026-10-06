@@ -566,6 +566,9 @@ mode `0600` on Linux. The English dashboard exposes the prompt only through
 Its client-side `Behavior template` selector fills the editor with five public
 starter prompts but never saves on selection; only `Save and apply` changes runtime
 state. Manual edits return the selector to `Custom / current prompt`.
+Template commit `a7f1886` passed all 59 tests on Windows and Pi ARM64; the deployed
+HTML exposes the selector, Storyteller and English teacher options while the service
+remains active.
 `/api/system/info` contains metadata only. Never log or store prompt text in usage
 history. Chained adapters read it per request. USB Realtime renews its connection
 before the next turn when instructions change. A connected browser sends
