@@ -1,7 +1,7 @@
 """Sanitized runtime technology information and LLM selection."""
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app import __version__
 from app.api.assistant import language_model
@@ -10,6 +10,7 @@ from app.llm.base import LanguageModelUnavailableError
 from app.runtime.current import (
     assistant_control,
     pipeline_selection_lock,
+    prompt_control,
     voice_interrupt_control,
     voice_pipeline,
 )
@@ -38,6 +39,19 @@ class PipelineSelection(BaseModel):
     pipeline: str
     model: str
     voice: str
+
+
+class PromptUpdate(BaseModel):
+    instructions: str = Field(min_length=1, max_length=20000)
+
+
+def _prompt_state() -> dict[str, object]:
+    return {
+        "instructions": prompt_control.instructions,
+        "revision": prompt_control.revision,
+        "is_default": prompt_control.is_default,
+        "max_characters": prompt_control.max_characters,
+    }
 
 
 def _require_chained_pipeline() -> None:
@@ -76,6 +90,11 @@ async def system_info() -> dict[str, object]:
         "assistant": {
             "enabled": assistant_control.enabled,
             "interrupt_available": voice_interrupt_control.available,
+        },
+        "prompt": {
+            "revision": prompt_control.revision,
+            "is_default": prompt_control.is_default,
+            "max_characters": prompt_control.max_characters,
         },
         "pipeline": {
             "id": voice_pipeline.pipeline,
@@ -152,6 +171,31 @@ async def system_info() -> dict[str, object]:
             "tls": settings.tls_enabled,
         },
     }
+
+
+@router.get("/prompt")
+async def get_prompt() -> dict[str, object]:
+    """Return the editable instructions only from the explicit prompt endpoint."""
+    return _prompt_state()
+
+
+@router.put("/prompt")
+async def update_prompt(update: PromptUpdate) -> dict[str, object]:
+    """Persist instructions after the current chained or USB turn completes."""
+    try:
+        async with pipeline_selection_lock:
+            await prompt_control.set_instructions(update.instructions)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _prompt_state()
+
+
+@router.post("/prompt/reset")
+async def reset_prompt() -> dict[str, object]:
+    """Restore the environment-backed default instructions."""
+    async with pipeline_selection_lock:
+        await prompt_control.reset()
+    return _prompt_state()
 
 
 @router.put("/llm")

@@ -17,7 +17,7 @@ from app.llm.base import LanguageModelError, TokenUsage
 from app.llm.llama_cpp import LlamaCppLanguageModel
 from app.llm.openai_responses import OpenAIResponsesLanguageModel
 from app.llm.selector import LanguageModelSelector
-from app.runtime.current import assistant_control
+from app.runtime.current import assistant_control, prompt_control
 from app.usage.runtime import usage_store
 from app.usage.store import UsageTurn
 
@@ -44,7 +44,7 @@ openai_models = {
     model: OpenAIResponsesLanguageModel(
         api_key=openai_key,
         model=model,
-        instructions=settings.llm_instructions,
+        instructions=lambda: prompt_control.instructions,
         max_output_tokens=settings.openai_max_output_tokens,
         timeout_seconds=settings.openai_timeout_seconds,
     )
@@ -54,7 +54,7 @@ local_models = {
     model: LlamaCppLanguageModel(
         base_url=settings.local_llm_base_url,
         model=model,
-        instructions=settings.llm_instructions,
+        instructions=lambda: prompt_control.instructions,
         max_output_tokens=settings.local_llm_max_output_tokens,
         timeout_seconds=settings.local_llm_timeout_seconds,
     )

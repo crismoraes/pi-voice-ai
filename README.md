@@ -270,6 +270,42 @@ resposta sem esperar a reprodução em tempo real, registra o uso ao receber
 `response.done` e depois aguarda o `aplay` terminar. Falhas e cancelamentos sempre
 encerram o processo de reprodução parcial.
 
+### Fase 13 — comportamento do assistente no dashboard
+
+O bloco **Assistant behavior** permite editar as instruções compartilhadas por
+OpenAI Responses, llama.cpp e OpenAI Realtime. **Save and apply** persiste o texto e
+o aplica no próximo turno; **Reset to default** restaura `LLM_INSTRUCTIONS`. Não é
+necessário reiniciar o Raspberry Pi nem o serviço.
+
+O estado fica em `data/prompt-state.json`, fora do Git, escrito atomicamente e com
+permissão `0600` no Linux. `/api/system/info` expõe apenas revisão, limite e indicação
+de padrão. O conteúdo completo existe somente no endpoint específico do editor e não
+é incluído em logs, banco de uso ou **Recent turns**.
+
+```text
+GET  /api/system/prompt
+PUT  /api/system/prompt        {"instructions":"..."}
+POST /api/system/prompt/reset
+```
+
+No pipeline Chained, cada chamada lê o prompt depois de adquirir a trava do turno.
+No Realtime USB, uma mudança renova a sessão antes da próxima fala. No Realtime pelo
+navegador, a página detecta a nova revisão e envia `session.update`; se a IA estiver
+falando, aguarda `response.done` para não alterar a resposta no meio.
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `LLM_INSTRUCTIONS` | resposta curta em português | Texto restaurado pelo reset |
+| `PROMPT_STATE_PATH` | `data/prompt-state.json` | Estado persistente ignorado pelo Git |
+| `PROMPT_MAX_CHARACTERS` | `8000` | Limite aceito pelo editor e API |
+
+Prompts maiores contam como entrada em cada solicitação e podem elevar tokens, custo
+e latência. A Responses API recebe as instruções em `instructions`. No Realtime,
+`session.update` pode atualizar `instructions` durante a sessão; uma string vazia
+limpa o campo, por isso o dashboard rejeita prompts vazios. Consulte a
+[referência da Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+e os [eventos de cliente do Realtime](https://developers.openai.com/api/reference/resources/realtime/client-events).
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de

@@ -43,6 +43,7 @@ def test_browser_realtime_call_uses_unified_interface(monkeypatch) -> None:
     monkeypatch.setattr(realtime_api.voice_pipeline, "_pipeline", "openai-realtime")
     monkeypatch.setattr(realtime_api.voice_pipeline, "_realtime_model", "gpt-realtime-2.1")
     monkeypatch.setattr(realtime_api.voice_pipeline, "_realtime_voice", "marin")
+    monkeypatch.setattr(realtime_api.prompt_control, "_instructions", "Test behavior.")
     response = asyncio.run(exercise())
 
     assert response.status_code == 200
@@ -53,6 +54,7 @@ def test_browser_realtime_call_uses_unified_interface(monkeypatch) -> None:
     assert session["max_output_tokens"] == 2048
     assert session["audio"]["output"]["voice"] == "marin"
     assert session["audio"]["input"]["turn_detection"]["type"] == "semantic_vad"
+    assert session["instructions"] == "Test behavior."
     assert "OpenAI-Safety-Identifier" in observed["headers"]
 
 
@@ -71,6 +73,66 @@ def test_browser_realtime_call_is_blocked_while_assistant_is_off(monkeypatch) ->
     response = asyncio.run(exercise())
 
     assert response.status_code == 409
+
+
+def test_usb_realtime_reconnects_with_updated_instructions() -> None:
+    class Session:
+        def __init__(self) -> None:
+            self.updates = []
+
+        async def update(self, *, session) -> None:
+            self.updates.append(session)
+
+    class Connection:
+        def __init__(self) -> None:
+            self.session = Session()
+            self.closed = False
+
+        async def close(self) -> None:
+            self.closed = True
+
+    class Manager:
+        def __init__(self, connection) -> None:
+            self.connection = connection
+
+        async def enter(self):
+            return self.connection
+
+    class Realtime:
+        def __init__(self) -> None:
+            self.connections = []
+
+        def connect(self, **kwargs):
+            connection = Connection()
+            self.connections.append(connection)
+            return Manager(connection)
+
+    current = {"instructions": "First behavior."}
+    pipeline = OpenAIRealtimeUsbPipeline(
+        api_key="",
+        model_getter=lambda: "gpt-realtime-2.1",
+        voice_getter=lambda: "marin",
+        instructions=lambda: current["instructions"],
+        max_output_tokens=100,
+        timeout_seconds=5,
+    )
+    realtime = Realtime()
+    pipeline._client = SimpleNamespace(realtime=realtime)
+
+    async def exercise():
+        first = await pipeline._ensure_connection()
+        same = await pipeline._ensure_connection()
+        current["instructions"] = "Second behavior."
+        second = await pipeline._ensure_connection()
+        return first, same, second
+
+    first, same, second = asyncio.run(exercise())
+
+    assert first is same
+    assert second is not first
+    assert first.closed is True
+    assert first.session.updates[0]["instructions"] == "First behavior."
+    assert second.session.updates[0]["instructions"] == "Second behavior."
 
 
 def test_usb_realtime_resamples_streams_audio_and_records_numeric_usage(

@@ -3,6 +3,7 @@ import asyncio
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.runtime.prompt import PromptControl
 
 
 async def get_health():
@@ -48,6 +49,10 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
     assert response.status_code == 200
     assert isinstance(payload["assistant"]["enabled"], bool)
     assert isinstance(payload["assistant"]["interrupt_available"], bool)
+    assert isinstance(payload["prompt"]["revision"], int)
+    assert isinstance(payload["prompt"]["is_default"], bool)
+    assert payload["prompt"]["max_characters"] == 8000
+    assert "instructions" not in payload["prompt"]
     assert payload["pipeline"]["id"] in {"chained", "openai-realtime"}
     assert payload["pipeline"]["realtime_model"] == "gpt-realtime-2.1"
     assert payload["pipeline"]["realtime_models"] == [
@@ -97,12 +102,50 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert "Voice assistant" in response.text
     assert 'id="assistant-enabled"' in response.text
     assert 'id="interrupt-assistant"' in response.text
+    assert 'id="assistant-prompt"' in response.text
+    assert 'id="save-prompt"' in response.text
+    assert 'id="reset-prompt"' in response.text
     assert "Consumo" not in response.text
     assert 'id="tech-llm"' in response.text
     assert 'id="tech-stt"' in response.text
     assert 'id="tech-tts"' in response.text
     assert 'id="apply-stt"' in response.text
     assert 'id="apply-tts"' in response.text
+
+
+def test_prompt_api_updates_and_resets_persistent_behavior(monkeypatch, tmp_path) -> None:
+    control = PromptControl(
+        default_instructions="Default behavior.",
+        state_path=tmp_path / "prompt.json",
+        max_characters=100,
+    )
+    monkeypatch.setattr("app.api.system.prompt_control", control)
+
+    async def exercise():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            initial = await client.get("/api/system/prompt")
+            updated = await client.put(
+                "/api/system/prompt", json={"instructions": "Custom behavior."}
+            )
+            reset = await client.post("/api/system/prompt/reset")
+            invalid = await client.put(
+                "/api/system/prompt", json={"instructions": "x" * 101}
+            )
+            return initial, updated, reset, invalid
+
+    initial, updated, reset, invalid = asyncio.run(exercise())
+
+    assert initial.json()["instructions"] == "Default behavior."
+    assert updated.json() == {
+        "instructions": "Custom behavior.",
+        "revision": 1,
+        "is_default": False,
+        "max_characters": 100,
+    }
+    assert reset.json()["instructions"] == "Default behavior."
+    assert reset.json()["revision"] == 2
+    assert invalid.status_code == 422
 
 
 def test_manual_interrupt_endpoint_reports_active_response(monkeypatch) -> None:

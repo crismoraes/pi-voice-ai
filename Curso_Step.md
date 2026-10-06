@@ -1480,6 +1480,69 @@ sessão com `409` enquanto Off. O dashboard respondeu `200`, o serviço permanec
 ativo, com `NRestarts=0` e sem entradas de warning no journal. Chained e Off foram
 restaurados antes da etapa física para evitar consumo involuntário.
 
+## Fase 13 — prompt dinâmico e persistente
+
+### Objetivo da aula
+
+Transformar `LLM_INSTRUCTIONS` em um padrão restaurável e permitir que o aluno mude
+a personalidade, o idioma, a extensão e as regras do assistente pelo dashboard. A
+mesma configuração deve alcançar os três caminhos existentes:
+
+```text
+Assistant behavior
+  +-> OpenAI Responses
+  +-> llama.cpp / Qwen local
+  +-> OpenAI Realtime (WebRTC e USB)
+```
+
+O dashboard, mantido em inglês, oferece uma área de texto, contador de caracteres,
+revisão, **Save and apply** e **Reset to default**. O backend valida texto não vazio,
+remove espaços externos e limita o tamanho a `PROMPT_MAX_CHARACTERS=8000`. Cada
+alteração incrementa a revisão e grava `data/prompt-state.json` por substituição
+atômica; no Linux o arquivo recebe modo `0600`.
+
+### Consistência entre provedores
+
+Os adaptadores de Responses e llama.cpp recebem uma função que lê as instruções no
+início de cada solicitação. A trava do turno faz uma alteração esperar o turno
+Chained ou USB atual acabar. No Realtime USB, modelo, voz e instruções identificam a
+sessão reutilizável; mudar qualquer um fecha a conexão antiga antes da próxima fala.
+
+Uma sessão Realtime WebRTC pertence diretamente ao navegador. A página consulta
+`/api/system/info` a cada dois segundos, compara a revisão e envia pelo canal de dados:
+
+```json
+{"type":"session.update","session":{"type":"realtime","instructions":"..."}}
+```
+
+Se `response.created` já ocorreu, a página adia esse evento até `response.done`.
+Assim, uma resposta não troca de comportamento no meio da fala. A sessão permanece
+conectada e o próximo turno usa as instruções novas.
+
+### Privacidade, custo e demonstração
+
+O endpoint geral retorna somente `revision`, `is_default` e `max_characters`. O texto
+fica restrito a `/api/system/prompt`, necessário para preencher o editor. Logs e
+SQLite continuam armazenando somente IDs, tempos, tokens e custos. Nunca projete um
+prompt privado durante a gravação do curso.
+
+Explique que o prompt participa dos tokens de entrada e que regras extensas podem
+aumentar custo e latência. Demonstre salvar uma regra curta, conversar uma vez com
+OpenAI, uma vez com llama.cpp e uma vez com Realtime, e então restaurar o padrão sem
+reiniciar o serviço.
+
+A documentação oficial consultada em 5 de outubro de 2026 descreve `instructions`
+como mensagem de sistema/desenvolvedor na Responses API e permite atualizar
+`instructions` com `session.update` no Realtime:
+
+- [Responses API — create](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+- [Realtime client events](https://developers.openai.com/api/reference/resources/realtime/client-events)
+- [Realtime conversations](https://developers.openai.com/api/docs/guides/realtime-conversations)
+
+Os testes automatizados cobrem persistência, revisão, reset, limites, payloads dos
+dois LLMs, criação Realtime no navegador e renovação da sessão USB. A implantação e
+a prova física devem ser registradas depois da execução no Raspberry Pi.
+
 # Perguntas frequentes e troubleshooting do curso
 
 ## Se OpenAI Realtime aparecer indisponível no dashboard

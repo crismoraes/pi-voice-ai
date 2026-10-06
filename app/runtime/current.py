@@ -4,6 +4,7 @@ import asyncio
 
 from app.config import get_settings
 from app.runtime.control import AssistantControl, VoiceInterruptControl
+from app.runtime.prompt import PromptControl
 from app.runtime.voice_pipeline import VoicePipelineControl
 
 settings = get_settings()
@@ -13,6 +14,11 @@ assistant_control = AssistantControl(
 )
 voice_interrupt_control = VoiceInterruptControl()
 pipeline_selection_lock = asyncio.Lock()
+prompt_control = PromptControl(
+    default_instructions=settings.llm_instructions,
+    state_path=settings.prompt_state_path,
+    max_characters=settings.prompt_max_characters,
+)
 voice_pipeline = VoicePipelineControl(
     default_pipeline=settings.voice_pipeline,
     selection_path=settings.pipeline_selection_path,

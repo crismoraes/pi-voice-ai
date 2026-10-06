@@ -29,6 +29,9 @@ let realtimeModel = null;
 let realtimeVoice = null;
 let realtimeResponseStartedAt = null;
 let realtimeFirstAudioAt = null;
+let realtimePromptRevision = null;
+let pendingPromptRevision = null;
+let realtimeResponseActive = false;
 let runtimePoller = null;
 let avatarAudioContext = null;
 let avatarAudioSource = null;
@@ -201,6 +204,7 @@ function handleRealtimeEvent(message) {
   } else if (event.type === "conversation.item.input_audio_transcription.completed") {
     transcriptText.textContent = event.transcript || "Fala recebida.";
   } else if (event.type === "response.created") {
+    realtimeResponseActive = true;
     realtimeResponseStartedAt = performance.now();
     realtimeFirstAudioAt = null;
     assistantText.textContent = "";
@@ -215,6 +219,8 @@ function handleRealtimeEvent(message) {
     assistantText.textContent += event.delta || "";
     setStatus("Reproduzindo resposta Realtime…", "connected");
   } else if (event.type === "response.done") {
+    realtimeResponseActive = false;
+    if (pendingPromptRevision != null) void syncRealtimePrompt(pendingPromptRevision);
     if (!assistantText.textContent) assistantText.textContent = "Resposta de áudio concluída.";
     void reportRealtimeUsage(event.response).catch((error) => { errorText.textContent = error.message; });
     if (event.response?.status && event.response.status !== "completed") {
@@ -230,6 +236,24 @@ function handleRealtimeEvent(message) {
     errorText.textContent = event.error?.message || "OpenAI Realtime returned an error.";
     setStatus("OpenAI Realtime conectado", "connected");
   }
+}
+
+async function syncRealtimePrompt(revision) {
+  if (revision == null || revision === realtimePromptRevision) return;
+  if (realtimeResponseActive) {
+    pendingPromptRevision = revision;
+    return;
+  }
+  if (realtimeEvents?.readyState !== "open") return;
+  const response = await fetch("/api/system/prompt", { cache: "no-store" });
+  if (!response.ok) return;
+  const prompt = await response.json();
+  realtimeEvents.send(JSON.stringify({
+    type: "session.update",
+    session: { type: "realtime", instructions: prompt.instructions },
+  }));
+  realtimePromptRevision = prompt.revision;
+  pendingPromptRevision = null;
 }
 
 function monitorRuntimeState() {
@@ -249,6 +273,8 @@ function monitorRuntimeState() {
             ? "O modelo ou a voz Realtime foi alterado no dashboard. Reconecte para aplicar."
             : "O pipeline ativo foi alterado no dashboard.";
         await closeSession();
+      } else if (info.prompt.revision !== realtimePromptRevision) {
+        await syncRealtimePrompt(info.prompt.revision);
       }
     } catch {
       // A transient dashboard request must not interrupt an active media session.
@@ -483,6 +509,9 @@ async function closeSession({ notifyServer = true } = {}) {
   realtimeSessionId = null;
   realtimeResponseStartedAt = null;
   realtimeFirstAudioAt = null;
+  realtimePromptRevision = null;
+  pendingPromptRevision = null;
+  realtimeResponseActive = false;
 
   if (notifyServer && closingPeerId) {
     try {
@@ -569,6 +598,7 @@ async function startSession() {
     pipelineMode = systemInfo.pipeline.id;
     realtimeModel = systemInfo.pipeline.realtime_model;
     realtimeVoice = systemInfo.pipeline.realtime_voice;
+    realtimePromptRevision = systemInfo.prompt.revision;
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,

@@ -1,7 +1,7 @@
 """OpenAI Responses API adapter."""
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from openai import AsyncOpenAI, OpenAIError
@@ -26,14 +26,16 @@ class OpenAIResponsesLanguageModel(LanguageModel):
         *,
         api_key: str | None,
         model: str,
-        instructions: str,
+        instructions: str | Callable[[], str],
         max_output_tokens: int,
         timeout_seconds: float,
         client: Any | None = None,
     ) -> None:
         self.model = model
         self._api_key = api_key
-        self._instructions = instructions
+        self._instructions_getter = (
+            instructions if callable(instructions) else lambda: instructions
+        )
         self._max_output_tokens = max_output_tokens
         self._timeout_seconds = timeout_seconds
         self._client = client
@@ -71,7 +73,7 @@ class OpenAIResponsesLanguageModel(LanguageModel):
             async with self._request_lock:
                 stream = await self._get_client().responses.create(
                     model=self.model,
-                    instructions=self._instructions,
+                    instructions=self._instructions_getter(),
                     input=model_input,
                     max_output_tokens=self._max_output_tokens,
                     store=False,

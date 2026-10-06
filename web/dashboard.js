@@ -10,8 +10,13 @@ const pipelineSelect = document.querySelector("#voice-pipeline");
 const realtimeModelSelect = document.querySelector("#realtime-model");
 const realtimeVoiceSelect = document.querySelector("#realtime-voice");
 const applyPipelineButton = document.querySelector("#apply-pipeline");
+const promptInput = document.querySelector("#assistant-prompt");
+const savePromptButton = document.querySelector("#save-prompt");
+const resetPromptButton = document.querySelector("#reset-prompt");
 let llmOptions = [];
 let assistantInterruptAvailable = false;
+let promptState = null;
+let promptDirty = false;
 const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [component, {
   provider: document.querySelector(`#${component}-provider`),
   model: document.querySelector(`#${component}-model`),
@@ -135,6 +140,24 @@ function renderTechnology(info) {
   realtimeVoiceSelect.disabled = !realtime;
 }
 
+function renderPrompt(prompt, { force = false } = {}) {
+  promptState = prompt;
+  promptInput.maxLength = prompt.max_characters;
+  if (force || !promptDirty) {
+    promptInput.value = prompt.instructions;
+    promptDirty = false;
+  }
+  text("prompt-revision", `Revision ${prompt.revision}${prompt.is_default ? " · default" : ""}`);
+  updatePromptControls();
+}
+
+function updatePromptControls() {
+  const length = promptInput.value.length;
+  const maximum = promptState?.max_characters || Number(promptInput.maxLength) || 0;
+  text("prompt-count", `${number.format(length)} / ${number.format(maximum)} characters`);
+  savePromptButton.disabled = !promptState || !promptInput.value.trim() || !promptDirty || length > maximum;
+}
+
 function renderChart(daily) {
   const chart = document.querySelector("#chart");
   if (!daily.length) { chart.innerHTML = '<p class="empty">No data yet.</p>'; return; }
@@ -186,21 +209,63 @@ async function loadDashboard() {
   text("dashboard-error", "");
   try {
     const days = daysSelect.value;
-    const [summaryResponse, turnsResponse, systemResponse] = await Promise.all([
-      fetch(`/api/usage/summary?days=${days}`), fetch(`/api/usage/turns?days=${days}&limit=100`), fetch("/api/system/info"),
+    const [summaryResponse, turnsResponse, systemResponse, promptResponse] = await Promise.all([
+      fetch(`/api/usage/summary?days=${days}`), fetch(`/api/usage/turns?days=${days}&limit=100`), fetch("/api/system/info"), fetch("/api/system/prompt"),
     ]);
-    if (!summaryResponse.ok || !turnsResponse.ok || !systemResponse.ok) throw new Error("The dashboard could not be loaded.");
+    if (!summaryResponse.ok || !turnsResponse.ok || !systemResponse.ok || !promptResponse.ok) throw new Error("The dashboard could not be loaded.");
     const summary = await summaryResponse.json();
     const recent = await turnsResponse.json();
     const system = await systemResponse.json();
+    const prompt = await promptResponse.json();
     const totals = summary.totals;
     text("turns", number.format(totals.turns)); text("tokens", number.format(totals.total_tokens));
     text("input-tokens", number.format(totals.input_tokens)); text("output-tokens", number.format(totals.output_tokens));
     text("cached-tokens", number.format(totals.cached_input_tokens)); text("cost", money(totals.estimated_cost_usd));
     text("audio-input-tokens", number.format(totals.audio_input_tokens)); text("audio-output-tokens", number.format(totals.audio_output_tokens));
     text("pricing-note", "USD estimates use the dated price snapshot stored with each turn.");
-    renderTechnology(system); renderChart(summary.daily); renderTurns(recent.turns);
+    renderTechnology(system); renderPrompt(prompt); renderChart(summary.daily); renderTurns(recent.turns);
   } catch (error) { text("dashboard-error", error.message); }
+}
+
+async function savePrompt() {
+  savePromptButton.disabled = true;
+  resetPromptButton.disabled = true;
+  text("prompt-status", "Saving…");
+  try {
+    const response = await fetch("/api/system/prompt", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instructions: promptInput.value }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "The assistant behavior could not be saved.");
+    promptDirty = false;
+    renderPrompt(result, { force: true });
+    text("prompt-status", "Saved. Active sessions update automatically for the next turn.");
+  } catch (error) {
+    text("prompt-status", error.message);
+  } finally {
+    resetPromptButton.disabled = false;
+    updatePromptControls();
+  }
+}
+
+async function resetPrompt() {
+  savePromptButton.disabled = true;
+  resetPromptButton.disabled = true;
+  text("prompt-status", "Restoring default…");
+  try {
+    const response = await fetch("/api/system/prompt/reset", { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "The default behavior could not be restored.");
+    promptDirty = false;
+    renderPrompt(result, { force: true });
+    text("prompt-status", "Default behavior restored.");
+  } catch (error) {
+    text("prompt-status", error.message);
+  } finally {
+    resetPromptButton.disabled = false;
+    updatePromptControls();
+  }
 }
 
 async function applyPipeline() {
@@ -306,4 +371,7 @@ pipelineSelect.addEventListener("change", () => {
   realtimeVoiceSelect.disabled = !realtime;
 });
 applyPipelineButton.addEventListener("click", applyPipeline);
+promptInput.addEventListener("input", () => { promptDirty = true; text("prompt-status", "Unsaved changes"); updatePromptControls(); });
+savePromptButton.addEventListener("click", savePrompt);
+resetPromptButton.addEventListener("click", resetPrompt);
 loadDashboard();

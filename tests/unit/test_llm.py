@@ -101,6 +101,25 @@ def test_openai_adapter_streams_only_text_deltas() -> None:
     }
 
 
+def test_openai_adapter_reads_current_instructions_for_each_request() -> None:
+    client = FakeOpenAIClient()
+    current = {"instructions": "First behavior."}
+    model = OpenAIResponsesLanguageModel(
+        api_key="test-key",
+        model="test-model",
+        instructions=lambda: current["instructions"],
+        max_output_tokens=100,
+        timeout_seconds=10,
+        client=client,
+    )
+
+    asyncio.run(collect_model_response(model, "first"))
+    assert client.responses.arguments["instructions"] == "First behavior."
+    current["instructions"] = "Second behavior."
+    asyncio.run(collect_model_response(model, "second"))
+    assert client.responses.arguments["instructions"] == "Second behavior."
+
+
 def test_openai_adapter_requires_api_key() -> None:
     model = OpenAIResponsesLanguageModel(
         api_key=None,
@@ -271,6 +290,41 @@ def test_llama_cpp_adapter_streams_text_and_reports_usage() -> None:
     assert asyncio.run(collect()) == "Olá!"
     assert reported[0].total_tokens == 15
     assert model.last_tokens_per_second == 8.5
+
+
+def test_llama_cpp_adapter_reads_current_instructions_for_each_request() -> None:
+    system_messages = []
+
+    def handler(request: Request) -> Response:
+        system_messages.append(request.read().decode())
+        return Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            content=b'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n',
+        )
+
+    current = {"instructions": "First behavior."}
+    client = AsyncClient(
+        transport=MockTransport(handler), base_url="http://local.test/v1/"
+    )
+    model = LlamaCppLanguageModel(
+        base_url="http://local.test/v1",
+        model="local",
+        instructions=lambda: current["instructions"],
+        max_output_tokens=100,
+        timeout_seconds=10,
+        client=client,
+    )
+
+    async def exercise() -> None:
+        await collect_model_response(model, "first")
+        current["instructions"] = "Second behavior."
+        await collect_model_response(model, "second")
+        await client.aclose()
+
+    asyncio.run(exercise())
+    assert '"content":"First behavior."' in system_messages[0]
+    assert '"content":"Second behavior."' in system_messages[1]
 
 
 def test_selector_persists_only_allowlisted_selection(tmp_path) -> None:

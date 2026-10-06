@@ -177,6 +177,13 @@ class Settings(BaseSettings):
         ),
         alias="LLM_INSTRUCTIONS",
     )
+    prompt_state_path: Path = Field(
+        default=PROJECT_ROOT / "data" / "prompt-state.json",
+        alias="PROMPT_STATE_PATH",
+    )
+    prompt_max_characters: int = Field(
+        default=8000, ge=100, le=20000, alias="PROMPT_MAX_CHARACTERS"
+    )
     tls_cert_file: Path | None = Field(default=None, alias="TLS_CERT_FILE")
     tls_key_file: Path | None = Field(default=None, alias="TLS_KEY_FILE")
     stt_engine: str = Field(default="sherpa-whisper", alias="STT_ENGINE")
@@ -321,6 +328,8 @@ class Settings(BaseSettings):
             self.assistant_state_path = PROJECT_ROOT / self.assistant_state_path
         if not self.pipeline_selection_path.is_absolute():
             self.pipeline_selection_path = PROJECT_ROOT / self.pipeline_selection_path
+        if not self.prompt_state_path.is_absolute():
+            self.prompt_state_path = PROJECT_ROOT / self.prompt_state_path
         return self
 
     @model_validator(mode="after")

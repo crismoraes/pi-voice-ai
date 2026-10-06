@@ -4,6 +4,12 @@
 
 ### Added
 
+- Editor persistente **Assistant behavior** no dashboard, com contador, revisão,
+  **Save and apply** e **Reset to default**.
+- APIs `GET/PUT /api/system/prompt` e `POST /api/system/prompt/reset`; o estado é
+  gravado atomicamente fora do Git e com permissão `0600` no Linux.
+- Um único prompt dinâmico para OpenAI Responses, llama.cpp e OpenAI Realtime,
+  inclusive atualização de sessões WebRTC já conectadas entre respostas.
 - Avatar 2D em SVG na conversa web, com estados de escuta, processamento e fala,
   piscadas e boca sincronizada ao RMS do áudio WebRTC via Web Audio API.
 - Botão **Stop speaking** e endpoint `POST /api/system/assistant/interrupt` para
@@ -46,6 +52,9 @@
 
 ### Changed
 
+- Versão de desenvolvimento elevada para `1.3.0.dev0`.
+- O prompt configurado no `.env` agora é o padrão restaurável; alterações do
+  dashboard entram no turno seguinte sem reiniciar o serviço.
 - Barge-in USB voltou a ficar desativado na instalação P10S após o teste físico
   comprovar falsas interrupções causadas pelo retorno do alto-falante no microfone.
 - **Recent turns** agora usa cartões responsivos com custo, modelos, tokens e tempo

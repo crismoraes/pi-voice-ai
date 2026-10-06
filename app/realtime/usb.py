@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from time import perf_counter
 
@@ -36,19 +37,22 @@ class OpenAIRealtimeUsbPipeline:
         api_key: str,
         model_getter,
         voice_getter,
-        instructions: str,
+        instructions: str | Callable[[], str],
         max_output_tokens: int,
         timeout_seconds: float,
     ) -> None:
         self._client = AsyncOpenAI(api_key=api_key) if api_key else None
         self._model_getter = model_getter
         self._voice_getter = voice_getter
-        self._instructions = instructions
+        self._instructions_getter = (
+            instructions if callable(instructions) else lambda: instructions
+        )
         self._max_output_tokens = max_output_tokens
         self._timeout_seconds = timeout_seconds
         self._connection = None
         self._connection_model: str | None = None
         self._connection_voice: str | None = None
+        self._connection_instructions: str | None = None
         self._session_id: str | None = None
         self._lock = asyncio.Lock()
 
@@ -159,10 +163,12 @@ class OpenAIRealtimeUsbPipeline:
     async def _ensure_connection(self):
         model = self._model_getter()
         voice = self._voice_getter()
+        instructions = self._instructions_getter()
         if (
             self._connection is not None
             and self._connection_model == model
             and self._connection_voice == voice
+            and self._connection_instructions == instructions
         ):
             return self._connection
         await self.close()
@@ -180,7 +186,7 @@ class OpenAIRealtimeUsbPipeline:
         await connection.session.update(
             session={
                 "type": "realtime",
-                "instructions": self._instructions,
+                "instructions": instructions,
                 "output_modalities": ["audio"],
                 "max_output_tokens": self._max_output_tokens,
                 "audio": {
@@ -198,6 +204,7 @@ class OpenAIRealtimeUsbPipeline:
         self._connection = connection
         self._connection_model = model
         self._connection_voice = voice
+        self._connection_instructions = instructions
         logger.info(
             "REALTIME_USB_CONNECTED", extra={"model": model, "voice": voice}
         )
@@ -274,6 +281,7 @@ class OpenAIRealtimeUsbPipeline:
         self._session_id = None
         self._connection_model = None
         self._connection_voice = None
+        self._connection_instructions = None
         if connection is not None:
             await connection.close()
 

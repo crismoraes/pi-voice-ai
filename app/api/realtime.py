@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from app.config import get_settings
 from app.realtime.runtime import realtime_usage_recorder
 from app.realtime.usage import RealtimeTurnUsage
-from app.runtime.current import assistant_control, voice_pipeline
+from app.runtime.current import assistant_control, prompt_control, voice_pipeline
 
 logger = logging.getLogger("pi_voice_ai.realtime")
 router = APIRouter(prefix="/api/realtime", tags=["realtime"])
@@ -69,7 +69,7 @@ async def create_realtime_call(
     session = {
         "type": "realtime",
         "model": voice_pipeline.realtime_model,
-        "instructions": settings.llm_instructions,
+        "instructions": prompt_control.instructions,
         "output_modalities": ["audio"],
         "max_output_tokens": settings.realtime_max_output_tokens,
         "audio": {

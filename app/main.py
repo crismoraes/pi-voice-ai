@@ -25,6 +25,7 @@ from app.realtime.usb import OpenAIRealtimeUsbPipeline
 from app.runtime.current import (
     assistant_control,
     pipeline_selection_lock,
+    prompt_control,
     voice_interrupt_control,
     voice_pipeline,
 )
@@ -53,7 +54,7 @@ realtime_usb = OpenAIRealtimeUsbPipeline(
     ),
     model_getter=lambda: voice_pipeline.realtime_model,
     voice_getter=lambda: voice_pipeline.realtime_voice,
-    instructions=settings.llm_instructions,
+    instructions=lambda: prompt_control.instructions,
     max_output_tokens=settings.realtime_max_output_tokens,
     timeout_seconds=settings.realtime_timeout_seconds,
 )

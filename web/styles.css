@@ -298,6 +298,17 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
 .interrupt-control .switch-status { margin-top: 5px; min-height: 0; }
 .danger-button { flex: none; border-color: #8b3a3a; background: #6e2929; }
 .danger-button:hover:not(:disabled) { background: #8b3a3a; }
+.prompt-control { margin-top: 16px; padding: 16px; border: 1px solid #30363d; border-radius: 12px; background: #161b22; }
+.prompt-heading, .prompt-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.prompt-heading strong, .prompt-heading small { display: block; }
+.prompt-heading small { margin-top: 4px; color: #8c959f; line-height: 1.45; }
+.prompt-control textarea { box-sizing: border-box; width: 100%; margin-top: 14px; min-height: 132px; resize: vertical; color: #f0f3f6; border: 1px solid #484f58; border-radius: 8px; padding: 12px; background: #0d1117; font: inherit; line-height: 1.5; }
+.prompt-control textarea:focus { outline: 2px solid #58a6ff; outline-offset: 1px; }
+.prompt-footer { justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; }
+.prompt-footer > span:first-child { margin-right: auto; color: #8c959f; font-size: .8rem; }
+.prompt-footer .switch-status { flex: 1 1 220px; min-height: 0; text-align: right; }
+.secondary-button { border-color: #484f58; background: #21262d; }
+.secondary-button:hover:not(:disabled) { background: #30363d; }
 .toggle { display: flex; align-items: center; gap: 10px; color: #f0f3f6; font-weight: 700; cursor: pointer; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
 .toggle-track { width: 48px; height: 26px; padding: 3px; border-radius: 999px; background: #484f58; transition: background .18s ease; }
@@ -331,6 +342,9 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
   .model-controls { grid-template-columns: 1fr; }
   .model-controls button { grid-column: auto; }
   .interrupt-control { align-items: stretch; flex-direction: column; }
+  .prompt-heading { align-items: flex-start; flex-direction: column; }
+  .prompt-footer { align-items: stretch; flex-direction: column; }
+  .prompt-footer .switch-status { flex-basis: auto; text-align: left; }
   .recent-turns-heading, .turn-card-header { align-items: stretch; flex-direction: column; }
   .recent-turns-heading > span { align-self: flex-start; }
   .turn-cost { text-align: left; }

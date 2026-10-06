@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 import httpx
@@ -29,13 +29,15 @@ class LlamaCppLanguageModel(LanguageModel):
         *,
         base_url: str,
         model: str,
-        instructions: str,
+        instructions: str | Callable[[], str],
         max_output_tokens: int,
         timeout_seconds: float,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self.model = model
-        self._instructions = instructions
+        self._instructions_getter = (
+            instructions if callable(instructions) else lambda: instructions
+        )
         self._max_output_tokens = max_output_tokens
         self._request_lock = asyncio.Lock()
         normalized = base_url.rstrip("/")
@@ -62,7 +64,7 @@ class LlamaCppLanguageModel(LanguageModel):
         history: tuple[ConversationMessage, ...] = (),
         on_usage: UsageHandler | None = None,
     ) -> AsyncIterator[str]:
-        messages = [{"role": "system", "content": self._instructions}]
+        messages = [{"role": "system", "content": ""}]
         messages.extend(
             {"role": message.role, "content": message.content} for message in history
         )
@@ -83,6 +85,7 @@ class LlamaCppLanguageModel(LanguageModel):
         }
         try:
             async with self._request_lock:
+                messages[0]["content"] = self._instructions_getter()
                 async with self._client.stream(
                     "POST", "chat/completions", json=payload
                 ) as response:

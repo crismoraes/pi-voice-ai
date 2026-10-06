@@ -558,6 +558,17 @@ ARM64. A real 1100 x 1400 headless browser capture confirmed the SVG, idle state
 responsive card and surrounding controls render correctly over deployed HTTPS.
 Physical WebRTC acceptance still needs to confirm mouth motion against audible speech.
 
+Phase 13 adds one persistent runtime prompt shared by OpenAI Responses, llama.cpp,
+browser Realtime and USB Realtime. `LLM_INSTRUCTIONS` remains the reset default;
+dashboard changes are stored atomically in ignored `data/prompt-state.json` with
+mode `0600` on Linux. The English dashboard exposes the prompt only through
+`GET/PUT /api/system/prompt` and reset through `POST /api/system/prompt/reset`.
+`/api/system/info` contains metadata only. Never log or store prompt text in usage
+history. Chained adapters read it per request. USB Realtime renews its connection
+before the next turn when instructions change. A connected browser sends
+`session.update` after the current `response.done`. The Windows suite passes 59
+tests; replace this statement with deployed ARM64 evidence after validation.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

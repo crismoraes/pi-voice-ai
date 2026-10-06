@@ -41,6 +41,22 @@
           </div>
           <button id="interrupt-assistant" class="danger-button" type="button">Stop speaking</button>
         </div>
+        <div class="prompt-control">
+          <div class="prompt-heading">
+            <div>
+              <strong>Assistant behavior</strong>
+              <small>Shared by OpenAI Responses, llama.cpp, and OpenAI Realtime. Changes apply to the next turn.</small>
+            </div>
+            <span id="prompt-revision" class="version-badge">Revision —</span>
+          </div>
+          <textarea id="assistant-prompt" rows="6" aria-label="Assistant behavior instructions" spellcheck="true"></textarea>
+          <div class="prompt-footer">
+            <span id="prompt-count">0 / 0 characters</span>
+            <span id="prompt-status" class="switch-status" role="status"></span>
+            <button id="reset-prompt" class="secondary-button" type="button">Reset to default</button>
+            <button id="save-prompt" type="button">Save and apply</button>
+          </div>
+        </div>
         <div class="model-controls pipeline-controls">
           <label>Voice pipeline<select id="voice-pipeline"></select></label>
           <label>Realtime model<select id="realtime-model"></select></label>
