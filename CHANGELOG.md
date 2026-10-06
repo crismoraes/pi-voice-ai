@@ -84,6 +84,9 @@
 
 ### Validated
 
+- Cinquenta e um testes passaram no Windows e no Pi ARM64. Uma captura real em
+  1.440 px confirmou os cartões sem overflow horizontal; a API confirmou barge-in
+  USB ativo e o restart seguinte terminou sem timeout do systemd.
 - Cinquenta testes passaram no Windows e no Raspberry Pi ARM64 após desacoplar a
   recepção Realtime da reprodução USB. O serviço implantado ficou ativo, sem
   reinícios, warnings ou processos ALSA com o assistente Off.

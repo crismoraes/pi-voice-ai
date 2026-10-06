@@ -1060,6 +1060,11 @@ quatro ou duas colunas. A informação permanece a mesma e nenhuma rolagem later
 necessária. Esse caso é útil no curso para mostrar que observabilidade também exige
 uma apresentação que permita comparar os dados sem esforço mecânico.
 
+A validação abriu a implantação real em um navegador headless com viewport de
+1.440 pixels. A captura confirmou o resumo de custo, o histórico diário e o primeiro
+cartão de turno sem overflow lateral. Os 51 testes passaram tanto no Windows quanto
+no Pi ARM64.
+
 Fluxo ensinado:
 
 ```text
@@ -1841,6 +1846,9 @@ mostra **voice interruption on/off** em **Audio and VAD**. Com o recurso ativo,
 pelo Silero cancela a geração e a reprodução atuais e conserva o áudio da nova frase
 para o turno seguinte. O teste automatizado confirma o cancelamento da tarefa e do
 player; o teste físico continua indispensável para avaliar eco no ambiente real.
+Na implantação, `USB_ENABLE_BARGE_IN=true` foi aplicado ao `.env` privado e
+`/api/system/info` retornou `barge_in: true`. O assistente ficou Off até o usuário
+iniciar deliberadamente o teste de falar durante uma resposta longa.
 
 ## Que informações nunca devem aparecer em uma aula ou diagnóstico publicado?
 

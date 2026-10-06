@@ -520,6 +520,12 @@ interruption remains configured by `USB_ENABLE_BARGE_IN`; when enabled, capture
 continues during playback and Silero speech onset cancels the response before the
 new utterance is segmented. Acoustic echo cancellation is not provided by direct
 ALSA, so physical acceptance must confirm that speaker echo does not self-interrupt.
+The expanded suite passes 51 tests on Windows and Raspberry Pi ARM64. Commit
+`e1297ff` is deployed with `USB_ENABLE_BARGE_IN=true` in the ignored Pi `.env`;
+system info reports `barge_in: true`. A 1440 px headless browser capture confirmed
+the responsive cards and visible cost. A second restart completed in under one
+second with the graceful timeout fix, leaving the service active and `NRestarts=0`.
+The assistant remains Off pending the user's physical interruption test.
 
 ## Project Goal
 
