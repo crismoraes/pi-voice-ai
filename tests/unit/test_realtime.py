@@ -41,6 +41,8 @@ def test_browser_realtime_call_uses_unified_interface(monkeypatch) -> None:
     monkeypatch.setattr(realtime_api.httpx, "AsyncClient", FakeHttpClient)
     monkeypatch.setattr(realtime_api.assistant_control, "_enabled", True)
     monkeypatch.setattr(realtime_api.voice_pipeline, "_pipeline", "openai-realtime")
+    monkeypatch.setattr(realtime_api.voice_pipeline, "_realtime_model", "gpt-realtime-2.1")
+    monkeypatch.setattr(realtime_api.voice_pipeline, "_realtime_voice", "marin")
     response = asyncio.run(exercise())
 
     assert response.status_code == 200

@@ -100,7 +100,9 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert 'id="apply-tts"' in response.text
 
 
-def test_system_rejects_unlisted_voice_models() -> None:
+def test_system_rejects_unlisted_voice_models(monkeypatch) -> None:
+    monkeypatch.setattr("app.api.system.voice_pipeline._pipeline", "chained")
+
     async def select_invalid_models():
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://testserver") as client:
