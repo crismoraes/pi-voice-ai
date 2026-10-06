@@ -224,6 +224,8 @@ async function loadStoryLibrary() {
     <article><span>Approved documents</span><strong>${approved}</strong></article>
     <article><span>Indexed stories</span><strong>${data.indexed_stories}</strong></article>
     <article><span>Search</span><strong>${data.fts5 === "available" ? "SQLite FTS5" : "Basic fallback"}</strong></article>
+    <article><span>Semantic search</span><strong>${data.semantic_search === "pending_local_model" ? "Pending local model" : data.semantic_search}</strong></article>
+    <article><span>Review queue</span><strong>${data.pending.length}</strong></article>
     <article><span>Story cloud</span><strong>${data.cloud_enabled ? "On" : "Off"}</strong></article>`;
 }
 

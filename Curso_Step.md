@@ -2013,6 +2013,7 @@ Use apenas URLs canônicas e APIs documentadas. O manifesto contém exemplos par
 - **PDF marcado `needs_ocr`:** ele não possui camada de texto. Converta em uma máquina confiável e reimporte; a aplicação não finge ter extraído conteúdo.
 - **Idioma ou voz incorretos:** confirme `STT_LANGUAGE=auto`, os três diretórios `TTS_*_MODEL_DIR` e execute `scripts/download_tts_model.sh`.
 - **Uma fonte remota falhou:** não repita agressivamente. Confirme host permitido, limite de bytes, política de robôs e URL oficial.
+- **Standard Ebooks retorna XHTML no link EPUB:** o importador rejeita a resposta e registra `manual_download_required`. Abra a página canônica, use a opção oficial de download no navegador e coloque o EPUB em `data/story_library/inbox/`; não renomeie a página HTML para `.epub`.
 - **A história aparece no CLI com `--all`, mas não na web:** este é o bloqueio esperado para conteúdo pendente ou rejeitado.
 
 ### Privacidade infantil

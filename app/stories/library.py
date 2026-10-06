@@ -647,17 +647,27 @@ class StoryLibrary:
         with self._connect() as database:
             coverage = [dict(row) for row in database.execute(
                 """SELECT language,COUNT(*) discovered,
+                   COUNT(*) downloaded,
                    SUM(extraction_status='extracted') extracted,
                    SUM(review_status IN ('approved','rejected')) reviewed,
-                   SUM(review_status='approved' AND rights_status='approved') approved
-                   FROM documents GROUP BY language ORDER BY language"""
+                   SUM(review_status='approved' AND rights_status='approved') approved,
+                   (SELECT COUNT(*) FROM stories s JOIN documents dx ON dx.document_id=s.document_id
+                    WHERE dx.language=d.language AND s.index_status='indexed') indexed_stories
+                   FROM documents d GROUP BY language ORDER BY language"""
+            )]
+            sources = [dict(row) for row in database.execute(
+                """SELECT source_name,language,COUNT(*) discovered,COUNT(*) downloaded,
+                          SUM(extraction_status='extracted') extracted,
+                          SUM(review_status IN ('approved','rejected')) reviewed,
+                          SUM(review_status='approved' AND rights_status='approved') approved
+                   FROM documents GROUP BY source_name,language ORDER BY source_name,language"""
             )]
             indexed = database.execute("SELECT COUNT(*) FROM stories WHERE index_status='indexed'").fetchone()[0]
             pending = [dict(row) for row in database.execute(
                 "SELECT document_id,title,language,source_name,source_url,extraction_status,rights_status,review_status FROM documents WHERE extraction_status!='extracted' OR rights_status!='approved' OR review_status!='approved' ORDER BY imported_at"
             )]
             fts = database.execute("SELECT value FROM metadata WHERE key='fts5'").fetchone()[0]
-        return {"generated_at": _utc_now(), "coverage": coverage, "indexed_stories": indexed, "fts5": fts, "semantic_search": "pending_local_model", "pending": pending}
+        return {"generated_at": _utc_now(), "coverage": coverage, "sources": sources, "indexed_stories": indexed, "fts5": fts, "semantic_search": "pending_local_model", "pending": pending}
 
     def write_report(self, name: str, payload: object) -> Path:
         path = self.paths.reports / name

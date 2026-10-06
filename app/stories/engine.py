@@ -60,7 +60,7 @@ class StoryEngine:
         lowered = f" {text.casefold()} "
         state = self._state(session_id)
         language = self._language(lowered)
-        list_words = ("liste histórias", "listar histórias", "list stories", "lista cuentos")
+        list_words = ("liste histórias", "listar histórias", "quais histórias", "que histórias", "list stories", "what stories", "which stories", "lista cuentos", "qué cuentos", "que cuentos")
         if any(word in lowered for word in list_words):
             items = self.library.list_stories(language=language, limit=8)
             names = ", ".join(str(item["title"]) for item in items)
@@ -78,7 +78,7 @@ class StoryEngine:
             state.pending_section = requested_section
             return StoryTurn("READ_EXACT", state.language, (section["text"],), story_id=state.story_id)
 
-        create_words = (" crie uma história", " invente uma história", " create a story", " inventa un cuento")
+        create_words = (" crie uma história", " invente uma história", " história curta sobre", " create a story", " story about", " inventa un cuento", " cuento sobre")
         if any(word in lowered for word in create_words):
             prompt = f"Create a short, age-appropriate story in language '{language}'. User request: {text}. Do not claim it comes from the catalog."
             return StoryTurn("CREATE", language, llm_prompt=prompt)
@@ -88,15 +88,29 @@ class StoryEngine:
             return StoryTurn("INTERACTIVE", language, llm_prompt=prompt, story_id=state.story_id)
 
         read_words = (" leia", " conte", " read", " tell", " lee", " cuenta")
+        read_words += (" cuéntame", " léeme")
         retell = any(word in lowered for word in ("reconte", "retell", "resume", "resuma"))
         if any(word in lowered for word in read_words) or retell:
             query = self._query(text)
-            results = self.library.search(query, language=language, limit=3) if query else []
+            refers_to_active = state.story_id and any(word in lowered for word in (" essa história", " esta história", " that story", " this story", " ese cuento", " este cuento", " para uma criança", " for a child", " para un niño"))
+            results = []
+            if refers_to_active:
+                active = self.library.get_story(state.story_id)
+                story = active
+            else:
+                results = self.library.search(query, language=language, limit=3) if query else []
             if not results:
-                message = {"pt": "Não encontrei uma história aprovada com esse nome.", "en": "I could not find an approved story with that name.", "es": "No encontré un cuento aprobado con ese nombre."}[language]
-                return StoryTurn("READ_EXACT", language, (message,))
-            story = self.library.get_story(results[0].story_id)
-            state.story_id, state.language = results[0].story_id, story["language"]
+                if refers_to_active:
+                    pass
+                else:
+                    message = {"pt": "Não encontrei uma história aprovada com esse nome. Posso listar as histórias locais disponíveis.", "en": "I could not find an approved story with that name. I can list the available local stories.", "es": "No encontré un cuento aprobado con ese nombre. Puedo listar los cuentos locales disponibles."}[language]
+                    return StoryTurn("READ_EXACT", language, (message,))
+            if not refers_to_active:
+                story = self.library.get_story(results[0].story_id)
+                state.story_id = results[0].story_id
+            else:
+                state.story_id = str(story["story_id"])
+            state.language = story["language"]
             if retell:
                 source = "\n\n".join(item["text"] for item in story["sections"])
                 return StoryTurn("RETELL", story["language"], llm_prompt=f"Retell this approved story briefly in {story['language']}. Preserve its meaning and say that this is an adaptation.\n\n{source}", story_id=state.story_id)
@@ -109,4 +123,7 @@ class StoryEngine:
             context = "\n\n".join(item["text"] for item in evidence)
             prompt = f"Answer in {state.language} using only the story excerpts below. Avoid spoilers beyond them. If unknown, say so.\nQuestion: {text}\nExcerpts:\n{context}"
             return StoryTurn("ASK_ABOUT_STORY", state.language, llm_prompt=prompt, story_id=state.story_id)
+        if any(word in lowered for word in (" história", " story", " cuento")):
+            message = {"pt": "Não entendi qual modo de história você quer. Posso listar, ler, recontar ou criar uma história local.", "en": "I did not understand the story mode. I can list, read, retell, or create a local story.", "es": "No entendí el modo de cuento. Puedo listar, leer, volver a contar o crear un cuento local."}[language]
+            return StoryTurn("READ_EXACT", language, (message,))
         return None

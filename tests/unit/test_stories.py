@@ -81,6 +81,12 @@ def test_exact_read_does_not_need_an_llm(tmp_path: Path):
     turn = StoryEngine(library).handle("child", "read the Lantern Story")
     assert turn is not None and turn.mode == "READ_EXACT"
     assert turn.llm_prompt is None and turn.text_segments == ("Exact canonical text.",)
+    engine = StoryEngine(library)
+    assert engine.handle("pt", "Quais histórias de Natal você tem?").llm_prompt is None
+    first = engine.handle("pt", "read the Lantern Story")
+    assert first and first.story_id
+    again = engine.handle("pt", "Read that story from the beginning")
+    assert again and again.story_id == first.story_id and again.llm_prompt is None
 
 
 def test_acquisition_rejects_html_disguised_as_epub(tmp_path: Path):
