@@ -1977,3 +1977,44 @@ ativo, com `NRestarts=0`, um único `arecord` e nenhum warning recente.
 Não mostre a chave privada SSH, senha, `OPENAI_API_KEY`, conteúdo do `.env`, chave
 TLS privada ou endereço de rede privada sem necessidade. Prefira eventos, tempos,
 contagens, nomes de configuração e saídas sanitizadas.
+## Fase 14 — Biblioteca e contador de histórias multilíngue, offline first
+
+Nesta fase o Raspberry Pi ganha um catálogo privado de histórias em português, inglês e espanhol. O objetivo pedagógico é mostrar uma cadeia completa: aquisição responsável, preservação da fonte, extração segura, revisão humana, indexação local, busca, narração e perguntas sem depender da internet durante o uso normal.
+
+### Preparação
+
+```bash
+cd ~/pi-voice-ai
+source .venv/bin/activate
+stories bootstrap --offline
+stories doctor --offline
+stories report
+```
+
+O bootstrap offline instala três textos originais CC0 do próprio projeto. O catálogo somente mostra itens com `rights_status=approved`, `review_status=approved` e índice pronto. Fontes externas começam desativadas em `config/story_sources.json`. Explique no curso por que domínio público depende da jurisdição e por que uma licença de coleção não substitui a licença do item.
+
+### Demonstração por voz
+
+1. Diga “liste histórias”.
+2. Diga “leia A Semente Luminosa”. O texto canônico é lido sem LLM.
+3. Diga “continue”. O cursor avança por seção.
+4. Diga “reconte A Semente Luminosa”. A adaptação usa somente o llama.cpp local.
+5. Repita em inglês com “read The Lantern Seed” e em espanhol com “lee La Semilla Luminosa”. Observe a troca automática da voz Piper.
+6. Desligue a internet e repita busca, leitura e uma criação curta. `stories doctor --offline` nunca tenta abrir uma conexão.
+
+### Aquisição e revisão
+
+Use apenas URLs canônicas e APIs documentadas. O manifesto contém exemplos para Project Gutenberg, Global Digital Library, Standard Ebooks e eBible, todos desativados. Antes de habilitar um item, registre licença, URL, atribuição, evidência de direitos, faixa etária e checksum. Conteúdo bíblico continua pendente até aprovação explícita. Para importação manual, formatos aceitos são TXT, MD, HTML, EPUB, PDF e H5P. PDF de imagem recebe `needs_ocr`.
+
+### Troubleshooting
+
+- **A história não aparece:** execute `stories review --list`; confirme direitos, revisão e depois `stories index`.
+- **Busca básica em vez de FTS5:** confira `stories doctor --offline`. O relatório identifica a degradação.
+- **PDF marcado `needs_ocr`:** ele não possui camada de texto. Converta em uma máquina confiável e reimporte; a aplicação não finge ter extraído conteúdo.
+- **Idioma ou voz incorretos:** confirme `STT_LANGUAGE=auto`, os três diretórios `TTS_*_MODEL_DIR` e execute `scripts/download_tts_model.sh`.
+- **Uma fonte remota falhou:** não repita agressivamente. Confirme host permitido, limite de bytes, política de robôs e URL oficial.
+- **A história aparece no CLI com `--all`, mas não na web:** este é o bloqueio esperado para conteúdo pendente ou rejeitado.
+
+### Privacidade infantil
+
+O modo de histórias em nuvem vem desligado. Não inclua voz, nome, perfil ou outros dados de uma criança em telemetria. Qualquer futura ativação de nuvem exige uma decisão de produto e salvaguardas apropriadas; consulte a [orientação oficial da OpenAI para menores](https://developers.openai.com/api/docs/guides/safety-checks/under-18-api-guidance).

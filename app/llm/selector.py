@@ -112,6 +112,16 @@ class LanguageModelSelector(LanguageModel):
             ):
                 yield delta
 
+    async def stream_response_for(
+        self, provider: str, model: str, text: str, *, history: tuple[ConversationMessage, ...] = (), on_usage: UsageHandler | None = None
+    ) -> AsyncIterator[str]:
+        """Run one request on an explicit provider without changing dashboard state."""
+        if provider not in self._providers or model not in self._providers[provider]:
+            raise LanguageModelUnavailableError("Requested story model is unavailable")
+        async with self._lock:
+            async for delta in self._providers[provider][model].stream_response(text, history=history, on_usage=on_usage):
+                yield delta
+
     async def close(self) -> None:
         seen: set[int] = set()
         for models in self._providers.values():

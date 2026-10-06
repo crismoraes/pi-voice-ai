@@ -41,3 +41,6 @@ class VoicePipelineRouter:
 
     def forget(self, session_id: str) -> None:
         self._chained.forget(session_id)
+
+    def confirm_story_playback(self, session_id: str) -> None:
+        self._chained.confirm_story_playback(session_id)

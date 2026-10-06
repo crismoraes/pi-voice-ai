@@ -501,6 +501,10 @@ class PeerConnectionManager:
             if result is not None:
                 session.conversation_phase = "playback"
                 await asyncio.sleep(session.output_track.pending_speech_seconds)
+                if getattr(result, "story_progress_pending", False):
+                    confirm = getattr(self._conversation_manager, "confirm_story_playback", None)
+                    if confirm is not None:
+                        confirm(peer_id)
         except asyncio.CancelledError:
             logger.info(
                 "CONVERSATION_TURN_CANCELLED",
@@ -608,7 +612,7 @@ stt_default_model = (
 def build_stt(model_dir):
     return SherpaWhisperSpeechToText(
         model_dir=model_dir,
-        language=settings.stt_language,
+        language="" if settings.stt_language == "auto" else settings.stt_language,
         num_threads=settings.stt_num_threads,
         precision=stt_precision,
         normalize_audio=settings.stt_normalize_audio,
@@ -656,7 +660,25 @@ text_to_speech = TextToSpeechSelector(
                     max_text_characters=settings.tts_max_text_characters,
                 ),
                 "Piper pt_BR Jeff Medium",
-            )
+            ),
+            "en_US-lessac-medium": TtsModelOption(
+                SherpaPiperTextToSpeech(
+                    model_dir=settings.tts_english_model_dir,
+                    num_threads=settings.tts_num_threads,
+                    speed=settings.tts_speed,
+                    max_text_characters=settings.tts_max_text_characters,
+                ),
+                "Piper en_US Lessac Medium",
+            ),
+            "es_ES-sharvard-medium": TtsModelOption(
+                SherpaPiperTextToSpeech(
+                    model_dir=settings.tts_spanish_model_dir,
+                    num_threads=settings.tts_num_threads,
+                    speed=settings.tts_speed,
+                    max_text_characters=settings.tts_max_text_characters,
+                ),
+                "Piper es_ES Sharvard Medium",
+            ),
         }
     },
     default_provider="sherpa-onnx",

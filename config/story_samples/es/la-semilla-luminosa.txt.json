@@ -1,0 +1,7 @@
+{
+  "title": "La Semilla Luminosa", "language": "es", "locale": "es-ES",
+  "source_name": "Muestra original PiVoice AI", "author": "Colaboradores de PiVoice AI",
+  "category": "children", "themes": ["compartir", "comunidad"], "age_min": 5, "age_max": 12,
+  "age_review_status": "approved", "license_id": "CC0-1.0", "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "rights_evidence": "Muestra original del proyecto dedicada a CC0.", "rights_status": "approved", "review_status": "approved"
+}

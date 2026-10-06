@@ -244,6 +244,14 @@ class Settings(BaseSettings):
         default=PROJECT_ROOT / "models" / "vits-piper-pt_BR-jeff-medium",
         alias="TTS_MODEL_DIR",
     )
+    tts_english_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "vits-piper-en_US-lessac-medium",
+        alias="TTS_ENGLISH_MODEL_DIR",
+    )
+    tts_spanish_model_dir: Path = Field(
+        default=PROJECT_ROOT / "models" / "vits-piper-es_ES-sharvard-medium",
+        alias="TTS_SPANISH_MODEL_DIR",
+    )
     tts_selection_path: Path = Field(
         default=PROJECT_ROOT / "data" / "tts-selection.json",
         alias="TTS_SELECTION_PATH",
@@ -255,6 +263,14 @@ class Settings(BaseSettings):
     )
     tts_chunk_characters: int = Field(
         default=240, ge=40, le=1000, alias="TTS_CHUNK_CHARACTERS"
+    )
+    story_library_enabled: bool = Field(default=True, alias="STORY_LIBRARY_ENABLED")
+    story_library_root: Path = Field(
+        default=PROJECT_ROOT / "data" / "story_library", alias="STORY_LIBRARY_ROOT"
+    )
+    story_cloud_enabled: bool = Field(default=False, alias="STORY_CLOUD_ENABLED")
+    story_local_llm_provider: Literal["llama.cpp"] = Field(
+        default="llama.cpp", alias="STORY_LOCAL_LLM_PROVIDER"
     )
 
     model_config = SettingsConfigDict(
@@ -338,6 +354,12 @@ class Settings(BaseSettings):
             self.tts_model_dir = PROJECT_ROOT / self.tts_model_dir
         if not self.tts_selection_path.is_absolute():
             self.tts_selection_path = PROJECT_ROOT / self.tts_selection_path
+        if not self.tts_english_model_dir.is_absolute():
+            self.tts_english_model_dir = PROJECT_ROOT / self.tts_english_model_dir
+        if not self.tts_spanish_model_dir.is_absolute():
+            self.tts_spanish_model_dir = PROJECT_ROOT / self.tts_spanish_model_dir
+        if not self.story_library_root.is_absolute():
+            self.story_library_root = PROJECT_ROOT / self.story_library_root
         return self
 
     @model_validator(mode="after")

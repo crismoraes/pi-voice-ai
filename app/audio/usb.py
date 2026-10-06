@@ -449,6 +449,10 @@ class UsbAudioConversation:
             )
             if result is not None:
                 await self._playback.finish()
+                if getattr(result, "story_progress_pending", False):
+                    confirm = getattr(self._conversation_manager, "confirm_story_playback", None)
+                    if confirm is not None:
+                        confirm(self.session_id)
         except asyncio.CancelledError:
             logger.info("USB_CONVERSATION_CANCELLED")
             raise

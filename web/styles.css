@@ -370,3 +370,12 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
 @media (prefers-reduced-motion: reduce) {
   .avatar-head, .avatar-eye ellipse, .avatar-orbit, .avatar-card .avatar-level span, .avatar-card.listening .avatar-halo { animation: none; }
 }
+
+.metric-grid.compact { margin: 1rem 0; }
+.story-search { display: grid; grid-template-columns: minmax(14rem, 1fr) 12rem auto; gap: .75rem; align-items: end; }
+.story-search label { display: grid; gap: .35rem; color: var(--muted); font-size: .85rem; }
+.story-search input { width: 100%; box-sizing: border-box; padding: .72rem; border-radius: .55rem; border: 1px solid rgba(148,163,184,.3); background: rgba(15,23,42,.45); color: inherit; }
+.story-results { display: grid; gap: .6rem; margin-top: 1rem; }
+.story-results article { display: grid; gap: .2rem; padding: .8rem 1rem; border: 1px solid rgba(148,163,184,.25); border-radius: .7rem; }
+.story-results span, .story-results small { color: var(--muted); }
+@media (max-width: 720px) { .story-search { grid-template-columns: 1fr; } }

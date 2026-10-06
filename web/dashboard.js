@@ -214,6 +214,33 @@ function renderTurns(turns) {
   }).join("");
 }
 
+async function loadStoryLibrary() {
+  const response = await fetch("/api/stories/status");
+  if (!response.ok) throw new Error("The story library status could not be loaded.");
+  const data = await response.json();
+  const approved = data.coverage.reduce((sum, item) => sum + (item.approved || 0), 0);
+  document.querySelector("#story-library-status").textContent = data.enabled ? "Enabled · local" : "Disabled";
+  document.querySelector("#story-library-summary").innerHTML = `
+    <article><span>Approved documents</span><strong>${approved}</strong></article>
+    <article><span>Indexed stories</span><strong>${data.indexed_stories}</strong></article>
+    <article><span>Search</span><strong>${data.fts5 === "available" ? "SQLite FTS5" : "Basic fallback"}</strong></article>
+    <article><span>Story cloud</span><strong>${data.cloud_enabled ? "On" : "Off"}</strong></article>`;
+}
+
+document.querySelector("#story-search-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const query = document.querySelector("#story-query").value.trim();
+  if (!query) return;
+  const language = document.querySelector("#story-language").value;
+  const response = await fetch(`/api/stories/search?q=${encodeURIComponent(query)}&language=${encodeURIComponent(language)}`);
+  const data = await response.json();
+  const target = document.querySelector("#story-results");
+  if (!response.ok) { target.textContent = data.detail || "Search failed."; return; }
+  target.innerHTML = data.results.length ? data.results.map(item => `<article><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.language.toUpperCase())} · ${escapeHtml(item.author || "Unknown author")}</span><small>${escapeHtml(item.source_name)}</small></article>`).join("") : '<p class="empty">No approved story matched.</p>';
+});
+
+loadStoryLibrary().catch(error => { document.querySelector("#story-library-status").textContent = error.message; });
+
 async function loadDashboard() {
   text("dashboard-error", "");
   try {

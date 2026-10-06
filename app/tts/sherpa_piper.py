@@ -14,7 +14,7 @@ from app.tts.base import SynthesisResult, TextToSpeech, TextToSpeechUnavailableE
 
 
 class SherpaPiperTextToSpeech(TextToSpeech):
-    """Lazy-loading Portuguese Piper synthesizer."""
+    """Lazy-loading local Piper synthesizer."""
 
     def __init__(
         self,
@@ -33,8 +33,10 @@ class SherpaPiperTextToSpeech(TextToSpeech):
         self._synthesis_lock = asyncio.Lock()
 
     def _model_files(self) -> tuple[Path, Path, Path]:
+        models = sorted(self._model_dir.glob("*.onnx"))
+        model = models[0] if len(models) == 1 else self._model_dir / "model.onnx"
         return (
-            self._model_dir / "pt_BR-jeff-medium.onnx",
+            model,
             self._model_dir / "tokens.txt",
             self._model_dir / "espeak-ng-data",
         )

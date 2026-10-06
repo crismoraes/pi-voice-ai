@@ -16,6 +16,7 @@ from app.stt.base import SpeechToText, TranscriptionResult
 from app.tts.base import SynthesisResult, TextToSpeech
 from app.tts.chunking import split_text_for_speech
 from app.usage.store import UsageStore, UsageTurn
+from app.stories.engine import StoryEngine
 
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
@@ -34,6 +35,7 @@ class ConversationResult:
     first_text_seconds: float
     total_text_seconds: float
     synthesis: SynthesisResult
+    story_progress_pending: bool = False
 
 
 @dataclass(slots=True)
@@ -55,6 +57,8 @@ class ConversationManager:
         tts_chunk_characters: int = 240,
         usage_store: UsageStore | None = None,
         pipeline_lock: asyncio.Lock | None = None,
+        story_engine: StoryEngine | None = None,
+        story_local_model: str | None = None,
     ) -> None:
         self._speech_to_text = speech_to_text
         self._language_model = language_model
@@ -64,9 +68,17 @@ class ConversationManager:
         self._usage_store = usage_store
         self._pipeline_lock = pipeline_lock or asyncio.Lock()
         self._states: dict[str, ConversationState] = {}
+        self._story_engine = story_engine
+        self._story_local_model = story_local_model
 
     def forget(self, session_id: str) -> None:
         self._states.pop(session_id, None)
+        if self._story_engine is not None:
+            self._story_engine.forget(session_id)
+
+    def confirm_story_playback(self, session_id: str) -> None:
+        if self._story_engine is not None:
+            self._story_engine.confirm_playback(session_id)
 
     async def process(
         self,
@@ -138,13 +150,21 @@ class ConversationManager:
             )
             response_text = ""
             token_usage: list[TokenUsage] = []
-            for attempt in range(2):
+            story_turn = self._story_engine.handle(session_id, transcription.text) if self._story_engine is not None else None
+            if story_turn is not None and story_turn.text_segments:
+                response_text = "\n\n".join(story_turn.text_segments)
+                first_text_seconds = perf_counter() - started_at
+                await emit("assistant_delta", {"text": response_text})
+            for attempt in range(2 if not response_text else 0):
                 response_parts: list[str] = []
-                async for delta in self._language_model.stream_response(
-                    transcription.text,
-                    history=tuple(state.history),
-                    on_usage=token_usage.append,
-                ):
+                prompt = story_turn.llm_prompt if story_turn is not None and story_turn.llm_prompt else transcription.text
+                explicit_stream = getattr(self._language_model, "stream_response_for", None)
+                stream = (
+                    explicit_stream("llama.cpp", self._story_local_model, prompt, history=tuple(state.history), on_usage=token_usage.append)
+                    if story_turn is not None and story_turn.llm_prompt and self._story_local_model and explicit_stream
+                    else self._language_model.stream_response(prompt, history=tuple(state.history), on_usage=token_usage.append)
+                )
+                async for delta in stream:
                     if first_text_seconds is None and delta.strip():
                         first_text_seconds = perf_counter() - started_at
                     response_parts.append(delta)
@@ -217,6 +237,15 @@ class ConversationManager:
                 "CONVERSATION_TTS_STARTED",
                 extra={"peer_id": session_id, "input_characters": len(response_text)},
             )
+            if story_turn is not None:
+                desired_tts = {"pt": "pt_BR-jeff-medium", "en": "en_US-lessac-medium", "es": "es_ES-sharvard-medium"}.get(story_turn.language)
+                select_tts = getattr(self._text_to_speech, "select", None)
+                if desired_tts and select_tts and getattr(self._text_to_speech, "model", None) != desired_tts:
+                    try:
+                        await select_tts("sherpa-onnx", desired_tts)
+                        tts_model = desired_tts
+                    except Exception:
+                        logger.warning("STORY_TTS_LANGUAGE_FALLBACK", extra={"language": story_turn.language, "requested_model": desired_tts})
             tts_started_at = perf_counter()
             first_audio_seconds: float | None = None
             syntheses: list[SynthesisResult] = []
@@ -297,4 +326,5 @@ class ConversationManager:
                 first_text_seconds=first_text_seconds,
                 total_text_seconds=total_text_seconds,
                 synthesis=synthesis,
+                story_progress_pending=bool(story_turn and story_turn.story_id and story_turn.text_segments),
             )

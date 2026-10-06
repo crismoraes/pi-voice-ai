@@ -1,0 +1,7 @@
+{
+  "title": "The Lantern Seed", "language": "en", "locale": "en-US",
+  "source_name": "PiVoice AI original sample", "author": "PiVoice AI contributors",
+  "category": "children", "themes": ["sharing", "community"], "age_min": 5, "age_max": 12,
+  "age_review_status": "approved", "license_id": "CC0-1.0", "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "rights_evidence": "Original project sample dedicated to CC0.", "rights_status": "approved", "review_status": "approved"
+}

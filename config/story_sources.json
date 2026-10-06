@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "notes": "Every remote item is disabled until a maintainer confirms jurisdiction, item license, age suitability, and checksum.",
+  "items": [
+    {
+      "id": "gutenberg-28308", "enabled": false, "extension": ".txt",
+      "canonical_url": "https://www.gutenberg.org/ebooks/28308",
+      "download_url": "https://www.gutenberg.org/cache/epub/28308/pg28308.txt",
+      "allowed_hosts": ["www.gutenberg.org"], "delay_seconds": 2,
+      "metadata": {"title": "The Children's Book of Christmas Stories", "language": "en", "source_name": "Project Gutenberg", "license_id": "Public domain in the USA", "rights_status": "pending", "review_status": "needs_review", "age_review_status": "pending", "collection": true}
+    },
+    {
+      "id": "standard-ebooks-wilde-childrens-stories", "enabled": false, "extension": ".epub",
+      "canonical_url": "https://standardebooks.org/ebooks/oscar-wilde/childrens-stories",
+      "download_url": "https://standardebooks.org/ebooks/oscar-wilde/childrens-stories/downloads/oscar-wilde_childrens-stories.epub",
+      "allowed_hosts": ["standardebooks.org"], "delay_seconds": 2,
+      "metadata": {"title": "Children's Stories", "language": "en", "author": "Oscar Wilde", "source_name": "Standard Ebooks", "rights_status": "pending", "review_status": "needs_review", "age_review_status": "pending", "collection": true}
+    },
+    {
+      "id": "gdl-item-to-be-selected", "enabled": false, "extension": ".h5p",
+      "canonical_url": "https://digitallibrary.io/", "download_url": "https://content.digitallibrary.io/wp-json/content-api/v1/h5p/0",
+      "allowed_hosts": ["content.digitallibrary.io"], "delay_seconds": 2,
+      "metadata": {"title": "Select a Global Digital Library item", "language": "pt", "source_name": "Global Digital Library", "rights_status": "pending", "review_status": "needs_review", "age_review_status": "pending"}
+    },
+    {
+      "id": "ebible-eng-web-c", "enabled": false, "extension": ".epub",
+      "canonical_url": "https://ebible.org/eng-web-c/", "download_url": "https://ebible.org/eng-web-c/eng-web-c.epub",
+      "allowed_hosts": ["ebible.org"], "delay_seconds": 2,
+      "metadata": {"title": "World English Bible, Catholic Edition", "language": "en", "category": "biblical", "source_name": "eBible.org", "license_id": "Public domain", "rights_status": "pending", "review_status": "needs_review", "age_review_status": "pending"}
+    }
+  ]
+}

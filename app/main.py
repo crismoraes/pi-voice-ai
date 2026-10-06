@@ -15,10 +15,12 @@ from app.api.health import router as health_router
 from app.api.realtime import router as realtime_router
 from app.api.signaling import router as signaling_router
 from app.api.system import router as system_router
+from app.api.stories import router as stories_router, story_library
 from app.api.usage import router as usage_router
 from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
+from app.stories.engine import StoryEngine
 from app.logging_config import configure_logging
 from app.realtime.router import VoicePipelineRouter
 from app.realtime.usb import OpenAIRealtimeUsbPipeline
@@ -45,6 +47,8 @@ conversation_manager = ConversationManager(
     tts_chunk_characters=settings.tts_chunk_characters,
     usage_store=usage_store,
     pipeline_lock=pipeline_selection_lock,
+    story_engine=StoryEngine(story_library) if settings.story_library_enabled else None,
+    story_local_model=settings.local_llm_model,
 )
 realtime_usb = OpenAIRealtimeUsbPipeline(
     api_key=(
@@ -113,6 +117,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             "USAGE_STORE_INITIALIZATION_FAILED",
             extra={"error_type": type(exc).__name__},
         )
+    if settings.story_library_enabled:
+        await asyncio.to_thread(story_library.initialize)
     await asyncio.gather(speech_to_text.warm_up(), text_to_speech.warm_up())
     logger.info("APP_MODELS_READY")
     await peer_manager.set_enabled(assistant_control.enabled)
@@ -149,6 +155,7 @@ app.include_router(assistant_router)
 app.include_router(usage_router)
 app.include_router(system_router)
 app.include_router(realtime_router)
+app.include_router(stories_router)
 app.mount(
     "/",
     StaticFiles(directory=str(PROJECT_ROOT / "web"), html=True),

@@ -102,6 +102,20 @@
         <p id="processing-note" class="technology-note">Audio, STT, and TTS stay on the Raspberry Pi. Text leaves the device only when OpenAI is selected.</p>
       </section>
 
+      <section class="dashboard-section story-library" aria-labelledby="story-library-title">
+        <div class="recent-turns-heading">
+          <div><p class="section-kicker">Offline first</p><h2 id="story-library-title">Story library</h2></div>
+          <span id="story-library-status">Loading…</span>
+        </div>
+        <div id="story-library-summary" class="metric-grid compact"></div>
+        <form id="story-search-form" class="story-search">
+          <label>Search approved stories<input id="story-query" maxlength="300" placeholder="Title, theme, or keyword"></label>
+          <label>Language<select id="story-language"><option value="">All</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option></select></label>
+          <button type="submit">Search</button>
+        </form>
+        <div id="story-results" class="story-results"><p class="empty">Search the local approved catalog.</p></div>
+      </section>
+
       <section class="metric-grid" aria-label="Summary">
         <article><span>Turns</span><strong id="turns">—</strong></article>
         <article><span>Total tokens</span><strong id="tokens">—</strong></article>

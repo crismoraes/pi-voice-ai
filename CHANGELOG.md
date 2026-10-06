@@ -434,3 +434,11 @@
 - Raspberry Pi 5 Model B, arquitetura ARM64, sistema, Python, Git, RAM, disco,
   temperatura e estado de throttling.
 - Repositório local limpo e sincronizado com `origin/main`, sem segredos rastreados.
+## 1.4.0.dev0 - Phase 14
+
+- Added a multilingual offline story library with guarded TXT, Markdown, HTML, EPUB, PDF, and H5P extraction.
+- Added SQLite catalog and FTS5 content search, immutable source metadata, rights and editorial gates, age fields, reports, and idempotent ingestion.
+- Added the `stories` administration CLI, offline CC0 starter set, bounded manifest downloader, safe export, and read only dashboard APIs.
+- Added deterministic multilingual story commands and forced llama.cpp routing for generated or adapted story content.
+- Added automatic Whisper language detection and verified local Piper model choices for Portuguese, English, and Spanish.
+- Added dashboard catalog status and approved story search.

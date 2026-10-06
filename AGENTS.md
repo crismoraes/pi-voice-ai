@@ -2356,3 +2356,12 @@ TTS
 The repository must continuously evolve into a complete, reproducible technical and educational record of the project.
 
 The project is not complete if the code works but the knowledge required to recreate and teach it has been lost.
+## Phase 14 invariant: local story library
+
+- Story data lives under ignored `data/story_library`; never commit downloaded works, child audio, transcripts, profiles, or generated derivatives.
+- Every story read path must enforce `rights_status=approved`, `review_status=approved`, and `index_status=indexed`, including direct IDs and question retrieval.
+- Never infer or auto approve rights, licenses, attribution, age suitability, or content warnings. Remote manifest entries remain disabled until an administrator reviews the exact item.
+- Story generation, retelling, interactive narration, and story Q&A use the explicit llama.cpp adapter. `STORY_CLOUD_ENABLED` defaults to false and must not be treated as consent to process children's personal data.
+- READ_EXACT returns stored canonical sections without an LLM. A fallback search mode must be reported explicitly. Image only PDFs are `needs_ocr`.
+- Dashboard story APIs remain read only until the application has authenticated administrator roles. Rights and editorial mutations are local CLI operations.
+- Keep English, Portuguese, and Spanish STT/TTS paths operational and validate offline behavior after deployment.

@@ -1352,3 +1352,37 @@ validações, inventário e pendências ao usuário. O commit inicial
 - Após o teste temporário, `Ctrl+C` encerrou a sessão SSH antes de encerrar o
   servidor remoto. O processo exato foi identificado pelo PID, finalizado com
   `SIGTERM` e a porta 8000 foi confirmada como livre.
+## Phase 14: multilingual offline story library
+
+Phase 14 adds a private, offline first library for English, Portuguese, and Spanish. Once content and models are prepared, approved stories can be searched and read without sending story text or children's speech to a cloud service. The story path always uses the local llama.cpp provider for adaptations, new stories, and questions. `STORY_CLOUD_ENABLED=false` is the safe default.
+
+The catalog keeps raw source files, normalized text, split stories, rights evidence, age review, reports, and SQLite FTS5 indexes under `data/story_library/`. This directory is ignored by Git. Search and narration return only records whose rights and editorial review are both `approved`. Web endpoints are read only; approval remains an administrator action through the local CLI because this project does not yet have authenticated dashboard users.
+
+```bash
+# Safe starter catalog: three original CC0 samples, no network
+stories bootstrap --offline
+stories doctor --offline
+stories list
+stories search "lantern" --language en
+
+# Manual import: copy TXT, MD, HTML, EPUB, PDF, or H5P plus an optional .json sidecar
+cp my-story.epub data/story_library/inbox/
+stories ingest
+stories review --list
+stories review doc_ID --rights approved --decision approved
+stories index
+stories report
+```
+
+Remote sources are declared in `config/story_sources.json` and disabled until an administrator verifies the exact item, jurisdiction, license, attribution, age suitability, and checksum. The downloader uses an allowlist, size limits, bounded retries, temporary files, hashes, and low request frequency. Project Gutenberg automation must follow its [robot access policy](https://www.gutenberg.org/policy/robot_access.html); Global Digital Library exposes its [Content API](https://content.digitallibrary.io/api/) and item specific licenses; Standard Ebooks and eBible entries retain their canonical item pages.
+
+PDFs with no extractable text are labeled `needs_ocr`; no silent OCR or invented text is performed. FTS5 is the current local search engine. The dashboard reports `semantic_search: pending_local_model` so this degradation remains visible until a reviewed embedding model is shipped.
+
+### Voice commands
+
+- “Liste histórias”, “list stories”, or “lista cuentos”.
+- “Leia A Semente Luminosa”, “read The Lantern Seed”, or “lee La Semilla Luminosa”.
+- “Continue” resumes the next stored section.
+- “Reconte…”, “create a story…”, and questions about the active story use llama.cpp locally.
+
+Whisper uses `STT_LANGUAGE=auto`. Piper voices are selected from `pt_BR-jeff-medium`, `en_US-lessac-medium`, and `es_ES-sharvard-medium`. Run `scripts/download_tts_model.sh` to install all three archives with fixed SHA-256 verification.
