@@ -538,6 +538,12 @@ offers a deterministic **Stop speaking** action backed by
 `POST /api/system/assistant/interrupt`; it cancels the active USB turn and playback,
 then capture resumes for the next request. Browser WebRTC remains the path for
 automatic voice barge-in because the browser supplies acoustic echo processing.
+Commit `a028b68` is deployed and all 53 tests pass on Windows and Raspberry Pi
+ARM64. The deployed API reports `barge_in: false` and
+`interrupt_available: true`. A live POST during USB playback returned
+`interrupted: true`; the journal recorded 1.949 seconds discarded followed by
+`USB_CAPTURE_RESUMED_AFTER_TURN`. The service is active with `NRestarts=0`, one
+`arecord`, no `aplay` after the interruption, and no recent warnings.
 
 ## Project Goal
 

@@ -88,6 +88,9 @@
 
 ### Validated
 
+- Cinquenta e três testes passaram no Windows e no Pi ARM64. O botão implantado
+  interrompeu uma resposta com 1,949 segundo pendente e a captura USB voltou
+  imediatamente, sem warnings ou reinícios do serviço.
 - Cinquenta e um testes passaram no Windows e no Pi ARM64. Uma captura real em
   1.440 px confirmou os cartões sem overflow horizontal; a API confirmou barge-in
   USB ativo e o restart seguinte terminou sem timeout do systemd.

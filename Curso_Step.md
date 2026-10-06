@@ -1864,6 +1864,11 @@ dashboard chama `POST /api/system/assistant/interrupt`, cancela o turno e o `apl
 e permite que a captura recomece. Interrupção automática continua adequada no
 navegador WebRTC, que dispõe de processamento acústico, ou em hardware com AEC.
 
+Os 53 testes passaram no Windows e no Pi ARM64. No teste implantado, o endpoint foi
+acionado durante uma resposta: retornou `interrupted: true`, descartou 1,949 segundo
+de áudio e o journal registrou `USB_CAPTURE_RESUMED_AFTER_TURN`. O serviço ficou
+ativo, com `NRestarts=0`, um único `arecord` e nenhum warning recente.
+
 ## Que informações nunca devem aparecer em uma aula ou diagnóstico publicado?
 
 Não mostre a chave privada SSH, senha, `OPENAI_API_KEY`, conteúdo do `.env`, chave
