@@ -11,6 +11,9 @@ from app.stories.library import StoryLibrary, StoryNotAvailableError
 from app.stories.types import SourceMetadata
 from app.stories.acquisition import _acquire_item
 from app.stories.paths import StoryPaths
+from app.stories.audio_cache import StoryAudioCache
+from app.tts.base import SynthesisResult
+import numpy as np
 
 
 def metadata(**changes):
@@ -49,6 +52,28 @@ def test_malicious_epub_path_is_ignored_and_pdf_without_text_needs_ocr(tmp_path:
     assert extract_document(pdf).status == "needs_ocr"
 
 
+def test_text_pdf_and_valid_epub_keep_source_structure(tmp_path: Path):
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+    writer = PdfWriter(); page = writer.add_blank_page(300, 300)
+    font = DictionaryObject({NameObject("/Type"): NameObject("/Font"), NameObject("/Subtype"): NameObject("/Type1"), NameObject("/BaseFont"): NameObject("/Helvetica")})
+    page[NameObject("/Resources")] = DictionaryObject({NameObject("/Font"): DictionaryObject({NameObject("/F1"): writer._add_object(font)})})
+    stream = DecodedStreamObject(); stream.set_data(b"BT /F1 12 Tf 40 250 Td (Canonical PDF story) Tj ET")
+    page[NameObject("/Contents")] = writer._add_object(stream)
+    pdf = tmp_path / "text.pdf"
+    with pdf.open("wb") as target: writer.write(target)
+    pdf_result = extract_document(pdf)
+    assert pdf_result.status == "extracted" and "Canonical PDF story" in pdf_result.text
+
+    epub = tmp_path / "story.epub"
+    with zipfile.ZipFile(epub, "w") as archive:
+        archive.writestr("META-INF/container.xml", '<container><rootfiles><rootfile full-path="OPS/content.opf"/></rootfiles></container>')
+        archive.writestr("OPS/content.opf", '<package><manifest><item id="one" href="one.xhtml"/></manifest><spine><itemref idref="one"/></spine></package>')
+        archive.writestr("OPS/one.xhtml", '<html><body><h1>Story One</h1><p>First paragraph.</p></body></html>')
+    epub_result = extract_document(epub)
+    assert epub_result.status == "extracted" and epub_result.sections[0].source_locator == "OPS/one.xhtml"
+
+
 def test_exact_read_does_not_need_an_llm(tmp_path: Path):
     library = StoryLibrary(tmp_path / "library")
     story = tmp_path / "story.txt"; story.write_text("Exact canonical text.", encoding="utf-8")
@@ -66,3 +91,28 @@ def test_acquisition_rejects_html_disguised_as_epub(tmp_path: Path):
     paths = StoryPaths(tmp_path / "library"); paths.create()
     with httpx.Client(transport=transport) as client, pytest.raises(ValueError, match="expected ZIP"):
         _acquire_item(client, paths, item, 1000)
+
+
+def test_collection_with_roman_headings_splits_without_mixing_stories(tmp_path: Path):
+    library = StoryLibrary(tmp_path / "library")
+    source = tmp_path / "collection.txt"
+    source.write_text("I\n\nFIRST TALE\n\nFirst body.\n\nII\n\nSECOND TALE[A]\n\nSecond body.\n\nIII\n\nTHIRD TALE\n\nThird body.", encoding="utf-8")
+    result = library.ingest_file(source, metadata(title="Collection", collection=True))
+    library.build_index()
+    assert result["stories"] == 3
+    stories = library.list_stories()
+    assert [item["title"] for item in stories] == ["FIRST TALE", "SECOND TALE", "THIRD TALE"]
+    assert library.get_story(stories[1]["story_id"])["sections"][0]["text"] == "Second body."
+
+
+def test_story_audio_cache_is_voice_specific_and_invalidated_by_review(tmp_path: Path):
+    library = StoryLibrary(tmp_path / "library"); library.initialize()
+    cache = StoryAudioCache(library.paths.cache_audio, 1_000_000)
+    audio = SynthesisResult(np.array([0.1, -0.1], dtype=np.float32), 22050, 0.2)
+    cache.put("hello", "english", audio)
+    assert cache.get("hello", "english") is not None
+    assert cache.get("hello", "spanish") is None
+    source = tmp_path / "story.txt"; source.write_text("hello", encoding="utf-8")
+    document = library.ingest_file(source, metadata())
+    library.review(document["document_id"], "approved")
+    assert cache.get("hello", "english") is None

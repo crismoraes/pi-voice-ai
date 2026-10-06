@@ -1374,7 +1374,7 @@ stories index
 stories report
 ```
 
-Remote sources are declared in `config/story_sources.json` and disabled until an administrator verifies the exact item, jurisdiction, license, attribution, age suitability, and checksum. The downloader uses an allowlist, size limits, bounded retries, temporary files, hashes, and low request frequency. Project Gutenberg automation must follow its [robot access policy](https://www.gutenberg.org/policy/robot_access.html); Global Digital Library exposes its [Content API](https://content.digitallibrary.io/api/) and item specific licenses; Standard Ebooks and eBible entries retain their canonical item pages.
+Remote sources are declared in `config/story_sources.json`. The two verified starter URLs are attempted but remain pending after import; Global Digital Library and eBible stay disabled until an administrator verifies the exact item, jurisdiction, license, attribution, age suitability, and checksum. The downloader uses an allowlist, size limits, bounded retries, temporary files, hashes, and low request frequency. Project Gutenberg automation follows its [robot access policy](https://www.gutenberg.org/policy/robot_access.html); Global Digital Library exposes its [Content API](https://content.digitallibrary.io/api/) and item specific licenses; Standard Ebooks and eBible entries retain their canonical item pages. A format mismatch is recorded for manual download instead of accepting an HTML response as a book.
 
 PDFs with no extractable text are labeled `needs_ocr`; no silent OCR or invented text is performed. FTS5 is the current local search engine. The dashboard reports `semantic_search: pending_local_model` so this degradation remains visible until a reviewed embedding model is shipped.
 
@@ -1385,4 +1385,4 @@ PDFs with no extractable text are labeled `needs_ocr`; no silent OCR or invented
 - “Continue” resumes the next stored section.
 - “Reconte…”, “create a story…”, and questions about the active story use llama.cpp locally.
 
-Whisper uses `STT_LANGUAGE=auto`. Piper voices are selected from `pt_BR-jeff-medium`, `en_US-lessac-medium`, and `es_ES-sharvard-medium`. Run `scripts/download_tts_model.sh` to install all three archives with fixed SHA-256 verification.
+Whisper uses `STT_LANGUAGE=auto`. Piper voices are selected from `pt_BR-jeff-medium`, `en_US-lessac-medium`, and `es_ES-sharvard-medium`. Run `scripts/download_tts_model.sh` to install all three archives with fixed SHA-256 verification. Story audio is cached privately by text and voice hash, bounded by `STORY_AUDIO_CACHE_MAX_MB`, and cleared when review or rights state changes.

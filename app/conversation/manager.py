@@ -17,6 +17,7 @@ from app.tts.base import SynthesisResult, TextToSpeech
 from app.tts.chunking import split_text_for_speech
 from app.usage.store import UsageStore, UsageTurn
 from app.stories.engine import StoryEngine
+from app.stories.audio_cache import StoryAudioCache
 
 logger = logging.getLogger("pi_voice_ai.conversation")
 EventHandler = Callable[[str, dict[str, object]], Awaitable[None]]
@@ -59,6 +60,7 @@ class ConversationManager:
         pipeline_lock: asyncio.Lock | None = None,
         story_engine: StoryEngine | None = None,
         story_local_model: str | None = None,
+        story_audio_cache: StoryAudioCache | None = None,
     ) -> None:
         self._speech_to_text = speech_to_text
         self._language_model = language_model
@@ -70,6 +72,7 @@ class ConversationManager:
         self._states: dict[str, ConversationState] = {}
         self._story_engine = story_engine
         self._story_local_model = story_local_model
+        self._story_audio_cache = story_audio_cache
 
     def forget(self, session_id: str) -> None:
         self._states.pop(session_id, None)
@@ -253,7 +256,14 @@ class ConversationManager:
                 response_text, self._tts_chunk_characters
             )
             for index, text_chunk in enumerate(text_chunks, start=1):
-                synthesis_chunk = await self._text_to_speech.synthesize(text_chunk)
+                synthesis_chunk = (
+                    self._story_audio_cache.get(text_chunk, str(tts_model))
+                    if story_turn is not None and self._story_audio_cache is not None else None
+                )
+                if synthesis_chunk is None:
+                    synthesis_chunk = await self._text_to_speech.synthesize(text_chunk)
+                    if story_turn is not None and self._story_audio_cache is not None:
+                        self._story_audio_cache.put(text_chunk, str(tts_model), synthesis_chunk)
                 syntheses.append(synthesis_chunk)
                 if play_audio is not None:
                     await play_audio(synthesis_chunk)

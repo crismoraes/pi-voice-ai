@@ -442,3 +442,5 @@
 - Added deterministic multilingual story commands and forced llama.cpp routing for generated or adapted story content.
 - Added automatic Whisper language detection and verified local Piper model choices for Portuguese, English, and Spanish.
 - Added dashboard catalog status and approved story search.
+- Added bounded voice-specific story audio caching with review and rights invalidation.
+- Executed the Project Gutenberg starter acquisition; invalid EPUB responses are now isolated and reported for manual download.

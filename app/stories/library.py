@@ -374,6 +374,24 @@ class StoryLibrary:
                         groups.append((match.group(1).strip(), [type(extraction.sections[0])(1, match.group(1).strip(), body, f"heading:{index + 1}")]))
                 if groups:
                     return groups
+            roman_matches = list(
+                re.finditer(r"(?m)^([IVXLCDM]{1,8})\n\n([^\n]{4,180})\n\n", text)
+            )
+            if len(roman_matches) >= 3:
+                groups = []
+                for index, match in enumerate(roman_matches):
+                    end = roman_matches[index + 1].start() if index + 1 < len(roman_matches) else len(text)
+                    body = text[match.end():end].strip()
+                    title = re.sub(r"\[[A-Z]+\]$", "", match.group(2)).strip(' "')
+                    if body:
+                        groups.append(
+                            (
+                                title,
+                                [type(extraction.sections[0])(1, title, body, f"roman:{match.group(1)}")],
+                            )
+                        )
+                if groups:
+                    return groups
         return [(metadata.title, list(extraction.sections))]
 
     def review(self, document_id: str, decision: str) -> None:
@@ -386,6 +404,7 @@ class StoryLibrary:
             )
             if result.rowcount != 1:
                 raise KeyError(document_id)
+        self._invalidate_audio_cache()
 
     def set_rights(self, document_id: str, status: str) -> None:
         if status not in {"approved", "blocked", "pending"}:
@@ -397,6 +416,11 @@ class StoryLibrary:
             )
             if result.rowcount != 1:
                 raise KeyError(document_id)
+        self._invalidate_audio_cache()
+
+    def _invalidate_audio_cache(self) -> None:
+        for path in self.paths.cache_audio.glob("*.npz"):
+            path.unlink(missing_ok=True)
 
     def build_index(self, *, incremental: bool = True) -> dict[str, object]:
         self.initialize()

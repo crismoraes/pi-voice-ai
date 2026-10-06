@@ -21,6 +21,7 @@ from app.audio.usb import UsbAudioConversation
 from app.config import PROJECT_ROOT, get_settings
 from app.conversation.manager import ConversationManager
 from app.stories.engine import StoryEngine
+from app.stories.audio_cache import StoryAudioCache
 from app.logging_config import configure_logging
 from app.realtime.router import VoicePipelineRouter
 from app.realtime.usb import OpenAIRealtimeUsbPipeline
@@ -49,6 +50,7 @@ conversation_manager = ConversationManager(
     pipeline_lock=pipeline_selection_lock,
     story_engine=StoryEngine(story_library) if settings.story_library_enabled else None,
     story_local_model=settings.local_llm_model,
+    story_audio_cache=StoryAudioCache(story_library.paths.cache_audio, settings.story_audio_cache_max_mb * 1024 * 1024) if settings.story_library_enabled else None,
 )
 realtime_usb = OpenAIRealtimeUsbPipeline(
     api_key=(

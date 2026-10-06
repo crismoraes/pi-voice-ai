@@ -272,6 +272,14 @@ class Settings(BaseSettings):
     story_local_llm_provider: Literal["llama.cpp"] = Field(
         default="llama.cpp", alias="STORY_LOCAL_LLM_PROVIDER"
     )
+    story_languages: str = Field(default="en,pt,es", alias="STORY_LANGUAGES")
+    story_ocr_enabled: bool = Field(default=False, alias="STORY_OCR_ENABLED")
+    story_download_max_per_language: int = Field(default=50, ge=1, le=50, alias="STORY_DOWNLOAD_MAX_PER_LANGUAGE")
+    story_download_max_bytes: int = Field(default=50_000_000, ge=1_000_000, alias="STORY_DOWNLOAD_MAX_BYTES")
+    story_download_timeout_seconds: float = Field(default=30, ge=5, le=120, alias="STORY_DOWNLOAD_TIMEOUT_SECONDS")
+    story_audio_cache_max_mb: int = Field(default=256, ge=16, le=4096, alias="STORY_AUDIO_CACHE_MAX_MB")
+    story_retention_days: int = Field(default=90, ge=1, le=3650, alias="STORY_RETENTION_DAYS")
+    story_embedding_model: str = Field(default="pending-local-multilingual-model", alias="STORY_EMBEDDING_MODEL")
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
