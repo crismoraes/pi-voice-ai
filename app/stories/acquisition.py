@@ -31,10 +31,19 @@ def acquire_manifest(
     paths = StoryPaths(root)
     paths.create()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    _atomic_write(paths.manifests / manifest_path.name, manifest_path.read_bytes())
     results: list[dict[str, object]] = []
     with httpx.Client(timeout=timeout_seconds, follow_redirects=True) as client:
         for item in manifest.get("items", [])[:max_items]:
             if not item.get("enabled", False):
+                continue
+            extension = str(item.get("extension", ".txt"))
+            if extension not in {".txt", ".md", ".html", ".htm", ".epub", ".pdf", ".h5p"}:
+                raise ValueError("Unsupported acquired file extension")
+            output = paths.inbox / f"{item['id']}{extension}"
+            sidecar_path = output.with_suffix(output.suffix + ".json")
+            if output.is_file() and sidecar_path.is_file():
+                results.append({"id": item["id"], "status": "already_downloaded", "bytes": output.stat().st_size, "sha256": hashlib.sha256(output.read_bytes()).hexdigest()})
                 continue
             url = str(item["download_url"])
             allowed_hosts = set(item.get("allowed_hosts", []))
@@ -57,16 +66,12 @@ def acquire_manifest(
             content = response.content
             if not content or len(content) > max_bytes:
                 raise ValueError(f"Download {item.get('id')} has an invalid size")
-            extension = str(item.get("extension", ".txt"))
-            if extension not in {".txt", ".md", ".html", ".htm", ".epub", ".pdf", ".h5p"}:
-                raise ValueError("Unsupported acquired file extension")
             if extension in {".epub", ".h5p"} and not content.startswith(b"PK"):
                 raise ValueError(f"Download {item['id']} is not a ZIP-based document")
             if extension == ".pdf" and not content.startswith(b"%PDF"):
                 raise ValueError(f"Download {item['id']} is not a PDF")
             if extension in {".txt", ".md", ".html", ".htm"} and b"\x00" in content[:4096]:
                 raise ValueError(f"Download {item['id']} does not look like text")
-            output = paths.inbox / f"{item['id']}{extension}"
             _atomic_write(output, content)
             sha256 = hashlib.sha256(content).hexdigest()
             expected = item.get("sha256")
@@ -75,7 +80,7 @@ def acquire_manifest(
                 raise ValueError(f"Checksum mismatch for {item['id']}")
             metadata = dict(item["metadata"])
             metadata.update({"source_url": item["canonical_url"], "source_item_id": item["id"]})
-            _atomic_write(output.with_suffix(output.suffix + ".json"), json.dumps(metadata, ensure_ascii=False, indent=2).encode())
+            _atomic_write(sidecar_path, json.dumps(metadata, ensure_ascii=False, indent=2).encode())
             results.append({"id": item["id"], "status": "downloaded", "bytes": len(content), "sha256": sha256})
             time.sleep(min(float(item.get("delay_seconds", 2)), 10))
     report = paths.reports / "acquisition-latest.json"

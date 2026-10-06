@@ -82,13 +82,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("doctor").add_argument("--offline", action="store_true")
     bootstrap = sub.add_parser("bootstrap")
     bootstrap.add_argument("--offline", action="store_true")
+    bootstrap.add_argument("--languages", nargs="+", choices=["en", "pt", "es"], default=["en", "pt", "es"])
+    bootstrap.add_argument("--max-per-language", type=int, default=50)
     bootstrap.add_argument("--manifest", type=Path, default=Path("config/story_sources.json"))
-    ingest = sub.add_parser("ingest"); ingest.add_argument("path", nargs="?", type=Path)
+    ingest = sub.add_parser("ingest"); ingest.add_argument("path", nargs="?", type=Path); ingest.add_argument("--input", dest="input_path", type=Path)
     review = sub.add_parser("review"); review.add_argument("document_id", nargs="?"); review.add_argument("--decision", choices=["approved", "rejected", "needs_review"]); review.add_argument("--rights", choices=["approved", "blocked", "pending"]); review.add_argument("--list", action="store_true")
-    index = sub.add_parser("index"); index.add_argument("--full", action="store_true")
-    listing = sub.add_parser("list"); listing.add_argument("--language", choices=["en", "pt", "es"]); listing.add_argument("--all", action="store_true")
-    search = sub.add_parser("search"); search.add_argument("query"); search.add_argument("--language", choices=["en", "pt", "es"]); search.add_argument("--age", type=int)
-    play = sub.add_parser("play"); play.add_argument("--id", required=True); play.add_argument("--section", type=int, default=1)
+    index = sub.add_parser("index"); index.add_argument("--full", action="store_true"); index.add_argument("--incremental", action="store_true")
+    listing = sub.add_parser("list"); listing.add_argument("--language", choices=["en", "pt", "es"]); listing.add_argument("--all", action="store_true"); listing.add_argument("--approved-only", action="store_true")
+    search = sub.add_parser("search"); search.add_argument("query", nargs="?"); search.add_argument("--query", dest="query_option"); search.add_argument("--language", choices=["en", "pt", "es"]); search.add_argument("--age", type=int)
+    play = sub.add_parser("play"); play.add_argument("--id", required=True); play.add_argument("--section", type=int, default=1); play.add_argument("--mode", choices=["read_exact"], default="read_exact")
     sub.add_parser("report")
     export = sub.add_parser("export"); export.add_argument("output", type=Path)
     package_import = sub.add_parser("import-package"); package_import.add_argument("package", type=Path)
@@ -104,13 +106,13 @@ def main(argv: list[str] | None = None) -> int:
             fts = db.execute("SELECT value FROM metadata WHERE key='fts5'").fetchone()[0]
         _print({"ok": True, "offline": args.offline, "root": str(library.paths.root), "sqlite_fts5": fts, "network_attempted": False})
     elif args.command == "bootstrap":
-        downloads = [] if args.offline else acquire_manifest(library.paths.root, args.manifest)
+        downloads = [] if args.offline else acquire_manifest(library.paths.root, args.manifest, max_items=max(1, args.max_per_language * len(args.languages)))
         _seed_samples(library)
         ingested = library.ingest_inbox()
         _print({"downloads": downloads, "ingested": ingested, "index": library.build_index()})
-    elif args.command == "ingest": _print(library.ingest_inbox(args.path))
+    elif args.command == "ingest": _print(library.ingest_inbox(args.input_path or args.path))
     elif args.command == "review":
-        if args.list or not args.document_id:
+        if args.list or args.document_id == "list" or not args.document_id:
             _print(library.report()["pending"])
         else:
             if args.decision: library.review(args.document_id, args.decision)
@@ -118,7 +120,10 @@ def main(argv: list[str] | None = None) -> int:
             _print({"document_id": args.document_id, "updated": True})
     elif args.command == "index": _print(library.build_index(incremental=not args.full))
     elif args.command == "list": _print(library.list_stories(language=args.language, approved_only=not args.all))
-    elif args.command == "search": _print([asdict(item) for item in library.search(args.query, language=args.language, age=args.age)])
+    elif args.command == "search":
+        query = args.query_option or args.query
+        if not query: raise SystemExit("A search query is required")
+        _print([asdict(item) for item in library.search(query, language=args.language, age=args.age)])
     elif args.command == "play":
         story = library.get_story(args.id)
         sections = story["sections"]

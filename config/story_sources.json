@@ -3,14 +3,14 @@
   "notes": "Every remote item is disabled until a maintainer confirms jurisdiction, item license, age suitability, and checksum.",
   "items": [
     {
-      "id": "gutenberg-28308", "enabled": false, "extension": ".txt",
+      "id": "gutenberg-28308", "enabled": true, "extension": ".txt",
       "canonical_url": "https://www.gutenberg.org/ebooks/28308",
       "download_url": "https://www.gutenberg.org/cache/epub/28308/pg28308.txt",
       "allowed_hosts": ["www.gutenberg.org"], "delay_seconds": 2,
       "metadata": {"title": "The Children's Book of Christmas Stories", "language": "en", "source_name": "Project Gutenberg", "license_id": "Public domain in the USA", "rights_status": "pending", "review_status": "needs_review", "age_review_status": "pending", "collection": true}
     },
     {
-      "id": "standard-ebooks-wilde-childrens-stories", "enabled": false, "extension": ".epub",
+      "id": "standard-ebooks-wilde-childrens-stories", "enabled": true, "extension": ".epub",
       "canonical_url": "https://standardebooks.org/ebooks/oscar-wilde/childrens-stories",
       "download_url": "https://standardebooks.org/ebooks/oscar-wilde/childrens-stories/downloads/oscar-wilde_childrens-stories.epub",
       "allowed_hosts": ["standardebooks.org"], "delay_seconds": 2,
