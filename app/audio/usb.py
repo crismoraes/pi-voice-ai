@@ -71,32 +71,49 @@ class AlsaPlayback:
             raise UsbAudioUnavailableError("ALSA playback input is unavailable")
         pcm = (np.clip(synthesis.samples, -1.0, 1.0) * 32767.0).astype("<i2")
         process.stdin.write(pcm.tobytes())
-        await process.stdin.drain()
         self._written_seconds += synthesis.audio_seconds
 
     async def finish(self) -> None:
         process = self._process
         if process is None:
             return
-        if process.stdin is not None:
-            process.stdin.close()
-            with suppress(BrokenPipeError, ConnectionResetError):
-                await process.stdin.wait_closed()
-        return_code = await process.wait()
-        stderr = await process.stderr.read() if process.stderr is not None else b""
-        if return_code != 0:
-            raise UsbAudioUnavailableError(
-                f"aplay exited with status {return_code}: "
-                f"{stderr.decode(errors='replace').strip()}"
+        try:
+            if process.stdin is not None:
+                process.stdin.close()
+                with suppress(BrokenPipeError, ConnectionResetError):
+                    await process.stdin.wait_closed()
+            return_code = await process.wait()
+            stderr = await process.stderr.read() if process.stderr is not None else b""
+            if return_code != 0:
+                raise UsbAudioUnavailableError(
+                    f"aplay exited with status {return_code}: "
+                    f"{stderr.decode(errors='replace').strip()}"
+                )
+            logger.info(
+                "USB_PLAYBACK_COMPLETED",
+                extra={
+                    "audio_seconds": round(self._written_seconds, 3),
+                    "elapsed_seconds": round(
+                        perf_counter() - (self._started_at or 0), 3
+                    ),
+                },
             )
-        logger.info(
-            "USB_PLAYBACK_COMPLETED",
-            extra={
-                "audio_seconds": round(self._written_seconds, 3),
-                "elapsed_seconds": round(perf_counter() - (self._started_at or 0), 3),
-            },
-        )
-        self._reset()
+        finally:
+            self._reset()
+
+    async def abort(self) -> None:
+        """Terminate playback and always release the tracked ALSA process."""
+        process = self._process
+        if process is None:
+            return
+        try:
+            if process.returncode is None:
+                with suppress(ProcessLookupError):
+                    process.kill()
+            with suppress(Exception):
+                await process.wait()
+        finally:
+            self._reset()
 
     async def interrupt(self) -> float:
         process = self._process
@@ -104,9 +121,7 @@ class AlsaPlayback:
             return 0.0
         elapsed = perf_counter() - (self._started_at or perf_counter())
         remaining = max(0.0, self._written_seconds - elapsed)
-        process.kill()
-        await process.wait()
-        self._reset()
+        await self.abort()
         return remaining
 
     def _reset(self) -> None:
@@ -431,8 +446,15 @@ class UsbAudioConversation:
             raise
         except Exception:
             logger.exception("USB_CONVERSATION_FAILED")
+            if self._playback is not None:
+                await self._playback.abort()
+            self._playback = AlsaPlayback(
+                self._playback_device, self._process_factory
+            )
             await self._play_error_message()
         finally:
+            if self._playback is not None:
+                await self._playback.abort()
             if self._conversation_task is current_task:
                 self._conversation_task = None
                 self._playback = None

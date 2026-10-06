@@ -57,6 +57,12 @@
 
 ### Fixed
 
+- Reprodução USB longa não bloqueia mais a leitura do WebSocket Realtime esperando
+  `aplay` consumir cada trecho. O evento `response.done` volta a registrar tokens e
+  custo antes da espera final pelo alto-falante.
+- Falhas e cancelamentos de turnos USB agora encerram qualquer `aplay` parcial; o
+  aviso local usa um player novo para aceitar a frequência de 22,05 kHz do Piper
+  depois dos 24 kHz do Realtime.
 - Respostas Realtime interrompidas no meio da fala ao atingir exatamente 300 tokens.
   USB agora registra status/motivo incompleto no journal e o navegador informa o
   encerramento incompleto na interface.

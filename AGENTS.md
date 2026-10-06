@@ -493,6 +493,16 @@ reports `max_output_tokens: 2048` and preserved the user's Realtime,
 pipeline/model/voice assumptions so persisted dashboard choices cannot change their
 expected status codes or session payloads.
 
+A later long physical response exposed a separate USB failure. `AlsaPlayback.play`
+awaited `StreamWriter.drain()` for every Realtime audio delta. Once the pipe reached
+backpressure, `aplay` consumed it at speech speed and the same coroutine stopped
+reading WebSocket events. The 45-second Realtime timeout then fired before
+`response.done`, so usage was not recorded, the partial `aplay` process remained on
+the P10S, and later turns failed. Playback writes are now decoupled from the network
+reader; `finish()` flushes the queued audio after `response.done`. Every failure and
+cancellation aborts the tracked ALSA process, and local error speech uses a fresh
+player so its 22.05 kHz Piper audio cannot conflict with 24 kHz Realtime audio.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

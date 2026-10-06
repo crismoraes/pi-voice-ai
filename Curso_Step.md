@@ -1380,6 +1380,28 @@ e o estado Off escolhidos pelo usuário. O serviço ficou ativo, com `NRestarts=
 sem warnings. A suíte também passou a isolar suas expectativas do estado persistido
 do dashboard, evitando falsos erros quando o curso testa outra voz ou pipeline.
 
+### Correção de timeout durante reprodução longa no USB
+
+Um teste posterior pediu uma explicação longa sobre a história da IA. A voz tocou
+por bastante tempo, parou antes do fim, o turno não apareceu no dashboard e as
+perguntas seguintes deixaram de responder. O journal mostrou a sequência decisiva:
+`USB_PLAYBACK_STARTED`, seguida cerca de 45 segundos depois por
+`USB_CONVERSATION_FAILED` com `TimeoutError`. `arecord` e um `aplay` antigo ficaram
+ativos ao mesmo tempo na P10S.
+
+A causa estava no controle de fluxo. Cada delta de áudio do WebSocket era escrito no
+`stdin` do `aplay` e aguardava `drain()`. Quando o pipe enchia, o servidor passava a
+esperar o alto-falante reproduzir o áudio em tempo real e deixava de ler novos eventos
+da OpenAI. Assim, `response.done` não chegava antes do timeout de 45 segundos. Sem
+esse evento final, as métricas de tokens e custo não podiam ser gravadas.
+
+O adaptador passou a enfileirar os deltas sem bloquear o leitor do WebSocket. Depois
+de `response.done`, `finish()` fecha a entrada e espera o `aplay` consumir o restante.
+Em qualquer exceção ou cancelamento, `abort()` mata e limpa o processo parcial. A
+mensagem local de falha cria outro player, pois o áudio Realtime usa 24 kHz e a voz
+Piper local usa 22,05 kHz. Um teste de regressão comprova que não há `drain()` por
+trecho e que uma resposta parcial mata o primeiro player antes do aviso local.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
@@ -1444,6 +1466,20 @@ aplay -l
 
 Se a P10S retornar `Input/output error`, use o procedimento de `usbreset` documentado
 nesta seção e reinicie apenas `pi-voice-ai.service`.
+
+Se uma fala longa não aparecer em **Recent turns**, procure `TimeoutError` entre
+`USB_PLAYBACK_STARTED` e `USB_CONVERSATION_FAILED`. Também confirme que não existe
+um `aplay` órfão junto com `arecord`:
+
+```bash
+journalctl -u pi-voice-ai.service --since "10 minutes ago" --no-pager \
+  | grep -E 'USB_PLAYBACK|USB_CONVERSATION_FAILED|REALTIME_USB'
+pgrep -af 'arecord|aplay'
+```
+
+O estado normal em espera tem somente `arecord`; durante a resposta, somente
+`aplay`. Se uma versão antiga deixou o player preso, desligue o assistente no
+dashboard, encerre esse `aplay`, atualize a aplicação e só então volte para On.
 
 ## Se a voz Realtime parar no meio de uma frase
 

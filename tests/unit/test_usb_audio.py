@@ -24,11 +24,13 @@ class FakeStreamWriter:
     def __init__(self) -> None:
         self.data = bytearray()
         self.closed = False
+        self.drain_calls = 0
 
     def write(self, data: bytes) -> None:
         self.data.extend(data)
 
     async def drain(self) -> None:
+        self.drain_calls += 1
         return None
 
     def close(self) -> None:
@@ -108,6 +110,18 @@ class FailingConversationManager(FakeConversationManager):
         raise RuntimeError("network unavailable")
 
 
+class PartiallyFailingConversationManager(FakeConversationManager):
+    async def process(self, *_: object, **kwargs: object) -> None:
+        await kwargs["play_audio"](
+            SynthesisResult(
+                samples=np.zeros(240, dtype=np.float32),
+                sample_rate=24_000,
+                processing_seconds=0.01,
+            )
+        )
+        raise TimeoutError("response.done was not received")
+
+
 def test_alsa_playback_reuses_process_and_writes_pcm() -> None:
     async def run() -> None:
         calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
@@ -137,6 +151,7 @@ def test_alsa_playback_reuses_process_and_writes_pcm() -> None:
         assert process.stdin is not None
         assert len(process.stdin.data) == 16
         assert process.stdin.closed
+        assert process.stdin.drain_calls == 0
 
     asyncio.run(run())
 
@@ -268,6 +283,39 @@ def test_usb_audio_plays_local_message_when_conversation_fails() -> None:
         assert calls[0][0] == "aplay"
         assert processes[0].stdin is not None
         assert len(processes[0].stdin.data) == 200
+
+    asyncio.run(run())
+
+
+def test_usb_audio_aborts_partial_realtime_playback_before_local_error() -> None:
+    async def run() -> None:
+        calls: list[tuple[object, ...]] = []
+        processes: list[FakeProcess] = []
+
+        async def factory(*args: object, **_: object) -> FakeProcess:
+            calls.append(args)
+            process = FakeProcess()
+            processes.append(process)
+            return process
+
+        adapter = UsbAudioConversation(
+            conversation_manager=PartiallyFailingConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=FakeVad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+            process_factory=factory,
+        )
+        task = asyncio.create_task(adapter._run_turn(np.zeros(1600, dtype=np.float32)))
+        adapter._conversation_task = task
+        await task
+
+        assert len(processes) == 2
+        assert processes[0].killed
+        assert calls[0][-1] == "24000"
+        assert calls[1][-1] == "22050"
+        assert processes[1].stdin is not None
+        assert processes[1].stdin.closed
 
     asyncio.run(run())
 

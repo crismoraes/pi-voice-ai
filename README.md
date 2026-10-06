@@ -248,6 +248,14 @@ estava herdando `OPENAI_MAX_OUTPUT_TOKENS=300`, criado para respostas textuais. 
 configuração foi separada e elevada para 2.048. Esse valor é um teto, não uma reserva:
 respostas curtas continuam cobrando apenas os tokens realmente usados.
 
+Uma resposta longa também revelou um segundo caso: aguardar o buffer do `aplay` em
+cada trecho fazia a leitura do WebSocket avançar na velocidade do alto-falante. Ao
+atingir 45 segundos, o turno expirava antes de `response.done`, não aparecia em
+**Recent turns** e podia deixar a P10S ocupada. O adaptador agora recebe toda a
+resposta sem esperar a reprodução em tempo real, registra o uso ao receber
+`response.done` e depois aguarda o `aplay` terminar. Falhas e cancelamentos sempre
+encerram o processo de reprodução parcial.
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de
