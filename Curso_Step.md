@@ -1540,8 +1540,12 @@ como mensagem de sistema/desenvolvedor na Responses API e permite atualizar
 - [Realtime conversations](https://developers.openai.com/api/docs/guides/realtime-conversations)
 
 Os testes automatizados cobrem persistência, revisão, reset, limites, payloads dos
-dois LLMs, criação Realtime no navegador e renovação da sessão USB. A implantação e
-a prova física devem ser registradas depois da execução no Raspberry Pi.
+dois LLMs, criação Realtime no navegador e renovação da sessão USB. Os 59 testes
+passaram no Windows e no Raspberry Pi ARM64. O commit `7b71bb5` foi implantado com
+serviço ativo, `NRestarts=0`, nenhum warning recente e clone limpo. A API informou
+versão `1.3.0.dev0`, revisão 0, prompt padrão e limite de 8.000 caracteres; os três
+controles apareceram no HTML servido. Falta apenas a demonstração física de salvar
+um comportamento e conversar com cada provedor.
 
 # Perguntas frequentes e troubleshooting do curso
 

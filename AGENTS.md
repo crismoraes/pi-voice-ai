@@ -566,8 +566,12 @@ mode `0600` on Linux. The English dashboard exposes the prompt only through
 `/api/system/info` contains metadata only. Never log or store prompt text in usage
 history. Chained adapters read it per request. USB Realtime renews its connection
 before the next turn when instructions change. A connected browser sends
-`session.update` after the current `response.done`. The Windows suite passes 59
-tests; replace this statement with deployed ARM64 evidence after validation.
+`session.update` after the current `response.done`. Commit `7b71bb5` passed all 59
+tests on Windows and Raspberry Pi ARM64. The deployed API reports `1.3.0.dev0`, the
+default prompt at revision 0 and the 8000-character limit. The dashboard serves all
+three prompt controls. The service is active with `NRestarts=0`, no recent warnings
+and a clean clone. Physical provider-by-provider behavior acceptance remains for the
+user to perform from the dashboard.
 
 ## Project Goal
 

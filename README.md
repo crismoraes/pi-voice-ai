@@ -306,6 +306,12 @@ limpa o campo, por isso o dashboard rejeita prompts vazios. Consulte a
 [referência da Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
 e os [eventos de cliente do Realtime](https://developers.openai.com/api/reference/resources/realtime/client-events).
 
+O commit `7b71bb5` passou nos 59 testes no Windows e no Raspberry Pi ARM64. Após a
+implantação, o serviço ficou ativo com `NRestarts=0` e sem warnings recentes. A API
+retornou `1.3.0.dev0`, revisão 0, estado padrão e limite de 8.000 caracteres; o HTML
+implantado contém editor, salvar e reset. O teste de comportamento com cada provedor
+depende agora somente de uma conversa real iniciada pelo usuário.
+
 ## Fase 10 — dashboard local de tokens e custos
 
 Cada resposta concluída pela Responses API informa contagens reais de tokens de
