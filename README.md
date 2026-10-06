@@ -899,6 +899,7 @@ Configuração lida nesta fase:
 | --- | --- | --- |
 | `APP_HOST` | `0.0.0.0` | Interface HTTP |
 | `APP_PORT` | `8000` | Porta HTTP |
+| `APP_GRACEFUL_SHUTDOWN_SECONDS` | `5` | Limite para encerrar conexões abertas no restart |
 | `LOG_LEVEL` | `INFO` | Nível dos logs JSON |
 | `TLS_CERT_FILE` | vazio | Certificado HTTPS do servidor |
 | `TLS_KEY_FILE` | vazio | Chave privada HTTPS, fora do Git |

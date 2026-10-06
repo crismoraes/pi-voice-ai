@@ -61,6 +61,9 @@
 
 ### Fixed
 
+- Restart com uma conexão longa do navegador aberta agora limita o encerramento
+  gracioso do Uvicorn a cinco segundos, deixando tempo para o cleanup antes do
+  `TimeoutStopSec` do systemd.
 - Reprodução USB longa não bloqueia mais a leitura do WebSocket Realtime esperando
   `aplay` consumir cada trecho. O evento `response.done` volta a registrar tokens e
   custo antes da espera final pelo alto-falante.

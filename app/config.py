@@ -15,6 +15,9 @@ class Settings(BaseSettings):
 
     app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
     app_port: int = Field(default=8000, ge=1, le=65535, alias="APP_PORT")
+    app_graceful_shutdown_seconds: float = Field(
+        default=5, ge=1, le=30, alias="APP_GRACEFUL_SHUTDOWN_SECONDS"
+    )
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     audio_mode: Literal["webrtc", "usb"] = Field(
         default="webrtc", alias="AUDIO_MODE"

@@ -507,6 +507,11 @@ The regression suite now passes 50 tests on Windows and Raspberry Pi ARM64. Comm
 journal entries, no ALSA process while the persisted assistant state is Off, and the
 system API preserves Realtime, `gpt-realtime-2.1`, `cedar`, and the 2048-token limit.
 
+Uvicorn uses a five-second graceful shutdown timeout, configurable through
+`APP_GRACEFUL_SHUTDOWN_SECONDS`. This stays below systemd's 15-second stop limit so
+an open browser stream is cancelled and application cleanup can finish without
+systemd killing the process.
+
 The usage dashboard no longer renders Recent turns as a 14-column table. Each turn
 is a responsive card with date, source, pipeline, cost, model identities, token
 breakdown and timing visible without horizontal scrolling. `/api/system/info` also

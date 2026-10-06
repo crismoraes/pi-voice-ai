@@ -160,6 +160,7 @@ def run() -> None:
         host=settings.app_host,
         port=settings.app_port,
         log_config=None,
+        timeout_graceful_shutdown=settings.app_graceful_shutdown_seconds,
         ssl_certfile=str(settings.tls_cert_file) if settings.tls_cert_file else None,
         ssl_keyfile=str(settings.tls_key_file) if settings.tls_key_file else None,
     )
