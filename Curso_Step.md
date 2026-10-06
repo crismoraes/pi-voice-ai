@@ -1046,6 +1046,20 @@ além dos acumulados de 7, 30, 90 ou 365 dias. O projeto não grava áudio, tran
 ou resposta. A tabela de preços fica configurável porque tarifas e aliases podem
 mudar, e o dashboard chama o valor monetário de estimativa.
 
+### Evolução visual de Recent turns
+
+A primeira versão colocou 14 colunas em uma tabela. Em telas menores que a soma das
+colunas, custo e tempo ficavam fora da área visível, enquanto a única barra horizontal
+aparecia depois de até cem registros. Para consultar o custo de uma fala, era preciso
+descer, mover a barra e voltar ao registro.
+
+A interface passou a representar cada turno como um cartão responsivo. O cabeçalho
+mantém data, origem, pipeline e custo juntos. Uma grade mostra STT, LLM e TTS/voz; a
+grade seguinte mostra tokens e tempo. Em larguras menores, as grades quebram para
+quatro ou duas colunas. A informação permanece a mesma e nenhuma rolagem lateral é
+necessária. Esse caso é útil no curso para mostrar que observabilidade também exige
+uma apresentação que permita comparar os dados sem esforço mecânico.
+
 Fluxo ensinado:
 
 ```text
@@ -1820,6 +1834,13 @@ O navegador dispõe de processamento acústico próprio. Na ligação USB direta
 do alto-falante pode voltar ao microfone e parecer uma nova fala. Primeiro ajuste o
 volume, a distância e a direção física. Depois habilite `USB_ENABLE_BARGE_IN=true`,
 reinicie e confirme nos logs que a reprodução não dispara interrupções sozinha.
+
+O endpoint sanitizado `/api/system/info` informa `audio.barge_in`, e o dashboard
+mostra **voice interruption on/off** em **Audio and VAD**. Com o recurso ativo,
+`arecord` permanece aberto enquanto `aplay` fala. O início de uma nova fala detectado
+pelo Silero cancela a geração e a reprodução atuais e conserva o áudio da nova frase
+para o turno seguinte. O teste automatizado confirma o cancelamento da tarefa e do
+player; o teste físico continua indispensável para avaliar eco no ambiente real.
 
 ## Que informações nunca devem aparecer em uma aula ou diagnóstico publicado?
 

@@ -65,6 +65,7 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
     assert payload["tts"]["provider"] == "sherpa-onnx"
     assert payload["tts"]["options"][0]["models"]
     assert payload["audio"]["mode"] in {"usb", "webrtc"}
+    assert isinstance(payload["audio"]["barge_in"], bool)
     assert "api_key" not in serialized
     assert "openai_api_key" not in serialized
     assert "/home/" not in serialized
@@ -85,9 +86,8 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert "LLM provider" in response.text
     assert "STT provider" in response.text
     assert "TTS provider" in response.text
-    assert "<th>Pipeline</th>" in response.text
-    assert "<th>STT</th>" in response.text
-    assert "<th>TTS/Voice</th>" in response.text
+    assert 'id="turn-list"' in response.text
+    assert "without horizontal scrolling" in response.text
     assert "Voice pipeline" in response.text
     assert 'id="apply-pipeline"' in response.text
     assert "Voice assistant" in response.text

@@ -270,6 +270,11 @@ provedores/modelos de STT, LLM e TTS realmente usados naquele turno. Linhas cria
 antes dessa melhoria mostram `—` em STT/TTS porque o dado não era armazenado e não
 é inferido retroativamente. As APIs de leitura são:
 
+**Recent turns** usa cartões responsivos em vez de uma tabela larga. Data, origem,
+pipeline e custo aparecem no cabeçalho; modelos, tokens e tempo ficam em grades que
+se reorganizam conforme a largura da tela. Todos os dados ficam visíveis sem mover
+uma barra horizontal no fim da lista.
+
 ```text
 GET /api/usage/summary?days=30
 GET /api/usage/turns?days=30&limit=100
@@ -379,6 +384,11 @@ O barge-in USB começa desativado porque o microfone pode captar a própria caix
 som sem cancelamento de eco. Depois de validar ganho, distância e ausência de
 realimentação, `USB_ENABLE_BARGE_IN=true` permite testar interrupções locais. Para
 voltar ao navegador, use `AUDIO_MODE=webrtc` e reinicie o serviço.
+
+Quando habilitado, o `arecord` permanece aberto durante a reprodução. Assim que o
+Silero VAD detecta uma nova fala, a tarefa atual e o `aplay` são cancelados; o novo
+segmento passa pelo pipeline normalmente. O dashboard mostra `voice interruption
+on` em **Audio and VAD** para confirmar a configuração ativa.
 
 Na versão `v0.9.0`, o barge-in USB permanece opt-in. O padrão desligado evita ciclos
 causados pelo eco em instalações sem cancelamento acústico; o WebRTC mantém seu

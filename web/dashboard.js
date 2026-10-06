@@ -19,6 +19,11 @@ const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [comp
 
 function text(id, value) { document.querySelector(`#${id}`).textContent = value; }
 function money(value) { return value == null ? "No cloud price" : usd.format(value); }
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
+  })[character]);
+}
 function providerLabel(provider) {
   if (provider === "openai") return "OpenAI";
   if (provider === "llama.cpp") return "Local (llama.cpp)";
@@ -106,7 +111,7 @@ function renderTechnology(info) {
   text("tech-tts-mode", `TTS · ${info.tts.processing}`);
   text("tech-tts-detail", `${providerLabel(info.tts.provider)} · ${info.tts.threads} threads`);
   text("tech-audio", `${info.audio.mode.toUpperCase()} · ${info.audio.vad}`);
-  text("tech-audio-detail", `threshold ${info.audio.vad_threshold} · ending silence ${info.audio.ending_silence_seconds.toFixed(1)} s · HTTPS ${info.audio.tls ? "on" : "off"}`);
+  text("tech-audio-detail", `threshold ${info.audio.vad_threshold} · ending silence ${info.audio.ending_silence_seconds.toFixed(1)} s · voice interruption ${info.audio.barge_in ? "on" : "off"} · HTTPS ${info.audio.tls ? "on" : "off"}`);
   llmOptions = info.llm.options;
   providerSelect.innerHTML = llmOptions.map((option) => `<option value="${option.provider}">${providerLabel(option.provider)}${option.available ? "" : " (unavailable)"}</option>`).join("");
   providerSelect.value = info.llm.provider;
@@ -138,17 +143,39 @@ function renderChart(daily) {
 }
 
 function renderTurns(turns) {
-  const body = document.querySelector("#turn-list");
-  if (!turns.length) { body.innerHTML = '<tr><td colspan="14">No data yet.</td></tr>'; return; }
-  body.innerHTML = turns.map((turn) => `<tr>
-    <td>${new Date(turn.created_at).toLocaleString("en-US")}</td><td>${turn.source}</td><td>${pipelineLabel(turn.pipeline)}</td>
-    <td>${componentLabel(turn.stt_provider, turn.stt_model)}</td><td>${componentLabel(turn.llm_provider, turn.model)}</td>
-    <td>${componentLabel(turn.tts_provider, turn.tts_model)}</td>
-    <td>${number.format(turn.input_tokens)}</td><td>${number.format(turn.cached_input_tokens)}</td>
-    <td>${number.format(turn.output_tokens)}</td><td>${number.format(turn.audio_input_tokens)}</td>
-    <td>${number.format(turn.audio_output_tokens)}</td><td>${number.format(turn.total_tokens)}</td>
-    <td>${money(turn.estimated_cost_usd)}</td><td>${turn.total_seconds == null ? "—" : `${turn.total_seconds.toFixed(2)} s`}</td>
-  </tr>`).join("");
+  const list = document.querySelector("#turn-list");
+  if (!turns.length) { list.innerHTML = '<p class="empty">No data yet.</p>'; return; }
+  list.innerHTML = turns.map((turn) => {
+    const technologies = [
+      ["STT", componentLabel(turn.stt_provider, turn.stt_model)],
+      ["LLM", componentLabel(turn.llm_provider, turn.model)],
+      ["TTS / voice", componentLabel(turn.tts_provider, turn.tts_model)],
+    ];
+    const metrics = [
+      ["Input", number.format(turn.input_tokens)],
+      ["Cached", number.format(turn.cached_input_tokens)],
+      ["Output", number.format(turn.output_tokens)],
+      ["Audio input", number.format(turn.audio_input_tokens)],
+      ["Audio output", number.format(turn.audio_output_tokens)],
+      ["Total tokens", number.format(turn.total_tokens)],
+      ["Model time", turn.total_seconds == null ? "—" : `${turn.total_seconds.toFixed(2)} s`],
+    ];
+    return `<article class="turn-card">
+      <header class="turn-card-header">
+        <div>
+          <time datetime="${escapeHtml(turn.created_at)}">${escapeHtml(new Date(turn.created_at).toLocaleString("en-US"))}</time>
+          <div class="turn-badges"><span>${escapeHtml(turn.source)}</span><span>${escapeHtml(pipelineLabel(turn.pipeline))}</span></div>
+        </div>
+        <div class="turn-cost"><span>Estimated cost</span><strong>${escapeHtml(money(turn.estimated_cost_usd))}</strong></div>
+      </header>
+      <div class="turn-technologies">${technologies.map(([label, value]) =>
+        `<div><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`
+      ).join("")}</div>
+      <dl class="turn-metrics">${metrics.map(([label, value]) =>
+        `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`
+      ).join("")}</dl>
+    </article>`;
+  }).join("");
 }
 
 async function loadDashboard() {

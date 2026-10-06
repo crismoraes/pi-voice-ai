@@ -83,11 +83,16 @@
         <div id="chart" class="usage-chart"><p class="empty">No data yet.</p></div>
       </section>
       <section class="dashboard-section">
-        <h2>Recent turns</h2>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Date</th><th>Source</th><th>Pipeline</th><th>STT</th><th>LLM</th><th>TTS/Voice</th><th>Input</th><th>Cached</th><th>Output</th><th>Audio in</th><th>Audio out</th><th>Total</th><th>Cost</th><th>Model time</th></tr></thead>
-          <tbody id="turn-list"><tr><td colspan="14">No data yet.</td></tr></tbody>
-        </table></div>
+        <div class="recent-turns-heading">
+          <div>
+            <h2>Recent turns</h2>
+            <p>Models, tokens, timing, and cost stay visible without horizontal scrolling.</p>
+          </div>
+          <span>Newest first</span>
+        </div>
+        <div id="turn-list" class="turn-list" aria-live="polite">
+          <p class="empty">No data yet.</p>
+        </div>
       </section>
       <p class="privacy-note">Only numeric metrics are stored locally. Audio, transcripts, prompts, and responses are excluded from this history.</p>
       <p id="dashboard-error" class="error" role="alert"></p>

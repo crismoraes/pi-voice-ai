@@ -4,6 +4,8 @@
 
 ### Added
 
+- Estado sanitizado de interrupção por voz em `/api/system/info` e no painel
+  **Audio and VAD**.
 - `gpt-realtime-2.1-mini` no seletor Realtime, com tarifas próprias de texto,
   áudio e cache e resolução correta de aliases e snapshots datados.
 - Seletor persistente **Voice pipeline** entre Chained e OpenAI Realtime, com
@@ -40,6 +42,8 @@
 
 ### Changed
 
+- **Recent turns** agora usa cartões responsivos com custo, modelos, tokens e tempo
+  visíveis sem rolagem horizontal.
 - Realtime passa a usar `REALTIME_MAX_OUTPUT_TOKENS=2048`, separado do limite de
   300 tokens da Responses API, para não cortar áudio por volta de dez segundos.
 - Versão de desenvolvimento elevada para `1.2.0.dev0`.

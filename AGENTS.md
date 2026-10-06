@@ -507,6 +507,15 @@ The regression suite now passes 50 tests on Windows and Raspberry Pi ARM64. Comm
 journal entries, no ALSA process while the persisted assistant state is Off, and the
 system API preserves Realtime, `gpt-realtime-2.1`, `cedar`, and the 2048-token limit.
 
+The usage dashboard no longer renders Recent turns as a 14-column table. Each turn
+is a responsive card with date, source, pipeline, cost, model identities, token
+breakdown and timing visible without horizontal scrolling. `/api/system/info` also
+reports the active transport's sanitized `audio.barge_in` state. USB voice
+interruption remains configured by `USB_ENABLE_BARGE_IN`; when enabled, capture
+continues during playback and Silero speech onset cancels the response before the
+new utterance is segmented. Acoustic echo cancellation is not provided by direct
+ALSA, so physical acceptance must confirm that speaker echo does not self-interrupt.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

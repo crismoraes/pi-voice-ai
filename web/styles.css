@@ -206,10 +206,25 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
 .bar-track { height: 12px; overflow: hidden; border-radius: 8px; background: #21262d; }
 .bar { height: 100%; min-width: 3px; border-radius: inherit; background: linear-gradient(90deg, #238636, #56d364); }
 .chart-row span, .chart-row time, .empty, .privacy-note { color: #8c959f; }
-.table-wrap { overflow-x: auto; margin-top: 16px; }
-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-th, td { padding: 12px 10px; border-bottom: 1px solid #30363d; text-align: left; white-space: nowrap; }
-th { color: #8c959f; font-weight: 600; }
+.recent-turns-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.recent-turns-heading h2 { margin-bottom: 0; }
+.recent-turns-heading p { margin: 7px 0 0; color: #8c959f; font-size: .82rem; }
+.recent-turns-heading > span { flex: none; padding: 6px 10px; border: 1px solid #30363d; border-radius: 999px; color: #8c959f; font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.turn-list { display: grid; gap: 14px; margin-top: 18px; }
+.turn-card { min-width: 0; overflow: hidden; border: 1px solid #30363d; border-radius: 15px; background: #0d1117; }
+.turn-card-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 18px; border-bottom: 1px solid #30363d; background: linear-gradient(105deg, rgba(35, 134, 54, .12), transparent 52%); }
+.turn-card time { color: #f0f3f6; font-size: .9rem; font-weight: 700; }
+.turn-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.turn-badges span { padding: 4px 8px; border: 1px solid #30363d; border-radius: 999px; color: #b1bac4; font-size: .7rem; }
+.turn-cost { flex: none; text-align: right; }
+.turn-cost span, .turn-technologies span, .turn-metrics dt { display: block; color: #8c959f; font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.turn-cost strong { display: block; margin-top: 5px; color: #56d364; font-size: 1.12rem; }
+.turn-technologies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #30363d; }
+.turn-technologies > div { min-width: 0; padding: 14px 18px; background: #161b22; }
+.turn-technologies strong { display: block; margin-top: 6px; overflow-wrap: anywhere; color: #d8dee4; font-size: .8rem; font-weight: 600; line-height: 1.4; }
+.turn-metrics { display: grid; grid-template-columns: repeat(7, minmax(78px, 1fr)); margin: 0; padding: 14px 18px; gap: 12px; }
+.turn-metrics div { min-width: 0; }
+.turn-metrics dd { margin: 6px 0 0; color: #f0f3f6; font-size: .88rem; font-weight: 700; }
 .privacy-note { margin: 28px 0 0; font-size: .82rem; }
 .technology-section { margin-top: 30px; padding: 22px; border: 1px solid rgba(86, 211, 100, .3); border-radius: 16px; background: rgba(13, 17, 23, .72); }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
@@ -250,12 +265,18 @@ th { color: #8c959f; font-weight: 600; }
   .model-controls { grid-template-columns: 1fr 1fr; }
   .pipeline-controls { grid-template-columns: 1fr 1fr; }
   .model-controls button { grid-column: 1 / -1; }
+  .turn-metrics { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (max-width: 480px) {
   .technology-grid { grid-template-columns: 1fr; }
   .model-controls { grid-template-columns: 1fr; }
   .model-controls button { grid-column: auto; }
+  .recent-turns-heading, .turn-card-header { align-items: stretch; flex-direction: column; }
+  .recent-turns-heading > span { align-self: flex-start; }
+  .turn-cost { text-align: left; }
+  .turn-technologies { grid-template-columns: 1fr; }
+  .turn-metrics { grid-template-columns: repeat(2, 1fr); }
 }
 
 @keyframes pulse {

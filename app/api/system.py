@@ -136,6 +136,11 @@ async def system_info() -> dict[str, object]:
             "vad": settings.vad_engine,
             "vad_threshold": settings.vad_threshold,
             "ending_silence_seconds": settings.vad_min_silence_seconds,
+            "barge_in": (
+                settings.usb_enable_barge_in
+                if settings.audio_mode == "usb"
+                else settings.enable_barge_in
+            ),
             "tls": settings.tls_enabled,
         },
     }

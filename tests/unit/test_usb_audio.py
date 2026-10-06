@@ -88,6 +88,15 @@ class SegmentVad(FakeVad):
         return [samples]
 
 
+class SpeechOnsetVad(FakeVad):
+    def __init__(self) -> None:
+        self.is_speech_detected = False
+
+    def accept(self, samples: np.ndarray) -> list[np.ndarray]:
+        self.is_speech_detected = True
+        return []
+
+
 class FakeConversationManager:
     def __init__(self) -> None:
         self.forgotten: list[str] = []
@@ -253,6 +262,47 @@ def test_usb_audio_marks_capture_for_pause_when_turn_starts() -> None:
         adapter._capture_released.set()
         await adapter._conversation_task
         assert adapter._turn_finished.is_set()
+
+    asyncio.run(run())
+
+
+def test_usb_barge_in_stops_playback_when_new_speech_starts() -> None:
+    async def run() -> None:
+        process = FakeProcess()
+
+        async def factory(*_: object, **__: object) -> FakeProcess:
+            return process
+
+        vad = SpeechOnsetVad()
+        adapter = UsbAudioConversation(
+            conversation_manager=FakeConversationManager(),  # type: ignore[arg-type]
+            text_to_speech=FakeTextToSpeech(),  # type: ignore[arg-type]
+            vad_factory=lambda: vad,  # type: ignore[arg-type]
+            capture_device="capture",
+            playback_device="playback",
+            enable_barge_in=True,
+            process_factory=factory,
+        )
+        playback = AlsaPlayback("playback", factory)
+        await playback.play(
+            SynthesisResult(
+                samples=np.zeros(240, dtype=np.float32),
+                sample_rate=24_000,
+                processing_seconds=0,
+            )
+        )
+        task = asyncio.create_task(asyncio.sleep(60))
+        adapter._vad = vad
+        adapter._busy = True
+        adapter._playback = playback
+        adapter._conversation_task = task
+
+        await adapter._accept_samples(np.ones(512, dtype=np.float32))
+
+        assert task.cancelled()
+        assert process.killed
+        assert not adapter._busy
+        assert adapter._playback is None
 
     asyncio.run(run())
 
