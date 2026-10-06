@@ -71,6 +71,10 @@
 
 ### Validated
 
+- A correção passou nos 49 testes Windows/ARM64; o Pi expôs o teto 2.048, preservou
+  Realtime/`gpt-realtime-2.1`/`cedar` e Off, com `NRestarts=0` e journal sem alertas.
+- Testes de API foram isolados das preferências persistidas após a suíte detectar
+  corretamente que o usuário havia selecionado Realtime e `cedar` no dashboard.
 - O Mini respondeu com áudio real na voz `marin` e informou 35 tokens de entrada,
   32 de saída e 67 no total; 49 testes passaram após a precificação por modelo.
 - No ARM64, os mesmos 49 testes passaram; o Mini entregou áudio e 76 tokens no

@@ -486,6 +486,13 @@ across Mini and full models. Realtime had reused the Responses API setting
 sessions. USB logs sanitized response status and incomplete reason through
 `REALTIME_USB_RESPONSE_INCOMPLETE`; the browser surfaces incomplete responses too.
 
+The cutoff fix passed all 49 tests on Windows and ARM64. The deployed system info
+reports `max_output_tokens: 2048` and preserved the user's Realtime,
+`gpt-realtime-2.1`, `cedar`, and Off selections. The service remains active with
+`NRestarts=0` and no warning-priority journal entries. API tests now monkeypatch
+pipeline/model/voice assumptions so persisted dashboard choices cannot change their
+expected status codes or session payloads.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

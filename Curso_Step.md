@@ -1374,6 +1374,12 @@ usada nas sessões WebRTC e WebSocket. O backend USB registra `response.status` 
 quando o motivo é `max_output_tokens`. O teto maior permite respostas longas, mas a
 cobrança continua baseada apenas nos tokens efetivamente gerados.
 
+Após a implantação, 49 testes passaram também no Pi. `/api/system/info` confirmou
+`max_output_tokens: 2048`; o restart preservou Realtime, modelo completo, voz `cedar`
+e o estado Off escolhidos pelo usuário. O serviço ficou ativo, com `NRestarts=0` e
+sem warnings. A suíte também passou a isolar suas expectativas do estado persistido
+do dashboard, evitando falsos erros quando o curso testa outra voz ou pipeline.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
