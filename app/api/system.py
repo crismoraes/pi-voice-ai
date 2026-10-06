@@ -7,7 +7,12 @@ from app import __version__
 from app.api.assistant import language_model
 from app.config import get_settings
 from app.llm.base import LanguageModelUnavailableError
-from app.runtime.current import assistant_control, pipeline_selection_lock, voice_pipeline
+from app.runtime.current import (
+    assistant_control,
+    pipeline_selection_lock,
+    voice_interrupt_control,
+    voice_pipeline,
+)
 from app.runtime.model_selector import RuntimeModelUnavailableError
 from app.runtime.voice_pipeline import VoicePipelineUnavailableError
 from app.webrtc.manager import speech_to_text, text_to_speech
@@ -68,7 +73,10 @@ async def system_info() -> dict[str, object]:
     availability = await language_model.status()
     return {
         "version": __version__,
-        "assistant": {"enabled": assistant_control.enabled},
+        "assistant": {
+            "enabled": assistant_control.enabled,
+            "interrupt_available": voice_interrupt_control.available,
+        },
         "pipeline": {
             "id": voice_pipeline.pipeline,
             "label": (
@@ -220,3 +228,9 @@ async def set_assistant_state(state: AssistantState) -> dict[str, bool]:
     """Pause or resume microphone-driven processing across all transports."""
     await assistant_control.set_enabled(state.enabled)
     return {"enabled": assistant_control.enabled}
+
+
+@router.post("/assistant/interrupt")
+async def interrupt_assistant() -> dict[str, bool]:
+    """Stop an active local response without disabling future voice turns."""
+    return {"interrupted": await voice_interrupt_control.interrupt()}

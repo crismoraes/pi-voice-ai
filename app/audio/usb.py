@@ -196,6 +196,14 @@ class UsbAudioConversation:
             await self.stop()
         logger.info("USB_ASSISTANT_STATE_CHANGED", extra={"enabled": enabled})
 
+    async def interrupt(self) -> bool:
+        """Stop the active response and resume capture without changing On/Off."""
+        task = self._conversation_task
+        if task is None or task.done():
+            return False
+        await self._interrupt_conversation()
+        return True
+
     async def start(self) -> None:
         if self.running:
             return

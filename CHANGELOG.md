@@ -4,6 +4,8 @@
 
 ### Added
 
+- Botão **Stop speaking** e endpoint `POST /api/system/assistant/interrupt` para
+  cancelar de forma determinística a resposta USB atual e retomar a captura.
 - Estado sanitizado de interrupção por voz em `/api/system/info` e no painel
   **Audio and VAD**.
 - `gpt-realtime-2.1-mini` no seletor Realtime, com tarifas próprias de texto,
@@ -42,6 +44,8 @@
 
 ### Changed
 
+- Barge-in USB voltou a ficar desativado na instalação P10S após o teste físico
+  comprovar falsas interrupções causadas pelo retorno do alto-falante no microfone.
 - **Recent turns** agora usa cartões responsivos com custo, modelos, tokens e tempo
   visíveis sem rolagem horizontal.
 - Realtime passa a usar `REALTIME_MAX_OUTPUT_TOKENS=2048`, separado do limite de

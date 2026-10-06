@@ -1850,6 +1850,20 @@ Na implantação, `USB_ENABLE_BARGE_IN=true` foi aplicado ao `.env` privado e
 `/api/system/info` retornou `barge_in: true`. O assistente ficou Off até o usuário
 iniciar deliberadamente o teste de falar durante uma resposta longa.
 
+### Resultado físico: eco torna o barge-in USB instável
+
+O teste real mostrou os dois sintomas possíveis: algumas falas do usuário não
+interromperam e, em outros momentos, a IA parou sem que o usuário falasse. O journal
+registrou três `USB_CONVERSATION_INTERRUPTED` durante reprodução, duas delas com
+2,669 e 2,368 segundos de áudio ainda pendentes. O VAD estava funcionando, mas via a
+voz devolvida pelo alto-falante como uma nova pessoa falando.
+
+O Pi voltou para `USB_ENABLE_BARGE_IN=false`. Para a P10S com microfone e caixa
+aberta, o curso usa uma interrupção explícita e previsível: **Stop speaking** no
+dashboard chama `POST /api/system/assistant/interrupt`, cancela o turno e o `aplay`
+e permite que a captura recomece. Interrupção automática continua adequada no
+navegador WebRTC, que dispõe de processamento acústico, ou em hardware com AEC.
+
 ## Que informações nunca devem aparecer em uma aula ou diagnóstico publicado?
 
 Não mostre a chave privada SSH, senha, `OPENAI_API_KEY`, conteúdo do `.env`, chave

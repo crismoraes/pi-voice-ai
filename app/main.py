@@ -25,6 +25,7 @@ from app.realtime.usb import OpenAIRealtimeUsbPipeline
 from app.runtime.current import (
     assistant_control,
     pipeline_selection_lock,
+    voice_interrupt_control,
     voice_pipeline,
 )
 from app.usage.runtime import usage_store
@@ -98,6 +99,7 @@ assistant_control.register(peer_manager.set_enabled)
 voice_pipeline.register(realtime_usb.select_pipeline)
 if usb_audio is not None:
     assistant_control.register(usb_audio.set_enabled)
+    voice_interrupt_control.register(usb_audio.interrupt)
 assistant_control.register(realtime_usb.set_enabled)
 
 

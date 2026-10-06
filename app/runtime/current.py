@@ -3,7 +3,7 @@
 import asyncio
 
 from app.config import get_settings
-from app.runtime.control import AssistantControl
+from app.runtime.control import AssistantControl, VoiceInterruptControl
 from app.runtime.voice_pipeline import VoicePipelineControl
 
 settings = get_settings()
@@ -11,6 +11,7 @@ assistant_control = AssistantControl(
     enabled=settings.assistant_enabled,
     state_path=settings.assistant_state_path,
 )
+voice_interrupt_control = VoiceInterruptControl()
 pipeline_selection_lock = asyncio.Lock()
 voice_pipeline = VoicePipelineControl(
     default_pipeline=settings.voice_pipeline,

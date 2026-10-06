@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 StateHandler = Callable[[bool], Awaitable[None]]
+InterruptHandler = Callable[[], Awaitable[bool]]
 
 
 class AssistantControl:
@@ -56,3 +57,22 @@ class AssistantControl:
         if os.name == "posix":
             temporary.chmod(0o600)
         temporary.replace(self._state_path)
+
+
+class VoiceInterruptControl:
+    """Route a manual stop request to the active local audio transport."""
+
+    def __init__(self) -> None:
+        self._handler: InterruptHandler | None = None
+
+    @property
+    def available(self) -> bool:
+        return self._handler is not None
+
+    def register(self, handler: InterruptHandler) -> None:
+        self._handler = handler
+
+    async def interrupt(self) -> bool:
+        if self._handler is None:
+            return False
+        return await self._handler()

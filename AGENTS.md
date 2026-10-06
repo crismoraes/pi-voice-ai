@@ -527,6 +527,18 @@ the responsive cards and visible cost. A second restart completed in under one
 second with the graceful timeout fix, leaving the service active and `NRestarts=0`.
 The assistant remains Off pending the user's physical interruption test.
 
+The physical USB interruption test failed acceptance. With
+`USB_ENABLE_BARGE_IN=true`, the open speaker repeatedly re-entered the P10S
+microphone and Silero could not distinguish echo from the user. Journal evidence
+showed three `USB_CONVERSATION_INTERRUPTED` events during playback, including turns
+with only 2.669 and 2.368 seconds remaining. The ignored Pi `.env` was restored to
+`USB_ENABLE_BARGE_IN=false` and the service restarted successfully. Keep automatic
+USB barge-in disabled for this microphone/speaker arrangement. The dashboard now
+offers a deterministic **Stop speaking** action backed by
+`POST /api/system/assistant/interrupt`; it cancels the active USB turn and playback,
+then capture resumes for the next request. Browser WebRTC remains the path for
+automatic voice barge-in because the browser supplies acoustic echo processing.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

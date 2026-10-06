@@ -4,7 +4,7 @@ import os
 import stat
 from pathlib import Path
 
-from app.runtime.control import AssistantControl
+from app.runtime.control import AssistantControl, VoiceInterruptControl
 
 
 def test_assistant_control_notifies_handlers_and_persists_state(tmp_path: Path) -> None:
@@ -43,3 +43,19 @@ def test_assistant_control_does_not_repeat_an_unchanged_state(tmp_path: Path) ->
 
     assert observed == []
     assert not state_path.exists()
+
+
+def test_voice_interrupt_control_reports_handler_result() -> None:
+    control = VoiceInterruptControl()
+    calls = 0
+
+    async def handler() -> bool:
+        nonlocal calls
+        calls += 1
+        return True
+
+    assert asyncio.run(control.interrupt()) is False
+    control.register(handler)
+    assert control.available
+    assert asyncio.run(control.interrupt()) is True
+    assert calls == 1

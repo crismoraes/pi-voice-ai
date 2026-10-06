@@ -5,11 +5,13 @@ const providerSelect = document.querySelector("#llm-provider");
 const modelSelect = document.querySelector("#llm-model");
 const applyButton = document.querySelector("#apply-llm");
 const assistantToggle = document.querySelector("#assistant-enabled");
+const interruptButton = document.querySelector("#interrupt-assistant");
 const pipelineSelect = document.querySelector("#voice-pipeline");
 const realtimeModelSelect = document.querySelector("#realtime-model");
 const realtimeVoiceSelect = document.querySelector("#realtime-voice");
 const applyPipelineButton = document.querySelector("#apply-pipeline");
 let llmOptions = [];
+let assistantInterruptAvailable = false;
 const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [component, {
   provider: document.querySelector(`#${component}-provider`),
   model: document.querySelector(`#${component}-model`),
@@ -48,13 +50,15 @@ function pipelineLabel(pipeline) {
   return pipeline || "—";
 }
 
-function renderAssistantState(enabled) {
+function renderAssistantState(enabled, interruptAvailable = assistantInterruptAvailable) {
+  assistantInterruptAvailable = interruptAvailable;
   assistantToggle.checked = enabled;
   text("assistant-toggle-label", enabled ? "On" : "Off");
   text("assistant-status", enabled
     ? "Listening for a voice request"
     : "Paused — microphone capture and AI processing are off");
   document.querySelector(".assistant-control").classList.toggle("paused", !enabled);
+  interruptButton.disabled = !enabled || !interruptAvailable;
 }
 
 function populateModels(selectedModel) {
@@ -91,7 +95,7 @@ function configureVoiceSelector(component, info) {
 }
 
 function renderTechnology(info) {
-  renderAssistantState(info.assistant.enabled);
+  renderAssistantState(info.assistant.enabled, info.assistant.interrupt_available);
   text("app-version", `v${info.version}`);
   text("tech-llm", info.llm.model);
   text("tech-llm-mode", `LLM · ${info.llm.processing}`);
@@ -272,6 +276,21 @@ async function setAssistantState() {
   }
 }
 
+async function interruptAssistant() {
+  interruptButton.disabled = true;
+  text("interrupt-status", "Stopping…");
+  try {
+    const response = await fetch("/api/system/assistant/interrupt", { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "The response could not be stopped.");
+    text("interrupt-status", result.interrupted ? "Response stopped. Listening again." : "No active response.");
+  } catch (error) {
+    text("interrupt-status", error.message);
+  } finally {
+    interruptButton.disabled = !assistantToggle.checked || !assistantInterruptAvailable;
+  }
+}
+
 providerSelect.addEventListener("change", () => populateModels());
 voiceControls.stt.provider.addEventListener("change", () => populateVoiceModels("stt"));
 voiceControls.tts.provider.addEventListener("change", () => populateVoiceModels("tts"));
@@ -280,6 +299,7 @@ applyButton.addEventListener("click", applyLlm);
 voiceControls.stt.apply.addEventListener("click", () => applyVoiceModel("stt"));
 voiceControls.tts.apply.addEventListener("click", () => applyVoiceModel("tts"));
 assistantToggle.addEventListener("change", setAssistantState);
+interruptButton.addEventListener("click", interruptAssistant);
 pipelineSelect.addEventListener("change", () => {
   const realtime = pipelineSelect.value === "openai-realtime";
   realtimeModelSelect.disabled = !realtime;

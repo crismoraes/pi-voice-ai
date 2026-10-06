@@ -44,6 +44,7 @@ def test_system_info_exposes_models_without_secrets_or_paths() -> None:
 
     assert response.status_code == 200
     assert isinstance(payload["assistant"]["enabled"], bool)
+    assert isinstance(payload["assistant"]["interrupt_available"], bool)
     assert payload["pipeline"]["id"] in {"chained", "openai-realtime"}
     assert payload["pipeline"]["realtime_model"] == "gpt-realtime-2.1"
     assert payload["pipeline"]["realtime_models"] == [
@@ -92,12 +93,30 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert 'id="apply-pipeline"' in response.text
     assert "Voice assistant" in response.text
     assert 'id="assistant-enabled"' in response.text
+    assert 'id="interrupt-assistant"' in response.text
     assert "Consumo" not in response.text
     assert 'id="tech-llm"' in response.text
     assert 'id="tech-stt"' in response.text
     assert 'id="tech-tts"' in response.text
     assert 'id="apply-stt"' in response.text
     assert 'id="apply-tts"' in response.text
+
+
+def test_manual_interrupt_endpoint_reports_active_response(monkeypatch) -> None:
+    async def interrupt() -> bool:
+        return True
+
+    monkeypatch.setattr("app.api.system.voice_interrupt_control._handler", interrupt)
+
+    async def request_interrupt():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            return await client.post("/api/system/assistant/interrupt")
+
+    response = asyncio.run(request_interrupt())
+
+    assert response.status_code == 200
+    assert response.json() == {"interrupted": True}
 
 
 def test_system_rejects_unlisted_voice_models(monkeypatch) -> None:

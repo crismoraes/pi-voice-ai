@@ -390,6 +390,14 @@ Silero VAD detecta uma nova fala, a tarefa atual e o `aplay` são cancelados; o 
 segmento passa pelo pipeline normalmente. O dashboard mostra `voice interruption
 on` em **Audio and VAD** para confirmar a configuração ativa.
 
+Na validação física com a P10S e alto-falante aberto, esse modo não foi confiável: o
+microfone captou a voz da própria IA e o Silero gerou interrupções falsas. Por isso,
+esta instalação mantém `USB_ENABLE_BARGE_IN=false`. O dashboard oferece o botão
+**Stop speaking**, que chama `POST /api/system/assistant/interrupt`, cancela a fala
+atual imediatamente e retoma a escuta sem desligar o assistente. Para interrupção
+automática por voz, use WebRTC no navegador com processamento acústico ou hardware
+com cancelamento de eco.
+
 Na versão `v0.9.0`, o barge-in USB permanece opt-in. O padrão desligado evita ciclos
 causados pelo eco em instalações sem cancelamento acústico; o WebRTC mantém seu
 barge-in validado e independente.

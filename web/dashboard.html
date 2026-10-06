@@ -33,6 +33,14 @@
             <span id="assistant-toggle-label">Off</span>
           </label>
         </div>
+        <div class="interrupt-control">
+          <div>
+            <strong>Stop the current response</strong>
+            <small>Immediately stop USB playback and listen for a new request.</small>
+            <span id="interrupt-status" class="switch-status" role="status"></span>
+          </div>
+          <button id="interrupt-assistant" class="danger-button" type="button">Stop speaking</button>
+        </div>
         <div class="model-controls pipeline-controls">
           <label>Voice pipeline<select id="voice-pipeline"></select></label>
           <label>Realtime model<select id="realtime-model"></select></label>

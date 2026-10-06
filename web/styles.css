@@ -242,6 +242,12 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
 .assistant-control.paused { border-color: #484f58; background: #161b22; }
 .assistant-control strong, .assistant-control small { display: block; }
 .assistant-control small { margin-top: 5px; color: #8c959f; }
+.interrupt-control { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 10px; padding: 14px 16px; border: 1px solid #30363d; border-radius: 12px; background: #161b22; }
+.interrupt-control strong, .interrupt-control small, .interrupt-control .switch-status { display: block; }
+.interrupt-control small { margin-top: 4px; color: #8c959f; }
+.interrupt-control .switch-status { margin-top: 5px; min-height: 0; }
+.danger-button { flex: none; border-color: #8b3a3a; background: #6e2929; }
+.danger-button:hover:not(:disabled) { background: #8b3a3a; }
 .toggle { display: flex; align-items: center; gap: 10px; color: #f0f3f6; font-weight: 700; cursor: pointer; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
 .toggle-track { width: 48px; height: 26px; padding: 3px; border-radius: 999px; background: #484f58; transition: background .18s ease; }
@@ -272,6 +278,7 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
   .technology-grid { grid-template-columns: 1fr; }
   .model-controls { grid-template-columns: 1fr; }
   .model-controls button { grid-column: auto; }
+  .interrupt-control { align-items: stretch; flex-direction: column; }
   .recent-turns-heading, .turn-card-header { align-items: stretch; flex-direction: column; }
   .recent-turns-heading > span { align-self: flex-start; }
   .turn-cost { text-align: left; }
