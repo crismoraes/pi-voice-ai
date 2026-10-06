@@ -1376,7 +1376,7 @@ stories report
 
 Remote sources are declared in `config/story_sources.json`. The two verified starter URLs are attempted but remain pending after import; Global Digital Library and eBible stay disabled until an administrator verifies the exact item, jurisdiction, license, attribution, age suitability, and checksum. The downloader uses an allowlist, size limits, bounded retries, temporary files, hashes, and low request frequency. Project Gutenberg automation follows its [robot access policy](https://www.gutenberg.org/policy/robot_access.html); Global Digital Library exposes its [Content API](https://content.digitallibrary.io/api/) and item specific licenses; Standard Ebooks and eBible entries retain their canonical item pages. A format mismatch is recorded for manual download instead of accepting an HTML response as a book.
 
-PDFs with no extractable text are labeled `needs_ocr`; no silent OCR or invented text is performed. FTS5 is the current local search engine. The dashboard reports `semantic_search: pending_local_model` so this degradation remains visible until a reviewed embedding model is shipped.
+PDFs with no extractable text are labeled `needs_ocr`; no silent OCR or invented text is performed. Search combines SQLite FTS5 with the local MIT licensed `multilingual-e5-small` model (384 dimensions, L2 normalization, `query:`/`passage:` prefixes) served by llama.cpp on loopback port 8082. Stored float32 vectors use the same model space for documents and queries. If that service is unavailable, the dashboard reports the runtime degradation and title/FTS5 search continues.
 
 ### Voice commands
 

@@ -14,11 +14,14 @@ from pathlib import Path
 from app.config import get_settings
 from app.stories.acquisition import acquire_manifest
 from app.stories.library import StoryLibrary
+from app.stories.embeddings import LocalEmbeddingClient
 
 
 def _library(root: str | None) -> StoryLibrary:
-    configured = getattr(get_settings(), "story_library_root", Path("data/story_library"))
-    return StoryLibrary(Path(root).resolve() if root else Path(configured))
+    settings = get_settings()
+    configured = settings.story_library_root
+    embeddings = LocalEmbeddingClient(settings.story_embedding_base_url, settings.story_embedding_model, settings.story_embedding_timeout_seconds)
+    return StoryLibrary(Path(root).resolve() if root else Path(configured), embeddings)
 
 
 def _print(value: object) -> None:

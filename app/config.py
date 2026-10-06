@@ -279,7 +279,9 @@ class Settings(BaseSettings):
     story_download_timeout_seconds: float = Field(default=30, ge=5, le=120, alias="STORY_DOWNLOAD_TIMEOUT_SECONDS")
     story_audio_cache_max_mb: int = Field(default=256, ge=16, le=4096, alias="STORY_AUDIO_CACHE_MAX_MB")
     story_retention_days: int = Field(default=90, ge=1, le=3650, alias="STORY_RETENTION_DAYS")
-    story_embedding_model: str = Field(default="pending-local-multilingual-model", alias="STORY_EMBEDDING_MODEL")
+    story_embedding_model: str = Field(default="multilingual-e5-small-q4_k_m", alias="STORY_EMBEDDING_MODEL")
+    story_embedding_base_url: str = Field(default="http://127.0.0.1:8082", alias="STORY_EMBEDDING_BASE_URL")
+    story_embedding_timeout_seconds: float = Field(default=60, ge=5, le=180, alias="STORY_EMBEDDING_TIMEOUT_SECONDS")
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",

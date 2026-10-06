@@ -4,10 +4,11 @@ from dataclasses import asdict
 from fastapi import APIRouter, HTTPException, Query
 from app.config import get_settings
 from app.stories.library import StoryLibrary, StoryNotAvailableError
+from app.stories.embeddings import LocalEmbeddingClient
 
 router = APIRouter(prefix="/api/stories", tags=["stories"])
 settings = get_settings()
-story_library = StoryLibrary(settings.story_library_root)
+story_library = StoryLibrary(settings.story_library_root, LocalEmbeddingClient(settings.story_embedding_base_url, settings.story_embedding_model, settings.story_embedding_timeout_seconds))
 
 
 @router.get("/status")

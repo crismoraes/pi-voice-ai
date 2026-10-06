@@ -1,0 +1,20 @@
+[Unit]
+Description=PiVoice AI local multilingual story embeddings
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+WorkingDirectory=__APP_DIR__
+ExecStart=__APP_DIR__/vendor/llama.cpp/build/bin/llama-server --model __APP_DIR__/models/multilingual-e5-small-Q4_k_m.gguf --alias multilingual-e5-small-q4_k_m --host 127.0.0.1 --port 8082 --embedding --pooling mean --embd-normalize 2 --ctx-size 512 --threads 3 --parallel 1
+Restart=on-failure
+RestartSec=3
+TimeoutStartSec=120
+TimeoutStopSec=20
+Nice=7
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

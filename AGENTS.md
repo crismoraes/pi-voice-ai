@@ -2365,3 +2365,4 @@ The project is not complete if the code works but the knowledge required to recr
 - READ_EXACT returns stored canonical sections without an LLM. A fallback search mode must be reported explicitly. Image only PDFs are `needs_ocr`.
 - Dashboard story APIs remain read only until the application has authenticated administrator roles. Rights and editorial mutations are local CLI operations.
 - Keep English, Portuguese, and Spanish STT/TTS paths operational and validate offline behavior after deployment.
+- Semantic story search uses the loopback-only multilingual E5 llama.cpp service; documents and queries must retain the same model, prefixes, dimension, and L2 normalization. FTS5 remains the explicit fallback.

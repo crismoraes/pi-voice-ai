@@ -122,3 +122,17 @@ def test_story_audio_cache_is_voice_specific_and_invalidated_by_review(tmp_path:
     document = library.ingest_file(source, metadata())
     library.review(document["document_id"], "approved")
     assert cache.get("hello", "english") is None
+
+
+def test_semantic_index_uses_same_local_vector_space_for_query_and_story(tmp_path: Path):
+    class FakeEmbeddings:
+        model = "fake-multilingual"
+        def ready(self): return True
+        def embed(self, texts, *, query=False):
+            return [np.array([1.0, 0.0], dtype=np.float32) if any(word in text.casefold() for word in ("lantern", "farol")) else np.array([0.0, 1.0], dtype=np.float32) for text in texts]
+    library = StoryLibrary(tmp_path / "library", FakeEmbeddings())
+    source = tmp_path / "story.txt"; source.write_text("A gentle light guides everyone home.", encoding="utf-8")
+    library.ingest_file(source, metadata(title="Lantern Story")); result = library.build_index()
+    assert result["semantic"] == "available"
+    found = library.search("farol", language="en")
+    assert found and found[0].method == "semantic_multilingual_e5"

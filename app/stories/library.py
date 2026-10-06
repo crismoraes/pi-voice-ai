@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import sqlite3
+import numpy as np
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 from app.stories.extract import SUPPORTED_SUFFIXES, extract_document
 from app.stories.paths import StoryPaths
 from app.stories.types import ExtractionResult, SourceMetadata, StorySearchResult
+from app.stories.embeddings import LocalEmbeddingClient
 
 SCHEMA_VERSION = 1
 LANGUAGES = {"en", "pt", "es"}
@@ -55,8 +57,9 @@ def _atomic_json(path: Path, value: object) -> None:
 class StoryLibrary:
     """Own the private catalog and enforce approval on every read path."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, embedding_client: LocalEmbeddingClient | None = None) -> None:
         self.paths = StoryPaths(root)
+        self.embedding_client = embedding_client
 
     def initialize(self) -> None:
         self.paths.create()
@@ -137,6 +140,14 @@ class StoryLibrary:
                     next_section INTEGER NOT NULL,
                     language TEXT NOT NULL,
                     updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS story_vectors (
+                    story_id TEXT PRIMARY KEY REFERENCES stories(story_id) ON DELETE CASCADE,
+                    model TEXT NOT NULL, dimension INTEGER NOT NULL, vector BLOB NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS chunk_vectors (
+                    chunk_id TEXT PRIMARY KEY REFERENCES chunks(chunk_id) ON DELETE CASCADE,
+                    model TEXT NOT NULL, dimension INTEGER NOT NULL, vector BLOB NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS story_document_idx ON stories(document_id);
                 CREATE INDEX IF NOT EXISTS story_language_review_idx
@@ -425,6 +436,7 @@ class StoryLibrary:
     def build_index(self, *, incremental: bool = True) -> dict[str, object]:
         self.initialize()
         indexed = 0
+        semantic = bool(self.embedding_client and self.embedding_client.ready())
         with self._connect() as database:
             fts = database.execute("SELECT value FROM metadata WHERE key='fts5'").fetchone()[0] == "available"
             rows = database.execute(
@@ -435,6 +447,8 @@ class StoryLibrary:
             ).fetchall()
             if not incremental:
                 database.execute("DELETE FROM chunks")
+                database.execute("DELETE FROM story_vectors")
+                database.execute("DELETE FROM chunk_vectors")
                 if fts:
                     database.execute("DELETE FROM story_fts")
                     database.execute("DELETE FROM chunk_fts")
@@ -453,6 +467,7 @@ class StoryLibrary:
                     (story_id,),
                 ).fetchall()
                 chunks = self._chunk_sections(sections)
+                chunk_records: list[tuple[str, int, str, str]] = []
                 for order, (section_order, text, locator) in enumerate(chunks, 1):
                     chunk_id = _stable_id("chunk", story_id, str(order), hashlib.sha256(text.encode()).hexdigest())
                     database.execute(
@@ -463,9 +478,25 @@ class StoryLibrary:
                     )
                     if fts:
                         database.execute("INSERT INTO chunk_fts VALUES(?,?,?,?)", (chunk_id, story_id, text, row["language"]))
+                    chunk_records.append((chunk_id, section_order, text, locator))
+                if semantic and self.embedding_client is not None:
+                    try:
+                        story_text = " ".join((row["title"], row["summary"] or "", " ".join(json.loads(row["themes_json"]))))
+                        vectors = self.embedding_client.embed([story_text, *(record[2] for record in chunk_records)])
+                        database.execute("DELETE FROM story_vectors WHERE story_id=?", (story_id,))
+                        database.execute("INSERT INTO story_vectors VALUES(?,?,?,?)", (story_id, self.embedding_client.model, len(vectors[0]), vectors[0].astype("<f4").tobytes()))
+                        for record, vector in zip(chunk_records, vectors[1:], strict=True):
+                            database.execute("INSERT OR REPLACE INTO chunk_vectors VALUES(?,?,?,?)", (record[0], self.embedding_client.model, len(vector), vector.astype("<f4").tobytes()))
+                    except Exception:
+                        semantic = False
                 database.execute("UPDATE stories SET index_status='indexed' WHERE story_id=?", (story_id,))
                 indexed += 1
-        return {"indexed_stories": indexed, "fts5": fts, "semantic": "unavailable", "search_mode": "fts5" if fts else "like"}
+            database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('semantic_search',?)", ("available" if semantic else "unavailable",))
+            if semantic and self.embedding_client is not None:
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_model',?)", (self.embedding_client.model,))
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_normalization','l2')")
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_prefixes','query:/passage:')")
+        return {"indexed_stories": indexed, "fts5": fts, "semantic": "available" if semantic else "unavailable", "search_mode": "hybrid" if semantic else ("fts5" if fts else "like")}
 
     @staticmethod
     def _chunk_sections(sections, target_words: int = 400, overlap_words: int = 50):
@@ -583,6 +614,28 @@ class StoryLibrary:
                 ).fetchall()
                 seen = {item.story_id for item in results}
                 results.extend(self._search_result(row, "like_fallback", None) for row in rows if row["story_id"] not in seen)
+            if self.embedding_client is not None and len(results) < limit:
+                try:
+                    query_vector = self.embedding_client.embed([normalized], query=True)[0]
+                    semantic_rows = database.execute(
+                        """SELECT s.story_id,s.title,d.author,d.language,d.category,d.source_name,d.source_url,
+                                  v.vector,v.dimension
+                           FROM story_vectors v JOIN stories s USING(story_id) JOIN documents d USING(document_id)
+                           WHERE d.rights_status='approved' AND d.review_status='approved' AND s.index_status='indexed'
+                             AND (? IS NULL OR d.language=?)""",
+                        (language, language),
+                    ).fetchall()
+                    scored = []
+                    seen = {item.story_id for item in results}
+                    for row in semantic_rows:
+                        if row["story_id"] in seen: continue
+                        vector = np.frombuffer(row["vector"], dtype="<f4", count=row["dimension"])
+                        scored.append((float(np.dot(query_vector, vector)), row))
+                    for score, row in sorted(scored, key=lambda item: item[0], reverse=True)[: limit - len(results)]:
+                        if score >= 0.72:
+                            results.append(self._search_result(row, "semantic_multilingual_e5", score))
+                except Exception:
+                    pass
             return results
 
     @staticmethod
@@ -667,7 +720,12 @@ class StoryLibrary:
                 "SELECT document_id,title,language,source_name,source_url,extraction_status,rights_status,review_status FROM documents WHERE extraction_status!='extracted' OR rights_status!='approved' OR review_status!='approved' ORDER BY imported_at"
             )]
             fts = database.execute("SELECT value FROM metadata WHERE key='fts5'").fetchone()[0]
-        return {"generated_at": _utc_now(), "coverage": coverage, "sources": sources, "indexed_stories": indexed, "fts5": fts, "semantic_search": "pending_local_model", "pending": pending}
+            semantic_row = database.execute("SELECT value FROM metadata WHERE key='semantic_search'").fetchone()
+            model_row = database.execute("SELECT value FROM metadata WHERE key='embedding_model'").fetchone()
+        semantic_status = semantic_row[0] if semantic_row else "unavailable"
+        if semantic_status == "available" and self.embedding_client is not None and not self.embedding_client.ready():
+            semantic_status = "runtime_unavailable_fts5_fallback"
+        return {"generated_at": _utc_now(), "coverage": coverage, "sources": sources, "indexed_stories": indexed, "fts5": fts, "semantic_search": semantic_status, "embedding_model": model_row[0] if model_row else None, "pending": pending}
 
     def write_report(self, name: str, payload: object) -> Path:
         path = self.paths.reports / name

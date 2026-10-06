@@ -2010,6 +2010,7 @@ Use apenas URLs canônicas e APIs documentadas. O manifesto contém exemplos par
 
 - **A história não aparece:** execute `stories review --list`; confirme direitos, revisão e depois `stories index`.
 - **Busca básica em vez de FTS5:** confira `stories doctor --offline`. O relatório identifica a degradação.
+- **Semantic search mostra fallback:** confira `systemctl status pi-voice-ai-embeddings.service` e o modelo `models/multilingual-e5-small-Q4_k_m.gguf`; FTS5 continua funcionando enquanto o serviço é recuperado.
 - **PDF marcado `needs_ocr`:** ele não possui camada de texto. Converta em uma máquina confiável e reimporte; a aplicação não finge ter extraído conteúdo.
 - **Idioma ou voz incorretos:** confirme `STT_LANGUAGE=auto`, os três diretórios `TTS_*_MODEL_DIR` e execute `scripts/download_tts_model.sh`.
 - **Uma fonte remota falhou:** não repita agressivamente. Confirme host permitido, limite de bytes, política de robôs e URL oficial.

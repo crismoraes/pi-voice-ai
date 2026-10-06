@@ -6,10 +6,13 @@ service_source="$project_dir/systemd/pi-voice-ai.service"
 service_target="/etc/systemd/system/pi-voice-ai.service"
 llm_service_source="$project_dir/systemd/pi-voice-ai-llm.service"
 llm_service_target="/etc/systemd/system/pi-voice-ai-llm.service"
+embedding_service_source="$project_dir/systemd/pi-voice-ai-embeddings.service"
+embedding_service_target="/etc/systemd/system/pi-voice-ai-embeddings.service"
 app_user="${SUDO_USER:-$USER}"
 rendered_service="$(mktemp)"
 rendered_llm_service="$(mktemp)"
-trap 'rm -f "$rendered_service" "$rendered_llm_service"' EXIT
+rendered_embedding_service="$(mktemp)"
+trap 'rm -f "$rendered_service" "$rendered_llm_service" "$rendered_embedding_service"' EXIT
 
 if [[ "$app_user" == "root" ]]; then
     printf 'Run with sudo from the non-root account that should own the service.\n' >&2
@@ -26,10 +29,16 @@ sed \
     -e "s&__APP_DIR__&$escaped_project_dir&g" \
     -e "s&__APP_USER__&$escaped_app_user&g" \
     "$llm_service_source" > "$rendered_llm_service"
+sed \
+    -e "s&__APP_DIR__&$escaped_project_dir&g" \
+    -e "s&__APP_USER__&$escaped_app_user&g" \
+    "$embedding_service_source" > "$rendered_embedding_service"
 
 sudo install -o root -g root -m 0644 "$rendered_service" "$service_target"
 sudo install -o root -g root -m 0644 "$rendered_llm_service" "$llm_service_target"
+sudo install -o root -g root -m 0644 "$rendered_embedding_service" "$embedding_service_target"
 sudo systemctl daemon-reload
 sudo systemctl enable pi-voice-ai-llm.service
+sudo systemctl enable pi-voice-ai-embeddings.service
 sudo systemctl enable pi-voice-ai.service
 printf 'Installed PiVoice AI services for user %s.\n' "$app_user"

@@ -58,5 +58,6 @@ esac
 "$project_dir/scripts/download_vad_model.sh"
 "$project_dir/scripts/install_llama_cpp.sh"
 "$project_dir/scripts/download_local_llm.sh"
+"$project_dir/scripts/download_story_embedding_model.sh"
 
 printf 'Bootstrap complete: %s\n' "$project_dir"
