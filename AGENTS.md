@@ -563,6 +563,9 @@ browser Realtime and USB Realtime. `LLM_INSTRUCTIONS` remains the reset default;
 dashboard changes are stored atomically in ignored `data/prompt-state.json` with
 mode `0600` on Linux. The English dashboard exposes the prompt only through
 `GET/PUT /api/system/prompt` and reset through `POST /api/system/prompt/reset`.
+Its client-side `Behavior template` selector fills the editor with five public
+starter prompts but never saves on selection; only `Save and apply` changes runtime
+state. Manual edits return the selector to `Custom / current prompt`.
 `/api/system/info` contains metadata only. Never log or store prompt text in usage
 history. Chained adapters read it per request. USB Realtime renews its connection
 before the next turn when instructions change. A connected browser sends

@@ -6,6 +6,8 @@
 
 - Editor persistente **Assistant behavior** no dashboard, com contador, revisão,
   **Save and apply** e **Reset to default**.
+- Combobox **Behavior template** com perfis editáveis para assistente geral,
+  histórias, professor de inglês, suporte técnico e aprendizado infantil.
 - APIs `GET/PUT /api/system/prompt` e `POST /api/system/prompt/reset`; o estado é
   gravado atomicamente fora do Git e com permissão `0600` no Linux.
 - Um único prompt dinâmico para OpenAI Responses, llama.cpp e OpenAI Realtime,

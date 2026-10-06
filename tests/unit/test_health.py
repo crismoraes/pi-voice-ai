@@ -103,6 +103,9 @@ def test_dashboard_contains_active_technology_panel() -> None:
     assert 'id="assistant-enabled"' in response.text
     assert 'id="interrupt-assistant"' in response.text
     assert 'id="assistant-prompt"' in response.text
+    assert 'id="behavior-template"' in response.text
+    assert "Storyteller in Portuguese" in response.text
+    assert "English teacher" in response.text
     assert 'id="save-prompt"' in response.text
     assert 'id="reset-prompt"' in response.text
     assert "Consumo" not in response.text

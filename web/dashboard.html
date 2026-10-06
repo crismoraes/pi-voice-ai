@@ -49,6 +49,17 @@
             </div>
             <span id="prompt-revision" class="version-badge">Revision —</span>
           </div>
+          <label class="prompt-template-label" for="behavior-template">
+            Behavior template
+            <select id="behavior-template">
+              <option value="custom">Custom / current prompt</option>
+              <option value="general">General assistant in Portuguese</option>
+              <option value="storyteller">Storyteller in Portuguese</option>
+              <option value="english-tutor">English teacher</option>
+              <option value="technical">Technical assistant</option>
+              <option value="kids-guide">Kids learning guide</option>
+            </select>
+          </label>
           <textarea id="assistant-prompt" rows="6" aria-label="Assistant behavior instructions" spellcheck="true"></textarea>
           <div class="prompt-footer">
             <span id="prompt-count">0 / 0 characters</span>

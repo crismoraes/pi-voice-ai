@@ -302,6 +302,7 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
 .prompt-heading, .prompt-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .prompt-heading strong, .prompt-heading small { display: block; }
 .prompt-heading small { margin-top: 4px; color: #8c959f; line-height: 1.45; }
+.prompt-template-label { display: grid; grid-template-columns: minmax(150px, auto) minmax(240px, 1fr); align-items: center; gap: 12px; margin-top: 14px; color: #b1bac4; font-size: .8rem; }
 .prompt-control textarea { box-sizing: border-box; width: 100%; margin-top: 14px; min-height: 132px; resize: vertical; color: #f0f3f6; border: 1px solid #484f58; border-radius: 8px; padding: 12px; background: #0d1117; font: inherit; line-height: 1.5; }
 .prompt-control textarea:focus { outline: 2px solid #58a6ff; outline-offset: 1px; }
 .prompt-footer { justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; }
@@ -343,6 +344,7 @@ select { min-height: 42px; border: 1px solid #484f58; border-radius: 9px; paddin
   .model-controls button { grid-column: auto; }
   .interrupt-control { align-items: stretch; flex-direction: column; }
   .prompt-heading { align-items: flex-start; flex-direction: column; }
+  .prompt-template-label { grid-template-columns: 1fr; }
   .prompt-footer { align-items: stretch; flex-direction: column; }
   .prompt-footer .switch-status { flex-basis: auto; text-align: left; }
   .recent-turns-heading, .turn-card-header { align-items: stretch; flex-direction: column; }

@@ -13,10 +13,18 @@ const applyPipelineButton = document.querySelector("#apply-pipeline");
 const promptInput = document.querySelector("#assistant-prompt");
 const savePromptButton = document.querySelector("#save-prompt");
 const resetPromptButton = document.querySelector("#reset-prompt");
+const behaviorTemplateSelect = document.querySelector("#behavior-template");
 let llmOptions = [];
 let assistantInterruptAvailable = false;
 let promptState = null;
 let promptDirty = false;
+const promptTemplates = {
+  general: "Você é um assistente de voz prestativo. Responda em português brasileiro, de forma natural, clara e concisa. Use frases adequadas para serem ouvidas em voz alta. Não use Markdown.",
+  storyteller: "Você é um contador de histórias envolvente. Responda em português brasileiro com narrativa clara, personagens interessantes e ritmo agradável para ouvir. Adapte a duração ao pedido do usuário e, quando ele não indicar uma duração, conte uma história curta. Não use Markdown.",
+  "english-tutor": "You are a patient English teacher for a native Brazilian Portuguese speaker. Speak mainly in clear, natural English at the learner's level. Correct mistakes gently, explain briefly in Brazilian Portuguese when helpful, and ask only one practice question at a time. Keep responses suitable for listening aloud and do not use Markdown.",
+  technical: "Você é um assistente técnico didático. Responda em português brasileiro com passos curtos, objetivos e seguros. Explique termos técnicos em linguagem simples, peça apenas informações realmente necessárias e confirme o resultado esperado. Como a resposta será falada, não use Markdown nem blocos de código longos.",
+  "kids-guide": "Você é um guia educativo gentil para crianças. Responda em português brasileiro com palavras simples, exemplos divertidos e explicações curtas, adequadas à idade informada. Incentive curiosidade sem assustar, evite conteúdo impróprio e não use Markdown.",
+};
 const voiceControls = Object.fromEntries(["stt", "tts"].map((component) => [component, {
   provider: document.querySelector(`#${component}-provider`),
   model: document.querySelector(`#${component}-model`),
@@ -147,6 +155,7 @@ function renderPrompt(prompt, { force = false } = {}) {
     promptInput.value = prompt.instructions;
     promptDirty = false;
   }
+  behaviorTemplateSelect.value = Object.entries(promptTemplates).find(([, instructions]) => instructions === promptInput.value)?.[0] || "custom";
   text("prompt-revision", `Revision ${prompt.revision}${prompt.is_default ? " · default" : ""}`);
   updatePromptControls();
 }
@@ -371,7 +380,15 @@ pipelineSelect.addEventListener("change", () => {
   realtimeVoiceSelect.disabled = !realtime;
 });
 applyPipelineButton.addEventListener("click", applyPipeline);
-promptInput.addEventListener("input", () => { promptDirty = true; text("prompt-status", "Unsaved changes"); updatePromptControls(); });
+promptInput.addEventListener("input", () => { behaviorTemplateSelect.value = "custom"; promptDirty = true; text("prompt-status", "Unsaved changes"); updatePromptControls(); });
+behaviorTemplateSelect.addEventListener("change", () => {
+  const instructions = promptTemplates[behaviorTemplateSelect.value];
+  if (!instructions) return;
+  promptInput.value = instructions;
+  promptDirty = true;
+  text("prompt-status", "Template loaded. Review or edit it, then save to apply.");
+  updatePromptControls();
+});
 savePromptButton.addEventListener("click", savePrompt);
 resetPromptButton.addEventListener("click", resetPrompt);
 loadDashboard();

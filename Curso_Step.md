@@ -1501,6 +1501,12 @@ remove espaços externos e limita o tamanho a `PROMPT_MAX_CHARACTERS=8000`. Cada
 alteração incrementa a revisão e grava `data/prompt-state.json` por substituição
 atômica; no Linux o arquivo recebe modo `0600`.
 
+O seletor **Behavior template** ensina que um prompt é um ponto de partida editável,
+e não uma configuração rígida. Ele inclui assistente geral, histórias, professor de
+inglês, suporte técnico e aprendizagem infantil. A seleção apenas copia o texto para
+o editor. O aluno pode comparar, adaptar e revisar antes de clicar em **Save and
+apply**; isso evita mudar uma conversa por um clique acidental no combobox.
+
 ### Consistência entre provedores
 
 Os adaptadores de Responses e llama.cpp recebem uma função que lê as instruções no

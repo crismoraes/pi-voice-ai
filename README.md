@@ -277,6 +277,12 @@ OpenAI Responses, llama.cpp e OpenAI Realtime. **Save and apply** persiste o tex
 o aplica no próximo turno; **Reset to default** restaura `LLM_INSTRUCTIONS`. Não é
 necessário reiniciar o Raspberry Pi nem o serviço.
 
+O combobox **Behavior template** preenche o editor com cinco pontos de partida:
+assistente geral em português, contador de histórias, professor de inglês,
+assistente técnico e guia educativo infantil. Escolher um template não muda o
+assistente imediatamente. Revise ou personalize o texto e pressione **Save and
+apply**. Ao editar manualmente, o seletor volta a **Custom / current prompt**.
+
 O estado fica em `data/prompt-state.json`, fora do Git, escrito atomicamente e com
 permissão `0600` no Linux. `/api/system/info` expõe apenas revisão, limite e indicação
 de padrão. O conteúdo completo existe somente no endpoint específico do editor e não
