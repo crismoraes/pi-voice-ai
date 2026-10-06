@@ -545,6 +545,15 @@ ARM64. The deployed API reports `barge_in: false` and
 `USB_CAPTURE_RESUMED_AFTER_TURN`. The service is active with `NRestarts=0`, one
 `arecord`, no `aplay` after the interruption, and no recent warnings.
 
+The browser conversation page includes a dependency-free SVG assistant avatar.
+Application events drive idle, ready, listening, thinking and speaking states. A
+browser `AnalyserNode` reads only the remote WebRTC stream and maps its RMS level to
+the SVG mouth dimensions on animation frames; a zero-gain Web Audio branch keeps
+analysis active without duplicating playback. Decorative SVG/CSS animation includes
+blink, float, orbit, listening and level effects, and honors
+`prefers-reduced-motion`. Analysis remains client-side and sends or stores no extra
+audio. Always release the AudioContext and animation frame in `closeSession()`.
+
 ## Project Goal
 
 Build a low-latency voice assistant running primarily on a Raspberry Pi 5.

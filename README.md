@@ -176,6 +176,20 @@ Chained          -> VAD -> STT -> LLM -> TTS
 OpenAI Realtime  -> áudio bidirecional em uma sessão de voz
 ```
 
+### Avatar 2D reativo na interface web
+
+A página de conversa contém um avatar SVG sem bibliotecas externas. Os eventos do
+aplicativo alternam entre espera, escuta, processamento e fala. Durante a resposta,
+um `AnalyserNode` da Web Audio API calcula a intensidade do áudio WebRTC recebido e
+controla a abertura da boca do SVG. O ramo usado para análise tem ganho zero, então
+não duplica o áudio que já sai pelo elemento `<audio>`.
+
+Piscadas, movimento suave, órbitas e indicadores de nível são feitos em CSS. A
+consulta `prefers-reduced-motion` desativa os movimentos decorativos quando o
+navegador solicita redução de animações. Todo o processamento permanece no cliente;
+nenhum áudio adicional é enviado ou armazenado, e o backend do Pi não recebe carga
+de inferência ou renderização por causa do avatar.
+
 No modo Realtime, os seletores encadeados continuam salvos, mas ficam inativos; a
 interface mostra o modelo e a voz da sessão. Voltar para Chained restaura as escolhas
 anteriores. O estado fica em `data/pipeline-selection.json`, com permissão `0600` no

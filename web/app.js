@@ -11,6 +11,10 @@ const assistantMetricsText = document.querySelector("#assistant-metrics");
 const remoteAudio = document.querySelector("#remote-audio");
 const loopbackCheckbox = document.querySelector("#loopback");
 const automaticCheckbox = document.querySelector("#automatic");
+const avatar = document.querySelector("#avatar");
+const avatarStateText = document.querySelector("#avatar-state");
+const avatarDetailText = document.querySelector("#avatar-detail");
+const avatarMouth = document.querySelector("#avatar-mouth");
 
 let peerConnection = null;
 let localStream = null;
@@ -26,10 +30,99 @@ let realtimeVoice = null;
 let realtimeResponseStartedAt = null;
 let realtimeFirstAudioAt = null;
 let runtimePoller = null;
+let avatarAudioContext = null;
+let avatarAudioSource = null;
+let avatarAnalyser = null;
+let avatarSilentGain = null;
+let avatarSamples = null;
+let avatarFrame = null;
+let avatarMouthLevel = 0;
+
+const avatarStates = {
+  idle: ["Aguardando conexão", "Conecte o microfone para iniciar."],
+  ready: ["Pronta para conversar", "Pode falar quando quiser."],
+  listening: ["Ouvindo você", "Detectando sua fala em tempo real."],
+  thinking: ["Pensando", "Preparando a resposta."],
+  speaking: ["Falando", "A boca acompanha o áudio recebido."],
+};
+
+function setAvatarState(state) {
+  const [label, detail] = avatarStates[state] || avatarStates.idle;
+  avatar.className = `avatar-card ${state}`;
+  avatarStateText.textContent = label;
+  avatarDetailText.textContent = detail;
+  if (state !== "speaking") {
+    avatarMouthLevel = 0;
+    avatarMouth.setAttribute("rx", "14");
+    avatarMouth.setAttribute("ry", "3");
+  }
+}
+
+function avatarStateForStatus(message, state) {
+  if (/Reproduzindo|resposta nativa de áudio/i.test(message)) return "speaking";
+  if (state === "recording" || /Ouvindo|Fala detectada|pode falar/i.test(message)) return "listening";
+  if (state === "connecting") return "thinking";
+  if (state === "connected") return "ready";
+  return "idle";
+}
+
+function animateAvatarMouth() {
+  if (!avatarAnalyser || !avatarSamples) return;
+  avatarAnalyser.getByteTimeDomainData(avatarSamples);
+  let energy = 0;
+  for (const sample of avatarSamples) {
+    const normalized = (sample - 128) / 128;
+    energy += normalized * normalized;
+  }
+  const rms = Math.sqrt(energy / avatarSamples.length);
+  const target = Math.min(1, Math.max(0, (rms - 0.008) * 13));
+  avatarMouthLevel += (target - avatarMouthLevel) * (target > avatarMouthLevel ? 0.55 : 0.24);
+  avatarMouth.setAttribute("rx", (14 - avatarMouthLevel * 2).toFixed(1));
+  avatarMouth.setAttribute("ry", (3 + avatarMouthLevel * 12).toFixed(1));
+  avatar.style.setProperty("--audio-level", avatarMouthLevel.toFixed(3));
+  avatarFrame = requestAnimationFrame(animateAvatarMouth);
+}
+
+async function connectAvatarAudio(stream) {
+  disconnectAvatarAudio();
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  avatarAudioContext = new AudioContextClass();
+  avatarAnalyser = avatarAudioContext.createAnalyser();
+  avatarAnalyser.fftSize = 256;
+  avatarAnalyser.smoothingTimeConstant = 0.68;
+  avatarSamples = new Uint8Array(avatarAnalyser.fftSize);
+  avatarAudioSource = avatarAudioContext.createMediaStreamSource(stream);
+  avatarAudioSource.connect(avatarAnalyser);
+  avatarSilentGain = avatarAudioContext.createGain();
+  avatarSilentGain.gain.value = 0;
+  avatarAnalyser.connect(avatarSilentGain);
+  avatarSilentGain.connect(avatarAudioContext.destination);
+  await avatarAudioContext.resume();
+  animateAvatarMouth();
+}
+
+function disconnectAvatarAudio() {
+  if (avatarFrame !== null) cancelAnimationFrame(avatarFrame);
+  avatarFrame = null;
+  avatarAudioSource?.disconnect();
+  avatarAnalyser?.disconnect();
+  avatarSilentGain?.disconnect();
+  const context = avatarAudioContext;
+  avatarAudioContext = null;
+  avatarAudioSource = null;
+  avatarAnalyser = null;
+  avatarSilentGain = null;
+  avatarSamples = null;
+  avatarMouthLevel = 0;
+  avatar.style.setProperty("--audio-level", "0");
+  if (context) void context.close().catch(() => {});
+}
 
 function setStatus(message, state = "") {
   statusText.textContent = message;
   statusDot.className = `status-dot ${state}`.trim();
+  setAvatarState(avatarStateForStatus(message, state));
 }
 
 function waitForIceGatheringComplete(connection) {
@@ -113,6 +206,11 @@ function handleRealtimeEvent(message) {
     assistantText.textContent = "";
   } else if (event.type === "response.output_audio.delta" && realtimeFirstAudioAt == null) {
     realtimeFirstAudioAt = performance.now();
+    setAvatarState("speaking");
+  } else if (event.type === "output_audio_buffer.started") {
+    setAvatarState("speaking");
+  } else if (event.type === "output_audio_buffer.stopped") {
+    setAvatarState("ready");
   } else if (["response.output_audio_transcript.delta", "response.output_text.delta"].includes(event.type)) {
     assistantText.textContent += event.delta || "";
     setStatus("Reproduzindo resposta Realtime…", "connected");
@@ -380,6 +478,7 @@ async function closeSession({ notifyServer = true } = {}) {
     localStream = null;
   }
   remoteAudio.srcObject = null;
+  disconnectAvatarAudio();
   realtimeEvents = null;
   realtimeSessionId = null;
   realtimeResponseStartedAt = null;
@@ -485,9 +584,11 @@ async function startSession() {
     });
 
     peerConnection.addEventListener("track", async (event) => {
-      remoteAudio.srcObject = event.streams[0] ?? new MediaStream([event.track]);
+      const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
+      remoteAudio.srcObject = remoteStream;
       remoteAudio.muted = false;
       try {
+        await connectAvatarAudio(remoteStream);
         await remoteAudio.play();
       } catch (error) {
         errorText.textContent = `O navegador bloqueou a reprodução: ${error.message}`;

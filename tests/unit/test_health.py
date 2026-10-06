@@ -30,6 +30,9 @@ def test_browser_client_is_served() -> None:
 
     assert response.status_code == 200
     assert "Assistente de voz" in response.text
+    assert 'id="avatar"' in response.text
+    assert 'id="avatar-mouth"' in response.text
+    assert 'id="avatar-state"' in response.text
 
 
 def test_system_info_exposes_models_without_secrets_or_paths() -> None:

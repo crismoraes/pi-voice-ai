@@ -4,6 +4,8 @@
 
 ### Added
 
+- Avatar 2D em SVG na conversa web, com estados de escuta, processamento e fala,
+  piscadas e boca sincronizada ao RMS do áudio WebRTC via Web Audio API.
 - Botão **Stop speaking** e endpoint `POST /api/system/assistant/interrupt` para
   cancelar de forma determinística a resposta USB atual e retomar a captura.
 - Estado sanitizado de interrupção por voz em `/api/system/info` e no painel

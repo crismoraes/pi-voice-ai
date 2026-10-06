@@ -1328,6 +1328,28 @@ Voice pipeline
   - OpenAI Realtime (audio -> realtime session -> audio)
 ```
 
+### Avatar SVG sincronizado com a voz
+
+A interface web ganhou um personagem vetorial para tornar a conversa mais clara e
+interativa sem adicionar bibliotecas ou trabalho ao backend. Estados do próprio
+fluxo controlam espera, escuta, processamento e fala. Piscadas, respiração, órbitas
+e barras de nível usam apenas CSS e respeitam `prefers-reduced-motion`.
+
+Quando a faixa remota chega pelo WebRTC, o navegador cria um `AnalyserNode`. A cada
+frame, calcula o RMS das amostras no domínio do tempo, suaviza a variação e ajusta
+`rx` e `ry` da elipse que representa a boca. O analisador termina em um `GainNode`
+com ganho zero para manter o grafo ativo sem reproduzir uma segunda cópia do áudio.
+Ao desconectar, `requestAnimationFrame`, nós de áudio e `AudioContext` são liberados.
+
+```text
+Remote MediaStream -> AnalyserNode -> GainNode(0) -> audio destination
+                           |
+                           +-> RMS -> SVG mouth
+```
+
+O cálculo ocorre no dispositivo que abriu a página. Nenhuma amostra adicional vai
+ao Pi ou ao provedor, e o avatar não altera o histórico, custo ou privacidade.
+
 Quando **Chained** está ativo, os três seletores continuam disponíveis. Quando
 **OpenAI Realtime** está ativo, eles permanecem salvos, mas desabilitados, e o
 dashboard mostra `Realtime model` e `Voice`. Voltar para Chained restaura exatamente
