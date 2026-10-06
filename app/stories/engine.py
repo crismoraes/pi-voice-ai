@@ -83,6 +83,10 @@ class StoryEngine:
             prompt = f"Create a short, age-appropriate story in language '{language}'. User request: {text}. Do not claim it comes from the catalog."
             return StoryTurn("CREATE", language, llm_prompt=prompt)
 
+        if any(word in lowered for word in (" interativa", " interativo", " interactive", " interactivo", " interactiva")):
+            prompt = f"Begin or continue a short interactive children's story in '{language}'. Offer exactly two safe choices, preserve prior choices from conversation history, and identify it as original fiction. User request: {text}"
+            return StoryTurn("INTERACTIVE", language, llm_prompt=prompt, story_id=state.story_id)
+
         read_words = (" leia", " conte", " read", " tell", " lee", " cuenta")
         retell = any(word in lowered for word in ("reconte", "retell", "resume", "resuma"))
         if any(word in lowered for word in read_words) or retell:

@@ -3,11 +3,14 @@ import zipfile
 from pathlib import Path
 
 import pytest
+import httpx
 
 from app.stories.engine import StoryEngine
 from app.stories.extract import extract_document
 from app.stories.library import StoryLibrary, StoryNotAvailableError
 from app.stories.types import SourceMetadata
+from app.stories.acquisition import _acquire_item
+from app.stories.paths import StoryPaths
 
 
 def metadata(**changes):
@@ -53,3 +56,13 @@ def test_exact_read_does_not_need_an_llm(tmp_path: Path):
     turn = StoryEngine(library).handle("child", "read the Lantern Story")
     assert turn is not None and turn.mode == "READ_EXACT"
     assert turn.llm_prompt is None and turn.text_segments == ("Exact canonical text.",)
+
+
+def test_acquisition_rejects_html_disguised_as_epub(tmp_path: Path):
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, headers={"content-type": "text/html"}, content=b"<html>Error</html>", request=request))
+    item = {"id": "book", "extension": ".epub", "download_url": "https://books.example/book.epub",
+            "canonical_url": "https://books.example/book", "allowed_hosts": ["books.example"],
+            "metadata": {"source_name": "test", "language": "en"}}
+    paths = StoryPaths(tmp_path / "library"); paths.create()
+    with httpx.Client(transport=transport) as client, pytest.raises(ValueError, match="expected ZIP"):
+        _acquire_item(client, paths, item, 1000)
