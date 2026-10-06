@@ -280,6 +280,10 @@ class Settings(BaseSettings):
     story_audio_cache_max_mb: int = Field(default=256, ge=16, le=4096, alias="STORY_AUDIO_CACHE_MAX_MB")
     story_retention_days: int = Field(default=90, ge=1, le=3650, alias="STORY_RETENTION_DAYS")
     story_embedding_model: str = Field(default="multilingual-e5-small-q4_k_m", alias="STORY_EMBEDDING_MODEL")
+    story_embedding_revision: str = Field(
+        default="sha256:6661b6e1ccb06e3044e2cd7aa25ca0b837ef7224a2cb5aff3a9e6807c60d01f1",
+        alias="STORY_EMBEDDING_REVISION",
+    )
     story_embedding_base_url: str = Field(default="http://127.0.0.1:8082", alias="STORY_EMBEDDING_BASE_URL")
     story_embedding_timeout_seconds: float = Field(default=60, ge=5, le=180, alias="STORY_EMBEDDING_TIMEOUT_SECONDS")
 

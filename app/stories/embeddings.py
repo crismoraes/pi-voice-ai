@@ -7,9 +7,10 @@ import numpy as np
 
 
 class LocalEmbeddingClient:
-    def __init__(self, base_url: str, model: str, timeout_seconds: float = 60) -> None:
+    def __init__(self, base_url: str, model: str, timeout_seconds: float = 60, revision: str | None = None) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.revision = revision or model
         self.timeout_seconds = timeout_seconds
 
     def embed(self, texts: list[str], *, query: bool = False) -> list[np.ndarray]:

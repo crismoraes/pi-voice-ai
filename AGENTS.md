@@ -2367,3 +2367,4 @@ The project is not complete if the code works but the knowledge required to recr
 - Keep English, Portuguese, and Spanish STT/TTS paths operational and validate offline behavior after deployment.
 - Semantic story search uses the loopback-only multilingual E5 llama.cpp service; documents and queries must retain the same model, prefixes, dimension, and L2 normalization. FTS5 remains the explicit fallback.
 - Keep semantic index chunks within the embedding model context. Chunking may change index text only; READ_EXACT must continue using untouched canonical sections.
+- Persist the embedding artifact revision, tokenizer, context, normalization, prefixes, and chunk parameters with the rebuilt catalog index.

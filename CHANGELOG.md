@@ -446,3 +446,4 @@
 - Executed the Project Gutenberg starter acquisition; invalid EPUB responses are now isolated and reported for manual download.
 - Added local multilingual E5 semantic vectors through a loopback-only llama.cpp embedding service, with FTS5 fallback and runtime degradation reporting.
 - Bounded semantic index chunks below the E5 context limit while preserving canonical exact-reading text.
+- Added embedding artifact and segmentation provenance to story catalog reports.

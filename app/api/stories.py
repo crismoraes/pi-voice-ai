@@ -8,7 +8,15 @@ from app.stories.embeddings import LocalEmbeddingClient
 
 router = APIRouter(prefix="/api/stories", tags=["stories"])
 settings = get_settings()
-story_library = StoryLibrary(settings.story_library_root, LocalEmbeddingClient(settings.story_embedding_base_url, settings.story_embedding_model, settings.story_embedding_timeout_seconds))
+story_library = StoryLibrary(
+    settings.story_library_root,
+    LocalEmbeddingClient(
+        settings.story_embedding_base_url,
+        settings.story_embedding_model,
+        settings.story_embedding_timeout_seconds,
+        settings.story_embedding_revision,
+    ),
+)
 
 
 @router.get("/status")

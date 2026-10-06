@@ -20,7 +20,12 @@ from app.stories.embeddings import LocalEmbeddingClient
 def _library(root: str | None) -> StoryLibrary:
     settings = get_settings()
     configured = settings.story_library_root
-    embeddings = LocalEmbeddingClient(settings.story_embedding_base_url, settings.story_embedding_model, settings.story_embedding_timeout_seconds)
+    embeddings = LocalEmbeddingClient(
+        settings.story_embedding_base_url,
+        settings.story_embedding_model,
+        settings.story_embedding_timeout_seconds,
+        settings.story_embedding_revision,
+    )
     return StoryLibrary(Path(root).resolve() if root else Path(configured), embeddings)
 
 

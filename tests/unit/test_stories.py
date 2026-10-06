@@ -136,6 +136,9 @@ def test_semantic_index_uses_same_local_vector_space_for_query_and_story(tmp_pat
     assert result["semantic"] == "available"
     found = library.search("farol", language="en")
     assert found and found[0].method == "semantic_multilingual_e5"
+    index_metadata = library.report()["semantic_index_metadata"]
+    assert index_metadata["chunk_target_words"] == "180"
+    assert index_metadata["embedding_context_tokens"] == "512"
 
 
 def test_index_chunks_long_paragraphs_within_embedding_limit(tmp_path: Path):

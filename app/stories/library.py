@@ -20,6 +20,10 @@ from app.stories.embeddings import LocalEmbeddingClient
 
 SCHEMA_VERSION = 1
 LANGUAGES = {"en", "pt", "es"}
+EMBEDDING_CONTEXT_TOKENS = 512
+EMBEDDING_TOKENIZER = "multilingual-e5 embedded SentencePiece"
+CHUNK_TARGET_WORDS = 180
+CHUNK_OVERLAP_WORDS = 30
 
 
 class StoryNotAvailableError(LookupError):
@@ -494,12 +498,17 @@ class StoryLibrary:
             database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('semantic_search',?)", ("available" if semantic else "unavailable",))
             if semantic and self.embedding_client is not None:
                 database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_model',?)", (self.embedding_client.model,))
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_revision',?)", (getattr(self.embedding_client, "revision", self.embedding_client.model),))
                 database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_normalization','l2')")
                 database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_prefixes','query:/passage:')")
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_tokenizer',?)", (EMBEDDING_TOKENIZER,))
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('embedding_context_tokens',?)", (str(EMBEDDING_CONTEXT_TOKENS),))
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('chunk_target_words',?)", (str(CHUNK_TARGET_WORDS),))
+                database.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('chunk_overlap_words',?)", (str(CHUNK_OVERLAP_WORDS),))
         return {"indexed_stories": indexed, "fts5": fts, "semantic": "available" if semantic else "unavailable", "search_mode": "hybrid" if semantic else ("fts5" if fts else "like")}
 
     @staticmethod
-    def _chunk_sections(sections, target_words: int = 180, overlap_words: int = 30):
+    def _chunk_sections(sections, target_words: int = CHUNK_TARGET_WORDS, overlap_words: int = CHUNK_OVERLAP_WORDS):
         chunks = []
         for section in sections:
             # E5 accepts at most 512 tokens. Word windows keep even unusually
@@ -720,10 +729,11 @@ class StoryLibrary:
             fts = database.execute("SELECT value FROM metadata WHERE key='fts5'").fetchone()[0]
             semantic_row = database.execute("SELECT value FROM metadata WHERE key='semantic_search'").fetchone()
             model_row = database.execute("SELECT value FROM metadata WHERE key='embedding_model'").fetchone()
+            semantic_metadata = dict(database.execute("SELECT key,value FROM metadata WHERE key LIKE 'embedding_%' OR key LIKE 'chunk_%'").fetchall())
         semantic_status = semantic_row[0] if semantic_row else "unavailable"
         if semantic_status == "available" and self.embedding_client is not None and not self.embedding_client.ready():
             semantic_status = "runtime_unavailable_fts5_fallback"
-        return {"generated_at": _utc_now(), "coverage": coverage, "sources": sources, "indexed_stories": indexed, "fts5": fts, "semantic_search": semantic_status, "embedding_model": model_row[0] if model_row else None, "pending": pending}
+        return {"generated_at": _utc_now(), "coverage": coverage, "sources": sources, "indexed_stories": indexed, "fts5": fts, "semantic_search": semantic_status, "embedding_model": model_row[0] if model_row else None, "semantic_index_metadata": semantic_metadata, "pending": pending}
 
     def write_report(self, name: str, payload: object) -> Path:
         path = self.paths.reports / name
