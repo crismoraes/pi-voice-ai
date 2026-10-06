@@ -77,6 +77,9 @@
 
 ### Validated
 
+- Cinquenta testes passaram no Windows e no Raspberry Pi ARM64 após desacoplar a
+  recepção Realtime da reprodução USB. O serviço implantado ficou ativo, sem
+  reinícios, warnings ou processos ALSA com o assistente Off.
 - A correção passou nos 49 testes Windows/ARM64; o Pi expôs o teto 2.048, preservou
   Realtime/`gpt-realtime-2.1`/`cedar` e Off, com `NRestarts=0` e journal sem alertas.
 - Testes de API foram isolados das preferências persistidas após a suíte detectar

@@ -502,6 +502,10 @@ the P10S, and later turns failed. Playback writes are now decoupled from the net
 reader; `finish()` flushes the queued audio after `response.done`. Every failure and
 cancellation aborts the tracked ALSA process, and local error speech uses a fresh
 player so its 22.05 kHz Piper audio cannot conflict with 24 kHz Realtime audio.
+The regression suite now passes 50 tests on Windows and Raspberry Pi ARM64. Commit
+`9e6b13d` is deployed; the service is active with `NRestarts=0`, no warning-priority
+journal entries, no ALSA process while the persisted assistant state is Off, and the
+system API preserves Realtime, `gpt-realtime-2.1`, `cedar`, and the 2048-token limit.
 
 ## Project Goal
 

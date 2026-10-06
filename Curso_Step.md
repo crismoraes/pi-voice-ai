@@ -1402,6 +1402,12 @@ mensagem local de falha cria outro player, pois o áudio Realtime usa 24 kHz e a
 Piper local usa 22,05 kHz. Um teste de regressão comprova que não há `drain()` por
 trecho e que uma resposta parcial mata o primeiro player antes do aviso local.
 
+Os 50 testes passaram no Windows e no Raspberry Pi ARM64. Após implantar o commit
+`9e6b13d`, o serviço ficou `active/running`, com `NRestarts=0`, sem warnings e sem
+processos ALSA enquanto o assistente permanecia Off. A API preservou Realtime,
+`gpt-realtime-2.1`, voz `cedar` e o teto de 2.048 tokens. A prova final de uma fala
+longa depende do microfone e alto-falante físicos e deve ser feita ao voltar para On.
+
 A documentação oficial consultada em 5 de outubro de 2026 usa
 `gpt-realtime-2.1` no exemplo atual, recomenda WebRTC para navegador e WebSocket para
 servidor, e orienta novas integrações a usar a interface GA. O modelo usa uma
